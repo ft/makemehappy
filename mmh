@@ -163,6 +163,9 @@ if (cmd == "build"):
     # lise the dependency dictionary as well.
     ds = mod.dependencies()
     fr = dep.fetch(log, src, dep.Stack(ds), dep.Trace(ds))
+    if (fr == False):
+        mmh.warn("Fetching dependencies failed. Giving up.")
+        exit(1)
     top.generateToplevel('CMakeLists.txt')
     build.allofthem()
     root.cleanup()

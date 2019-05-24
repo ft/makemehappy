@@ -38,7 +38,7 @@ def fetch(log, src, st, trace):
 
         if (source == False):
             log.error("Module {} has no source!".format(dep['name']))
-            exit(1)
+            return False
 
         p = os.path.join('deps', dep['name'])
         newmod = os.path.join(p, 'module.yaml')
