@@ -48,7 +48,10 @@ class BuildRoot:
 
     def cleanup(self):
         self.log.info("Cleaning up build-directory: {}".format(self.name()))
+        olddir = os.getcwd()
+        os.chdir(self.calldir)
         shutil.rmtree(self.root)
+        os.chdir(olddir)
 
     def cd(self):
         self.log.info("Changing into build-directory: {}".format(self.name()))

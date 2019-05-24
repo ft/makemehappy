@@ -62,6 +62,10 @@ src = YamlStack(log, 'Source Definition',
 
 ap = argparse.ArgumentParser()
 
+ap.add_argument("-d", "--directory",
+                default = None,
+                help = "specify the build-root directory")
+
 ap.add_argument("-m", "--module",
                 default = "module.yaml",
                 help = "specify the file that contains the"
@@ -116,7 +120,11 @@ if (cmd == "build"):
         exit(1)
     mod = CodeUnderTest(log, cmdargs.module)
     mod.load()
-    root = BuildRoot(log, mod)
+    root = None
+    if (isinstance(cmdargs.directory, str)):
+        root = BuildRoot(log, mod, cmdargs.directory)
+    else:
+        root = BuildRoot(log, mod)
     root.populate()
     root.linkCodeUnderTest()
     root.cd()
