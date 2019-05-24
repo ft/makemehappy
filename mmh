@@ -67,6 +67,9 @@ ap.add_argument("-m", "--module",
                 help = "specify the file that contains the"
                      + " module description (defaults to module.yaml)")
 
+ap.add_argument("-p", "--preserve", action = "store_true",
+                help = "preserve build root instead of deleting it")
+
 ap.add_argument("-s", "--source",
                 default = [ ],
                 action = "append",
@@ -113,7 +116,7 @@ if (cmd == "build"):
         exit(1)
     mod = CodeUnderTest(log, cmdargs.module)
     mod.load()
-    root = BuildRoot(log)
+    root = BuildRoot(log, mod)
     root.populate()
     root.linkCodeUnderTest()
     root.cd()
@@ -169,7 +172,8 @@ if (cmd == "build"):
         exit(1)
     top.generateToplevel('CMakeLists.txt')
     build.allofthem()
-    root.cleanup()
+    if (cmdargs.preserve == False):
+        root.cleanup()
 elif (cmd == "dump-description"):
     data = mmh.load(cmdargs.module)
     mmh.pp(data)
