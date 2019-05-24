@@ -42,8 +42,14 @@ def fetch(log, src, st, trace):
 
         p = os.path.join('deps', dep['name'])
         newmod = os.path.join(p, 'module.yaml')
-        subprocess.run(['git', 'clone', source, p])
-        # TODO: Need to check out the right revision!
+        subprocess.run(['git', 'clone',
+                        source, p])
+
+        # Check out the requested revision
+        olddir = os.getcwd()
+        os.chdir(p)
+        subprocess.run(['git', 'checkout', dep['revision']])
+        os.chdir(olddir)
 
         if (os.path.isfile(p)):
             newdeps = mmh.load()
