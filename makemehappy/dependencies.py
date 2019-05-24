@@ -34,7 +34,7 @@ def fetch(log, src, st, trace):
         if ('source' in dep.keys()):
             source = dep['source']
         else:
-            source = src.lookup(dep['name'])
+            source = src.lookup(dep['name'])['repository']
 
         if (source == False):
             log.error("Module {} has no source!".format(dep['name']))

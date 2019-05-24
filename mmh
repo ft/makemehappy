@@ -162,6 +162,7 @@ if (cmd == "build"):
     # pairs from the  CodeUnderTest top-level module. These  pairs also initia-
     # lise the dependency dictionary as well.
     ds = mod.dependencies()
+    src.load()
     fr = dep.fetch(log, src, dep.Stack(ds), dep.Trace(ds))
     if (fr == False):
         mmh.warn("Fetching dependencies failed. Giving up.")
