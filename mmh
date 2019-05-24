@@ -48,7 +48,7 @@ name = "mmh"
 StreamHandler(sys.stdout).push_application()
 log = Logger(fullname)
 
-src = YamlStack(log, 'Configuration',
+cfg = YamlStack(log, 'Configuration',
                 '/usr/share/MakeMeHappy/config.yaml',
                 '/etc/MakeMeHappy/config.yaml',
                 mmh.xdgFile('config.yaml'),
