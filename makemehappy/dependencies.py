@@ -55,4 +55,4 @@ def fetch(log, src, st, trace):
 
     # And recurse with the new stack and trace; we're done when the new stack
     # is empty.
-    fetch(log, src, st, trace)
+    return fetch(log, src, st, trace)
