@@ -7,3 +7,6 @@ class YamlStack:
 
     def push(self, item):
         self.log.info("{}: {}".format(self.desc, item))
+
+    def lookup(self, needle):
+        return False

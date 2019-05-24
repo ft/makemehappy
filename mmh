@@ -162,7 +162,7 @@ if (cmd == "build"):
     # pairs from the  CodeUnderTest top-level module. These  pairs also initia-
     # lise the dependency dictionary as well.
     ds = mod.dependencies()
-    fr = dep.fetch(log, dep.Stack(ds), dep.Trace(ds))
+    fr = dep.fetch(log, src, dep.Stack(ds), dep.Trace(ds))
     top.generateToplevel('CMakeLists.txt')
     build.allofthem()
     root.cleanup()
