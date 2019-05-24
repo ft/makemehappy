@@ -1,0 +1,12 @@
+.*
+!.gitignore
+*~
+\#*\#
+\#*
+*.tmp
+*.orig
+GPATH
+GRTAGS
+GSYMS
+GTAGS
+makemehappy/__pycache__

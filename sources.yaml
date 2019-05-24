@@ -1,0 +1,18 @@
+shorthands:
+  gt: https://gitthing.tld/ft/{}.git
+
+# Unknown modules will default to add_subdirectory(), the master branch and the
+# catch-all's short-hand to try and fetch dependencies. Which means, that
+# strictly speaking, the "foo" entry below is not required.
+catchall: gt
+
+modules:
+
+- foo:
+    repository: gt
+    branch: master
+
+- bar:
+    repository: gt
+    branch: special
+    include: add_bar

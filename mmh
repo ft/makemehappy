@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+
+# Jobs:
+#   - Initialise build tree
+#     - By default, generate a temporary directory name
+#     - Allow the user to specify one
+#       If this is done, the default build-dir removal is disabled.
+#     - Create: tools, deps, build
+#     - Link code-under-test to module source directory
+#   - Fetch dependencies into deps
+#     - Recursively fetch all dependencies into deps
+#     - This involves some minor version dependency resolution
+#   - Generate a top-level CMakeLists.txt
+#   - Run build instance (buildtool, toolchain, build-config) in separate fol-
+#     der in build.
+#   - Log all this to a file (build-dir.log by default).
+#   - If desired keep running in case an instance breaks.
+#   - Produce statistics across all instances at the end.
+#
+# All modules under an organisation's control should use CMake based builds,
+# particularly of the ufw variety. All such modules should ship with a
+# module.yaml file, so mmh can build it. This way, the CMakeLists.txt file
+# generator only has to add_subdirectory(deps/module) the module.
+#
+# For third-party modules, that do not use CMake, it's likely that we'd provide
+# external cmake modules that allow the inclusion of them: add_libtap(deps/tap)
+# To support that, we need a data base that connects dependencies to these
+# utility functions/macros.
+
+import argparse
+import os
+import sys
+
+import makemehappy.build as build
+import makemehappy.dependencies as dep
+import makemehappy.utilities as mmh
+import makemehappy.toplevel as top
+
+from logbook import warn, Logger, StreamHandler
+from makemehappy.buildroot import BuildRoot
+from makemehappy.cud import CodeUnderTest
+from makemehappy.yamlstack import YamlStack
+
+version = "0.1.0"
+fullname = "MakeMeHappy"
+name = "mmh"
+
+StreamHandler(sys.stdout).push_application()
+log = Logger(fullname)
+
+src = YamlStack(log, 'Configuration',
+                '/usr/share/MakeMeHappy/config.yaml',
+                '/etc/MakeMeHappy/config.yaml',
+                mmh.xdgFile('config.yaml'),
+                mmh.dotFile('config.yaml'))
+
+src = YamlStack(log, 'Source Definition',
+                '/usr/share/MakeMeHappy/sources.yaml',
+                '/etc/MakeMeHappy/sources.yaml',
+                mmh.xdgFile('sources.yaml'),
+                mmh.dotFile('sources.yaml'))
+
+ap = argparse.ArgumentParser()
+
+ap.add_argument("-m", "--module",
+                default = "module.yaml",
+                help = "specify the file that contains the"
+                     + " module description (defaults to module.yaml)")
+
+ap.add_argument("-s", "--source",
+                default = [ ],
+                action = "append",
+                help = "add a module source definition")
+
+ap.add_argument("-V", "--version", action = "store_true",
+                help = "show program version")
+
+ap.add_argument("-v", "--verbose", action = "store_true",
+                help = "produce verbose output")
+
+ap.add_argument("rest",
+                nargs = "*",
+                default = [ ],
+                help = "sub command to carry out")
+
+cmdargs = ap.parse_args()
+
+if (cmdargs.verbose):
+    mmh.setVerbosity(1)
+
+if (cmdargs.version):
+    print("{} ({}) version {}".format(fullname, name, version))
+    exit(0)
+
+for item in cmdargs.source:
+    if (os.path.isfile(item) == False):
+        mmh.warn("Source definition does not exist: {}".format(item))
+        exit(1)
+    src.push(cmdargs.source)
+
+cmd = mmh.lookupCommand(cmdargs.rest)
+
+if (len(cmdargs.rest) == 0):
+    cmd = 'build'
+    cmdargs.rest = [ cmd ]
+    log.info("Starting up using default command ({})".format(cmd))
+elif (cmd != False):
+    log.info("Starting up using '{}' command".format(cmd))
+
+if (cmd == "build"):
+    if (os.path.isfile(cmdargs.module) == False):
+        mmh.warn("Module definition does not exist: {}".format(cmdargs.module))
+        exit(1)
+    mod = CodeUnderTest(log, cmdargs.module)
+    mod.load()
+    root = BuildRoot(log)
+    root.populate()
+    root.linkCodeUnderTest()
+    root.cd()
+    # Okay then. Dependencies. Here is the plan:
+    #
+    # - Fetch all dependencies.
+    # - Check out the desired revision.
+    # - Record all these module/revision pairs.
+    #
+    # Then do the same  for all the dependencies for the  previous level of de-
+    # pendencies. Lower  level modules do  not get  to change the  revision re-
+    # quirements of higher level modules.  However, harsh conflicts can trigger
+    # warnings and errors:
+    #
+    # - If the major version of a module differs between two modules requesting
+    #   the same  dependency, this will almost  certain break the build  and an
+    #   error will  be triggered. An option  should make it possible  to demote
+    #   these errors to warnings.
+    #
+    # - Similarly, with  minor versions, there is  a chance that a  build might
+    #   pass despite the mismatch. So conditions like that trigger warnings. An
+    #   option should make it possible to promote such warnings to errors.
+    #
+    # - Mismatches  in patch  levels  of a  semantic  versioning triplet,  will
+    #   likely work out. These conditions  will merely trigger an informational
+    #   notice during operation.  There should, again, be an  option to promote
+    #   situations such as this to warnings or even errors.
+    #
+    # While fetching dependencies like this,  keep a dictionary of modules that
+    # where pulled in as dependencies and map them to lists of pairs:
+    #
+    #     (dependant revision)
+    #
+    # This  way, after  all dependencies  have been  pulled in,  it is  easy to
+    # assess whether or  not one of the mismatch  conditions, detailed earlier,
+    # are met.
+    #
+    # To determine  a bottom case for  the recursive nature of  this algorithm,
+    # keep a stack of dependencies that still need to be processed. Add to that
+    # stack each time the recursion shifts  to the next level of the dependency
+    # tree. Only add modules to that stack,  if they have not yet been fetched.
+    # Pop off modules from that stack as soon as they have been fetched. Opera-
+    # tion has finished when the stack runs empty.
+    #
+    # The entry into the recursion is  a stack filled with (dependant revision)
+    # pairs from the  CodeUnderTest top-level module. These  pairs also initia-
+    # lise the dependency dictionary as well.
+    ds = mod.dependencies()
+    fr = dep.fetch(log, dep.Stack(ds), dep.Trace(ds))
+    top.generateToplevel('CMakeLists.txt')
+    build.allofthem()
+    root.cleanup()
+elif (cmd == "dump-description"):
+    data = mmh.load(cmdargs.module)
+    mmh.pp(data)
+elif (isinstance(cmd, str)):
+    print("Not implemented yet: {}".format(cmd))
+else:
+    mmh.warn("Unknown command: {}".format(cmdargs.rest[0]))
+    exit(1)
+
+exit(0)
