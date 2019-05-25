@@ -39,7 +39,7 @@ import makemehappy.toplevel as top
 from logbook import warn, Logger, StreamHandler
 from makemehappy.buildroot import BuildRoot
 from makemehappy.cud import CodeUnderTest
-from makemehappy.yamlstack import YamlStack
+from makemehappy.yamlstack import YamlStack, SourceStack
 
 version = "0.1.0"
 fullname = "MakeMeHappy"
@@ -54,11 +54,11 @@ cfg = YamlStack(log, 'Configuration',
                 mmh.xdgFile('config.yaml'),
                 mmh.dotFile('config.yaml'))
 
-src = YamlStack(log, 'Source Definition',
-                '/usr/share/MakeMeHappy/sources.yaml',
-                '/etc/MakeMeHappy/sources.yaml',
-                mmh.xdgFile('sources.yaml'),
-                mmh.dotFile('sources.yaml'))
+src = SourceStack(log, 'Source Definition',
+                  '/usr/share/MakeMeHappy/sources.yaml',
+                  '/etc/MakeMeHappy/sources.yaml',
+                  mmh.xdgFile('sources.yaml'),
+                  mmh.dotFile('sources.yaml'))
 
 ap = argparse.ArgumentParser()
 

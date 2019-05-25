@@ -21,6 +21,10 @@ class YamlStack:
         self.data = list((self.fileload(x) for x in self.files
                           if os.path.isfile(x)))
 
+class SourceStack(YamlStack):
+    def __init__(self, log, desc, *lst):
+        YamlStack.__init__(self, log, desc, *lst)
+
     def lookup(self, needle):
         if (self.data == False):
             return False
