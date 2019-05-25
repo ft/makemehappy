@@ -51,7 +51,10 @@ class BuildRoot:
         olddir = os.getcwd()
         os.chdir(self.calldir)
         shutil.rmtree(self.root)
-        os.chdir(olddir)
+        if (os.path.exists(olddir)):
+            os.chdir(olddir)
+        else:
+            self.log.info("Previous directory is gone: {}".format(olddir))
 
     def cd(self):
         self.log.info("Changing into build-directory: {}".format(self.name()))
