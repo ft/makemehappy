@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!@@PYTHON@@
 
 import argparse
 import os
@@ -14,7 +14,7 @@ from makemehappy.buildroot import BuildRoot
 from makemehappy.cud import CodeUnderTest
 from makemehappy.yamlstack import YamlStack, SourceStack
 
-version = "0.1.0"
+version = "@@VERSION@@"
 fullname = "MakeMeHappy"
 name = "mmh"
 
@@ -22,14 +22,14 @@ StreamHandler(sys.stdout).push_application()
 log = Logger(fullname)
 
 cfg = YamlStack(log, 'Configuration',
-                '/usr/share/MakeMeHappy/config.yaml',
-                '/etc/MakeMeHappy/config.yaml',
+                '@@DATADIR@@/config.yaml',
+                '@@ETCDIR@@/config.yaml',
                 mmh.xdgFile('config.yaml'),
                 mmh.dotFile('config.yaml'))
 
 src = SourceStack(log, 'Source Definition',
-                  '/usr/share/MakeMeHappy/sources.yaml',
-                  '/etc/MakeMeHappy/sources.yaml',
+                  '@@DATADIR@@/sources.yaml',
+                  '@@ETCDIR@@/sources.yaml',
                   mmh.xdgFile('sources.yaml'),
                   mmh.dotFile('sources.yaml'))
 

@@ -27,7 +27,7 @@ patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
 ** TODO Add a way to define dependencies for third-party modules
 ** TODO With non-temporary build-roots, invert --preserve
 …including its default.
-** TODO Generate mmh script
+** DONE Generate mmh script
 Configure:
 - Python path
 - Data directory (`/usr/share/MakeMeHappy`)

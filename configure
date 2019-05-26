@@ -1,0 +1,63 @@
+#!/bin/sh
+
+name='MakeMeHappy'
+datadir="/usr/share/$name"
+etcdir="/etc/$name"
+version="0.0.0"
+python=''
+
+findprg() {
+    _prg="$1"
+    REPLY=''
+    _oldifs="$IFS"
+    IFS=':'
+    for dir in $PATH; do
+        f="$dir/$_prg"
+        if [ -x "$f" ]; then
+            printf 'Looking up %s program in $PATH: %s\n' "$_prg" "$f"
+            REPLY="$f"
+            IFS="$_oldifs"
+            return 0
+        fi
+    done
+    IFS="$_oldifs"
+    printf 'Could not find binary: %s\n' "$_prg"
+    return 1
+}
+
+gotgit=1
+findprg git || {
+    printf 'Version will be set to %s\n' "$version"
+    gotgit=0
+}
+git="$REPLY"
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+    --datadir=*) datadir="${1#*=}" ;;
+    --etcdir=*) etcdir="${1#*=}" ;;
+    --python=*) python="${1#*=}" ;;
+    *) printf 'Unknown option: "%s"\n' "$1"
+       exit 1 ;;
+    esac
+done
+
+if [ -z "$python" ]; then
+    findprg python3 || exit 1
+    python="$REPLY"
+fi
+
+if [ "$gotgit" -gt 0 ]; then
+    if [ "$("$git" rev-parse --is-inside-work-tree)" = 'true' ]; then
+        version="$(git describe --always)"
+    fi
+fi
+
+printf 'Generating mmh from mmh.in...\n'
+sed -e "s|@@DATADIR@@|${datadir}|" \
+    -e "s|@@ETCDIR@@|${etcdir}|"   \
+    -e "s|@@PYTHON@@|${python}|"   \
+    -e "s|@@VERSION@@|${version}|" \
+    < mmh.in > mmh
+
+chmod 0755 mmh

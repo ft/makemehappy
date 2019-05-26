@@ -9,6 +9,7 @@ GPATH
 GRTAGS
 GSYMS
 GTAGS
+mmh
 makemehappy/__pycache__
 doc/*.1
 doc/*.html
