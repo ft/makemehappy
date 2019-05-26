@@ -101,50 +101,6 @@ if (cmd == "build"):
     root.populate()
     root.linkCodeUnderTest()
     root.cd()
-    # Okay then. Dependencies. Here is the plan:
-    #
-    # - Fetch all dependencies.
-    # - Check out the desired revision.
-    # - Record all these module/revision pairs.
-    #
-    # Then do the same  for all the dependencies for the  previous level of de-
-    # pendencies. Lower  level modules do  not get  to change the  revision re-
-    # quirements of higher level modules.  However, harsh conflicts can trigger
-    # warnings and errors:
-    #
-    # - If the major version of a module differs between two modules requesting
-    #   the same  dependency, this will almost  certain break the build  and an
-    #   error will  be triggered. An option  should make it possible  to demote
-    #   these errors to warnings.
-    #
-    # - Similarly, with  minor versions, there is  a chance that a  build might
-    #   pass despite the mismatch. So conditions like that trigger warnings. An
-    #   option should make it possible to promote such warnings to errors.
-    #
-    # - Mismatches  in patch  levels  of a  semantic  versioning triplet,  will
-    #   likely work out. These conditions  will merely trigger an informational
-    #   notice during operation.  There should, again, be an  option to promote
-    #   situations such as this to warnings or even errors.
-    #
-    # While fetching dependencies like this,  keep a dictionary of modules that
-    # where pulled in as dependencies and map them to lists of pairs:
-    #
-    #     (dependant revision)
-    #
-    # This  way, after  all dependencies  have been  pulled in,  it is  easy to
-    # assess whether or  not one of the mismatch  conditions, detailed earlier,
-    # are met.
-    #
-    # To determine  a bottom case for  the recursive nature of  this algorithm,
-    # keep a stack of dependencies that still need to be processed. Add to that
-    # stack each time the recursion shifts  to the next level of the dependency
-    # tree. Only add modules to that stack,  if they have not yet been fetched.
-    # Pop off modules from that stack as soon as they have been fetched. Opera-
-    # tion has finished when the stack runs empty.
-    #
-    # The entry into the recursion is  a stack filled with (dependant revision)
-    # pairs from the  CodeUnderTest top-level module. These  pairs also initia-
-    # lise the dependency dictionary as well.
     ds = mod.dependencies()
     src.load()
     fr = dep.fetch(log, src, dep.Stack(ds), dep.Trace(ds))
