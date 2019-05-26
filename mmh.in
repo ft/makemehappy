@@ -107,7 +107,7 @@ if (cmd == "build"):
     if (fr == False):
         mmh.warn("Fetching dependencies failed. Giving up.")
         exit(1)
-    top.generateToplevel('CMakeLists.txt')
+    top.generateToplevel(log, cfg, src, 'CMakeLists.txt')
     build.allofthem()
     if (cmdargs.preserve == False):
         root.cleanup()
