@@ -42,7 +42,7 @@ If we don't, we need to check tons of conditions at the points the data is
 actually used. Checking data upfront allows us to write much more straight
 forward code.
 * Wishlist
-** TODO Forget "tools" — check all dependencies into "deps"
+** DONE Forget "tools" — check all dependencies into "deps"
 ** TODO Zsh completion would be nice
 ** TODO Gather statistics while running
 *** TODO How many dependency versions had a patch-level mismatch?

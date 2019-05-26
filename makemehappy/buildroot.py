@@ -32,7 +32,7 @@ def mkTempDir(mod):
 
 class BuildRoot:
     def __init__(self, log, mod, name = None):
-        self.initdirs = [ 'build', 'deps', 'tools' ]
+        self.initdirs = [ 'build', 'deps' ]
         self.log = log
         self.calldir = os.path.realpath(os.getcwd())
         if (name == None):
