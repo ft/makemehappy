@@ -52,7 +52,13 @@ class Trace:
         self.data = init
 
     def has(self, needle):
-        return (needle in (entry[0] for entry in self.data))
+        return (needle in (entry['name'] for entry in self.data))
+
+    def deps(self):
+        return list(((entry['name'] for entry in self.data)))
+
+    def push(self, entry):
+        self.data = [entry] + self.data
 
 class Stack:
     def __init__(self, init):
@@ -89,17 +95,19 @@ def fetch(log, src, st, trace):
         subprocess.run(['git', 'clone',
                         source, p])
 
+
         # Check out the requested revision
         olddir = os.getcwd()
         os.chdir(p)
         subprocess.run(['git', 'checkout', dep['revision']])
         os.chdir(olddir)
 
-        if (os.path.isfile(p)):
-            newdeps = mmh.load()
+        if (os.path.isfile(newmod)):
+            newmodata = mmh.load(newmod)
+            trace.push(newmodata)
             for newdep in newdeps:
                 if (trace.has(newdep['name']) == False):
-                    st.push(newdep)
+                    st.push(newmodata)
 
         st.delete(dep['name'])
 

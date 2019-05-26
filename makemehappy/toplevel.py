@@ -7,24 +7,42 @@ def generateHeader(fh):
               "project({} {})".format(defaultProjectName, defaultLanguages)]:
         print(s, file = fh)
 
-def generateCMakeModulePath(fh):
-    print('list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/code-under-test/cmake/modules")', file = fh)
+def modAppend(fh, p, m):
+    print("list(APPEND CMAKE_MODULE_PATH \"{}/{}\")".format(p,m),
+          file = fh)
+
+def generateCMakeModulePath(fh, moddirs):
+    for (p,ds) in moddirs:
+        for d in ds:
+            modAppend(fh, p, d)
 
 def generateTestHeader(fh):
+    # TODO: Check if it's benign to have this in unconditionally
     print("include(CTest)", file = fh)
     print("enable_testing()", file = fh)
 
-def generateDependencies(fh):
-    print("include(Libtap)", file = fh)
-    print("add_libtap(deps/libtap)", file = fh)
+def generateDependencies(fh, deps, thirdParty):
+    for dep in deps:
+        if (dep in thirdParty):
+            print("include({})".format(thirdParty[dep]['module']), file = fh)
+            print("{}(deps/{})".format(thirdParty[dep]['include'],
+                                       dep),
+                  file = fh)
+        else:
+            print("add_subdirectory(deps/{})".format(dep), file = fh)
 
 def generateFooter(fh):
     print("add_subdirectory(code-under-test)", file = fh)
 
-def generateToplevel(log, cfg, src, fname):
+def generateToplevel(log, cfg, src, trace, mod, fname):
     with open(fname, 'w') as fh:
         generateHeader(fh)
-        generateCMakeModulePath(fh)
+        # TODO: This needs the equivalent for all module carrying dependencies
+        # in "deps/".
+        moddirs = [ ("${PROJECT_SOURCE_DIR}/code-under-test",
+                     [ mod.cmakeModules() ] ) ]
+        generateCMakeModulePath(fh, moddirs)
         generateTestHeader(fh)
-        generateDependencies(fh)
+        tp = mod.cmake3rdParty()
+        generateDependencies(fh, trace.deps(), tp)
         generateFooter(fh)

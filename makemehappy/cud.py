@@ -11,3 +11,9 @@ class CodeUnderTest:
 
     def dependencies(self):
         return self.data['dependencies']
+
+    def cmakeModules(self):
+        return self.data['cmake-modules']
+
+    def cmake3rdParty(self):
+        return self.data['cmake-third-party']
