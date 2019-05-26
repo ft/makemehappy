@@ -10,3 +10,8 @@ GRTAGS
 GSYMS
 GTAGS
 makemehappy/__pycache__
+doc/*.1
+doc/*.html
+doc/*.info
+doc/*.pdf
+doc/*.texi

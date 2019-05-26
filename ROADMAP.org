@@ -33,6 +33,7 @@ Configure:
 - Data directory (`/usr/share/MakeMeHappy`)
 - Config directory (`/etc/MakeMeHappy`)
 ** TODO Add Debian Packaging
+** TODO Flesh out user manual
 * Wishlist
 ** TODO Forget "tools" — check all dependencies into "deps"
 ** TODO Zsh completion would be nice
