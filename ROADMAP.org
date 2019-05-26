@@ -28,8 +28,7 @@ patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
 ** TODO Add YamlStack variant for configuration parsing
 ** TODO Add option to keep running when a build-instance fails
 ** TODO Add a way to define dependencies for third-party modules
-** TODO With non-temporary build-roots, invert --preserve
-…including its default.
+** DONE With non-temporary build-roots, invert --preserve
 ** DONE Generate mmh script
 Configure:
 - Python path

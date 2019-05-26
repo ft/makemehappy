@@ -65,6 +65,9 @@ ap.add_argument("rest",
 
 cmdargs = ap.parse_args()
 
+if (isinstance(cmdargs.directory, str)):
+    cmdargs.preserve = not(cmdargs.preserve)
+
 if (cmdargs.verbose):
     mmh.setVerbosity(1)
 
