@@ -1,0 +1,49 @@
+* Main objectives
+** TODO Really generate toplevel CMakeLists.txt
+** TODO Add support for extending CMAKE_MODULE_PATH
+** TODO Make dependency fetcher build its dep-trace correctly
+** TODO Write output to log
+** TODO Write log to log file
+** TODO Handle external program return codes correctly
+* Secondary
+** TODO Determine inclusion-order for toplevel CMakeLists.txt
+** TODO Detect cyclic dependencies in toplevel CMakeLists.txt
+** TODO Implement version dependency judgements
+** TODO Allow output to both terminal and log
+** TODO Add more sub-commands
+*** TODO Run compilation instances from build-tree
+- [ ] All
+- [ ] One
+- [ ] Some
+** TODO Add options to override dependency versions
+It would be best to be able to put the option more than once and for it to use
+patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
+
+  mmh --dep-version "*=master" build
+
+…to build a module with all dependency versions set to ‘master’.
+** TODO Add YamlStack variant for configuration parsing
+** TODO Add option to keep running when a build-instance fails
+** TODO Add a way to define dependencies for third-party modules
+** TODO With non-temporary build-roots, invert --preserve
+…including its default.
+** TODO Generate mmh script
+Configure:
+- Python path
+- Data directory (`/usr/share/MakeMeHappy`)
+- Config directory (`/etc/MakeMeHappy`)
+** TODO Add Debian Packaging
+* Wishlist
+** TODO Forget "tools" — check all dependencies into "deps"
+** TODO Zsh completion would be nice
+** TODO Gather statistics while running
+*** TODO How many dependency versions had a patch-level mismatch?
+*** TODO How many dependency versions had a minor mismatch?
+*** TODO How many dependency versions had a major mismatch?
+*** TODO How many build-instances succeeded/failed?
+*** TODO How many build-instances had their test runs succeed/fail?
+*** TODO How much time did individual steps take to execute?
+- Build-Root Init
+- Dependency Fetch
+- Toplevel Generation
+- Individual Build-Instances

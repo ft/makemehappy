@@ -1,32 +1,5 @@
 #!/usr/bin/env python3
 
-# Jobs:
-#   - Initialise build tree
-#     - By default, generate a temporary directory name
-#     - Allow the user to specify one
-#       If this is done, the default build-dir removal is disabled.
-#     - Create: tools, deps, build
-#     - Link code-under-test to module source directory
-#   - Fetch dependencies into deps
-#     - Recursively fetch all dependencies into deps
-#     - This involves some minor version dependency resolution
-#   - Generate a top-level CMakeLists.txt
-#   - Run build instance (buildtool, toolchain, build-config) in separate fol-
-#     der in build.
-#   - Log all this to a file (build-dir.log by default).
-#   - If desired keep running in case an instance breaks.
-#   - Produce statistics across all instances at the end.
-#
-# All modules under an organisation's control should use CMake based builds,
-# particularly of the ufw variety. All such modules should ship with a
-# module.yaml file, so mmh can build it. This way, the CMakeLists.txt file
-# generator only has to add_subdirectory(deps/module) the module.
-#
-# For third-party modules, that do not use CMake, it's likely that we'd provide
-# external cmake modules that allow the inclusion of them: add_libtap(deps/tap)
-# To support that, we need a data base that connects dependencies to these
-# utility functions/macros.
-
 import argparse
 import os
 import sys
