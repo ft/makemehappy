@@ -47,9 +47,36 @@ import subprocess
 
 import makemehappy.utilities as mmh
 
+def extendPath(root, lst, datum):
+    new = os.path.join(root, datum)
+    if (isinstance(datum, str)):
+        lst.append(new)
+    elif (isinstance(datum, list)):
+        lst.extend(new)
+    else:
+        raise(Exception())
+
+class CMakeExtensions:
+    def __init__(self, mod, trace):
+        self.modulepath = []
+        self.toolchainpath = []
+        midx = 'cmake-modules'
+        tidx = 'cmake-toolchains'
+        if (midx in mod.data):
+            extendPath(mod.data['root'], self.modulepath, mod.data[midx])
+        if (tidx in mod.data):
+            extendPath(mod.data['root'], self.toolchainpath, mod.data[tidx])
+        # TODO: Same has to be done for stuff in ‘trace’
+
+    def modulePath(self):
+        return self.modulepath
+
+    def toolchainPath(self):
+        return self.toolchainpath
+
 class Trace:
-    def __init__(self, init):
-        self.data = init
+    def __init__(self):
+        self.data = []
 
     def has(self, needle):
         return (needle in (entry['name'] for entry in self.data))

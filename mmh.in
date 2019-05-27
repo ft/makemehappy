@@ -106,12 +106,13 @@ if (cmd == "build"):
     root.cd()
     ds = mod.dependencies()
     src.load()
-    fr = dep.fetch(log, src, dep.Stack(ds), dep.Trace(ds))
+    fr = dep.fetch(log, src, dep.Stack(ds), dep.Trace())
     if (fr == False):
         mmh.warn("Fetching dependencies failed. Giving up.")
         exit(1)
-    top.generateToplevel(log, cfg, src, fr, mod, 'CMakeLists.txt')
-    build.allofthem()
+    ext = dep.CMakeExtensions(mod, fr)
+    top.generateToplevel(log, cfg, src, fr, ext, mod, 'CMakeLists.txt')
+    build.allofthem(mod, ext)
     if (cmdargs.preserve == False):
         root.cleanup()
 elif (cmd == "dump-description"):

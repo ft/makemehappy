@@ -8,7 +8,7 @@ In 885ae63, the trace module was revised slightly.
 ** TODO Write output to log
 ** TODO Write log to log file
 ** TODO Handle external program return codes correctly
-** TODO Run all configured build-instances
+** DONE Run all configured build-instances
 …not just the default native build using make.
 * Secondary
 ** TODO Determine inclusion-order for toplevel CMakeLists.txt

@@ -17,3 +17,12 @@ class CodeUnderTest:
 
     def cmake3rdParty(self):
         return self.data['cmake-third-party']
+
+    def toolchains(self):
+        return self.data['toolchains']
+
+    def buildtools(self):
+        return self.data['buildtools']
+
+    def buildconfigs(self):
+        return self.data['buildconfigs']

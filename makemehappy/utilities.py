@@ -52,8 +52,12 @@ def lookupCommand(cmds):
     return False
 
 def load(file):
+    (root,fn) = os.path.split(os.path.realpath(file))
     with open(file) as fh:
-        return yaml.load(fh.read())
+        data = yaml.load(fh.read())
+        data['root'] = root
+        data['definition'] = fn
+        return data
 
 xppx = pprint.PrettyPrinter(indent = 4)
 

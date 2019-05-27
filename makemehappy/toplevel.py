@@ -7,14 +7,9 @@ def generateHeader(fh):
               "project({} {})".format(defaultProjectName, defaultLanguages)]:
         print(s, file = fh)
 
-def modAppend(fh, p, m):
-    print("list(APPEND CMAKE_MODULE_PATH \"{}/{}\")".format(p,m),
-          file = fh)
-
 def generateCMakeModulePath(fh, moddirs):
-    for (p,ds) in moddirs:
-        for d in ds:
-            modAppend(fh, p, d)
+    for p in moddirs:
+        print("list(APPEND CMAKE_MODULE_PATH \"{}\")".format(p), file = fh)
 
 def generateTestHeader(fh):
     # TODO: Check if it's benign to have this in unconditionally
@@ -34,14 +29,10 @@ def generateDependencies(fh, deps, thirdParty):
 def generateFooter(fh):
     print("add_subdirectory(code-under-test)", file = fh)
 
-def generateToplevel(log, cfg, src, trace, mod, fname):
+def generateToplevel(log, cfg, src, trace, ext, mod, fname):
     with open(fname, 'w') as fh:
         generateHeader(fh)
-        # TODO: This needs the equivalent for all module carrying dependencies
-        # in "deps/".
-        moddirs = [ ("${PROJECT_SOURCE_DIR}/code-under-test",
-                     [ mod.cmakeModules() ] ) ]
-        generateCMakeModulePath(fh, moddirs)
+        generateCMakeModulePath(fh, ext.modulePath())
         generateTestHeader(fh)
         tp = mod.cmake3rdParty()
         generateDependencies(fh, trace.deps(), tp)
