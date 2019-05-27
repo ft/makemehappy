@@ -28,6 +28,8 @@ def generateDependencies(fh, deps, thirdParty):
             print("add_subdirectory(deps/{})".format(dep), file = fh)
 
 def generateFooter(fh):
+    print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",
+          file = fh)
     print("add_subdirectory(code-under-test)", file = fh)
 
 def generateToplevel(log, cfg, src, trace, ext, mod, fname):
