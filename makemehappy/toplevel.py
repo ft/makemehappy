@@ -18,10 +18,11 @@ def generateTestHeader(fh):
 
 def generateDependencies(fh, deps, thirdParty):
     for dep in deps:
-        if (dep in thirdParty):
-            print("include({})".format(thirdParty[dep]['module']), file = fh)
-            print("{}(deps/{})".format(thirdParty[dep]['include'],
-                                       dep),
+        name = dep['name']
+        if (name in thirdParty):
+            print("include({})".format(thirdParty[name]['module']), file = fh)
+            print("{}(deps/{})".format(thirdParty[name]['include'],
+                                       name),
                   file = fh)
         else:
             print("add_subdirectory(deps/{})".format(dep), file = fh)
@@ -34,6 +35,7 @@ def generateToplevel(log, cfg, src, trace, ext, mod, fname):
         generateHeader(fh)
         generateCMakeModulePath(fh, ext.modulePath())
         generateTestHeader(fh)
+        # TODO It's not enough to pick these up from the module under test.
         tp = mod.cmake3rdParty()
-        generateDependencies(fh, trace.deps(), tp)
+        generateDependencies(fh, mod.dependencies() + trace.deps(), tp)
         generateFooter(fh)
