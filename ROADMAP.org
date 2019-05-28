@@ -42,6 +42,10 @@ Configure:
 If we don't, we need to check tons of conditions at the points the data is
 actually used. Checking data upfront allows us to write much more straight
 forward code.
+** TODO Allow the user to specify a subset of all defined build instances
+If the module.yaml file defines 40 or 50 possible combinations of toolchains,
+build configurations, tools and the like, it would be useful to pick from
+those. Lists or patterns or both, I'm not sure yet.
 * Wishlist
 ** DONE Forget "tools" — check all dependencies into "deps"
 ** TODO Zsh completion would be nice
