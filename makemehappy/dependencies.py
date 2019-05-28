@@ -132,9 +132,9 @@ def fetch(log, src, st, trace):
         if (os.path.isfile(newmod)):
             newmodata = mmh.load(newmod)
             trace.push(newmodata)
-            for newdep in newdeps:
+            for newdep in newmodata['dependencies']:
                 if (trace.has(newdep['name']) == False):
-                    st.push(newmodata)
+                    st.push(newdep)
 
         st.delete(dep['name'])
 
