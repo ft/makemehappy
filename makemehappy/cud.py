@@ -1,5 +1,12 @@
 import makemehappy.utilities as mmh
 
+def has(key, dic, t):
+    if not(key in dic):
+        return False
+    if not(isinstance(dic[key], t)):
+        return False
+    return True
+
 class CodeUnderTest:
     def __init__(self, log, src):
         self.log = log
@@ -10,19 +17,31 @@ class CodeUnderTest:
         self.data = mmh.load(self.src)
 
     def dependencies(self):
-        return self.data['dependencies']
+        if (has('dependencies', self.data, list)):
+            return self.data['dependencies']
+        return []
 
     def cmakeModules(self):
-        return self.data['cmake-modules']
+        if (has('cmake-modules', self.data, str)):
+            return self.data['cmake-modules']
+        return None
 
     def cmake3rdParty(self):
-        return self.data['cmake-third-party']
+        if (has('cmake-third-party', self.data, dict)):
+            return self.data['cmake-third-party']
+        return {}
 
     def toolchains(self):
-        return self.data['toolchains']
+        if (has('toolchains', self.data, list)):
+            return self.data['toolchains']
+        return []
 
     def buildtools(self):
-        return self.data['buildtools']
+        if (has('buildtools', self.data, list)):
+            return self.data['buildtools']
+        return []
 
     def buildconfigs(self):
-        return self.data['buildconfigs']
+        if (has('buildconfigs', self.data, list)):
+            return self.data['buildconfigs']
+        return []
