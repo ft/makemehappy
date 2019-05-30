@@ -1,10 +1,7 @@
 * Main objectives
-** ACTIVE Really generate toplevel CMakeLists.txt
-In 885ae63, this works for very simple dependecy graphs.
-** ACTIVE Add support for extending CMAKE_MODULE_PATH
-In 885ae63, this is partially addressed.
-** ACTIVE Make dependency fetcher build its dep-trace correctly
-In 885ae63, the trace module was revised slightly.
+** DONE Really generate toplevel CMakeLists.txt
+** DONE Add support for extending CMAKE_MODULE_PATH
+** DONE Make dependency fetcher build its dep-trace correctly
 ** TODO Write output to log
 ** TODO Write log to log file
 ** TODO Handle external program return codes correctly
