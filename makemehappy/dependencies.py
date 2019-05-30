@@ -133,13 +133,22 @@ def fetch(log, src, st, trace):
         subprocess.run(['git', 'checkout', dep['revision']])
         os.chdir(olddir)
 
+        newmodata = None
         if (os.path.isfile(newmod)):
             newmodata = mmh.load(newmod)
             newmodata['version'] = dep['revision']
-            trace.push(newmodata)
-            for newdep in newmodata['dependencies']:
-                if (trace.has(newdep['name']) == False):
-                    st.push(newdep)
+        else:
+            newmodata = {}
+            newmodata['name'] = dep['name']
+            newmodata['version'] = dep['revision']
+
+        if not('dependencies' in newmodata):
+            newmodata['dependencies'] = []
+
+        trace.push(newmodata)
+        for newdep in newmodata['dependencies']:
+            if (trace.has(newdep['name']) == False):
+                st.push(newdep)
 
         st.delete(dep['name'])
 
