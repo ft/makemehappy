@@ -27,10 +27,10 @@ class SourceStack(YamlStack):
 
     def lookup(self, needle):
         if (self.data == False):
-            return False
+            raise(Exception)
 
         for slice in self.data:
             if (needle in slice['modules']):
                 return slice['modules'][needle]
 
-        return False
+        raise(Exception)
