@@ -66,7 +66,11 @@ class CMakeExtensions:
             extendPath(mod.data['root'], self.modulepath, mod.data[midx])
         if (tidx in mod.data):
             extendPath(mod.data['root'], self.toolchainpath, mod.data[tidx])
-        # TODO: Same has to be done for stuff in ‘trace’
+        for entry in trace.data:
+            if (midx in entry):
+                extendPath(entry['root'], self.modulepath, entry[midx])
+            if (tidx in entry):
+                extendPath(entry['root'], self.toolchainpath, entry[tidx])
 
     def modulePath(self):
         return self.modulepath
@@ -82,7 +86,8 @@ class Trace:
         return (needle in (entry['name'] for entry in self.data))
 
     def deps(self):
-        return list(((entry['name'] for entry in self.data)))
+        return list((({'name': entry['name'],
+                       'revision': entry['version'] } for entry in self.data)))
 
     def push(self, entry):
         self.data = [entry] + self.data
@@ -122,7 +127,6 @@ def fetch(log, src, st, trace):
         subprocess.run(['git', 'clone',
                         source, p])
 
-
         # Check out the requested revision
         olddir = os.getcwd()
         os.chdir(p)
@@ -131,6 +135,7 @@ def fetch(log, src, st, trace):
 
         if (os.path.isfile(newmod)):
             newmodata = mmh.load(newmod)
+            newmodata['version'] = dep['revision']
             trace.push(newmodata)
             for newdep in newmodata['dependencies']:
                 if (trace.has(newdep['name']) == False):

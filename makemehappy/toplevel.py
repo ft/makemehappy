@@ -25,19 +25,31 @@ def generateDependencies(fh, deps, thirdParty):
                                        name),
                   file = fh)
         else:
-            print("add_subdirectory(deps/{})".format(dep), file = fh)
+            print("add_subdirectory(deps/{})".format(name), file = fh)
 
 def generateFooter(fh):
     print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",
           file = fh)
     print("add_subdirectory(code-under-test)", file = fh)
 
+def isTLDep(cud, needle):
+    return (needle in (entry['name'] for entry in cud))
+
+def mergeDependencies(cud, further):
+    rest = list((x for x in further if not(isTLDep(cud, x['name']))))
+    return cud + rest
+
 def generateToplevel(log, cfg, src, trace, ext, mod, fname):
     with open(fname, 'w') as fh:
         generateHeader(fh)
         generateCMakeModulePath(fh, ext.modulePath())
         generateTestHeader(fh)
-        # TODO It's not enough to pick these up from the module under test.
-        tp = mod.cmake3rdParty()
-        generateDependencies(fh, mod.dependencies() + trace.deps(), tp)
+        tp = {}
+        for entry in trace.data:
+            if ('cmake-third-party' in entry):
+                tp = { **tp, **entry['cmake-third-party'] }
+        tp = { **tp, **mod.cmake3rdParty() }
+        generateDependencies(fh,
+                             mergeDependencies(mod.dependencies(),trace.deps()),
+                             tp)
         generateFooter(fh)
