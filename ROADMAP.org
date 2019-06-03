@@ -7,8 +7,8 @@
 ** TODO Handle external program return codes correctly
 ** DONE Run all configured build-instances
 …not just the default native build using make.
-* Secondary
 ** TODO Determine inclusion-order for toplevel CMakeLists.txt
+* Secondary
 ** TODO Detect cyclic dependencies in toplevel CMakeLists.txt
 ** TODO Implement version dependency judgements
 ** TODO Allow output to both terminal and log

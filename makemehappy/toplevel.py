@@ -16,16 +16,16 @@ def generateTestHeader(fh):
     print("include(CTest)", file = fh)
     print("enable_testing()", file = fh)
 
+def insertInclude(fh, name, tp):
+    if (name in tp):
+        print("include({})".format(tp[name]['module']), file = fh)
+        print("{}(deps/{})".format(tp[name]['include'], name), file = fh)
+    else:
+        print("add_subdirectory(deps/{})".format(name), file = fh)
+
 def generateDependencies(fh, deps, thirdParty):
     for dep in deps:
-        name = dep['name']
-        if (name in thirdParty):
-            print("include({})".format(thirdParty[name]['module']), file = fh)
-            print("{}(deps/{})".format(thirdParty[name]['include'],
-                                       name),
-                  file = fh)
-        else:
-            print("add_subdirectory(deps/{})".format(name), file = fh)
+        insertInclude(fh, dep['name'], thirdParty)
 
 def generateFooter(fh):
     print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",
