@@ -75,7 +75,14 @@ def cmakeBuild(instance):
     subprocess.run(['cmake', '--build', '.'])
 
 def cmakeTest(instance):
-    subprocess.run(['ctest', '-VV'])
+    # The last line of this command reads  like this: "Total Tests: N" …where N
+    # is the number of registered tests. Fetch this integer from stdout and on-
+    # ly run ctest for real, if tests were registered using add_test().
+    txt = subprocess.run(['ctest', '--show-only'], capture_output = True)
+    last = txt.stdout.splitlines()[-1]
+    num = int(last.decode().split(' ')[-1])
+    if (num > 0):
+        subprocess.run(['ctest', '--extra-verbose'])
 
 def build(ext, root, instance):
     dname = instanceDirectory(instance)
