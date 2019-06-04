@@ -85,9 +85,12 @@ class Trace:
     def has(self, needle):
         return (needle in (entry['name'] for entry in self.data))
 
-    def deps(self):
+    def dependencies(self):
         return list((({'name': entry['name'],
                        'revision': entry['version'] } for entry in self.data)))
+
+    def modDependencies(self):
+        return dict({ x['name']: x['dependencies'] for x in self.data})
 
     def push(self, entry):
         self.data = [entry] + self.data

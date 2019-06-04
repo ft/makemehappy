@@ -12,7 +12,6 @@ def generateCMakeModulePath(fh, moddirs):
         print("list(APPEND CMAKE_MODULE_PATH \"{}\")".format(p), file = fh)
 
 def generateTestHeader(fh):
-    # TODO: Check if it's benign to have this in unconditionally
     print("include(CTest)", file = fh)
     print("enable_testing()", file = fh)
 
@@ -23,9 +22,35 @@ def insertInclude(fh, name, tp):
     else:
         print("add_subdirectory(deps/{})".format(name), file = fh)
 
+def isSatisfied(deps, done, name):
+    lst = list(x['name'] for x in deps[name])
+    for dep in lst:
+        if not(dep in done):
+            return False
+    return True
+
 def generateDependencies(fh, deps, thirdParty):
-    for dep in deps:
-        insertInclude(fh, dep['name'], thirdParty)
+    lst = list(deps.keys())
+    none = list(name for name in lst if (len(deps[name]) == 0))
+
+    for entry in none:
+        insertInclude(fh, entry, thirdParty)
+
+    done = none
+    rest = list(name for name in lst if (len(deps[name]) > 0))
+
+    while (len(rest) > 0):
+        lastdone = len(done)
+        for item in rest:
+            if (isSatisfied(deps, done, item)):
+                insertInclude(fh, item, thirdParty)
+                done = [item] + done
+                rest = list(x for x in rest if (x != item))
+        newdone = len(done)
+        if (newdone == lastdone):
+            # Couldn't take a single item off of the rest in the last
+            # iteration. That means that dependencies can't be satisfied.
+            raise Exception()
 
 def generateFooter(fh):
     print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",
@@ -49,7 +74,5 @@ def generateToplevel(log, cfg, src, trace, ext, mod, fname):
             if ('cmake-third-party' in entry):
                 tp = { **tp, **entry['cmake-third-party'] }
         tp = { **tp, **mod.cmake3rdParty() }
-        generateDependencies(fh,
-                             mergeDependencies(mod.dependencies(),trace.deps()),
-                             tp)
+        generateDependencies(fh, trace.modDependencies(), tp)
         generateFooter(fh)
