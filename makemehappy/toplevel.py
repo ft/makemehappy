@@ -3,7 +3,7 @@ defaultProjectName = "MakeMeHappy"
 defaultLanguages = "C CXX ASM"
 
 def generateHeader(fh):
-    for s in ["cmake_minimum_required(VERSION 3.1.0)".format(defaultCMakeVersion),
+    for s in ["cmake_minimum_required(VERSION {})".format(defaultCMakeVersion),
               "project({} {})".format(defaultProjectName, defaultLanguages)]:
         print(s, file = fh)
 
