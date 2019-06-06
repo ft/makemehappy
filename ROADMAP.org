@@ -2,7 +2,7 @@
 ** DONE Really generate toplevel CMakeLists.txt
 ** DONE Add support for extending CMAKE_MODULE_PATH
 ** DONE Make dependency fetcher build its dep-trace correctly
-** TODO Write output to log
+** DONE Write output to log
 ** TODO Write log to log file
 ** TODO Handle external program return codes correctly
 ** DONE Run all configured build-instances

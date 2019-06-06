@@ -127,13 +127,12 @@ def fetch(log, src, st, trace):
 
         p = os.path.join('deps', dep['name'])
         newmod = os.path.join(p, 'module.yaml')
-        subprocess.run(['git', 'clone',
-                        source, p])
+        mmh.loggedProcess(log, ['git', 'clone', source, p])
 
         # Check out the requested revision
         olddir = os.getcwd()
         os.chdir(p)
-        subprocess.run(['git', 'checkout', dep['revision']])
+        mmh.loggedProcess(log, ['git', 'checkout', dep['revision']])
         os.chdir(olddir)
 
         newmodata = None

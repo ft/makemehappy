@@ -112,7 +112,7 @@ if (cmd == "build"):
         exit(1)
     ext = dep.CMakeExtensions(mod, fr)
     top.generateToplevel(log, cfg, src, fr, ext, mod, 'CMakeLists.txt')
-    build.allofthem(mod, ext)
+    build.allofthem(log, mod, ext)
     if (cmdargs.preserve == False):
         root.cleanup()
 elif (cmd == "dump-description"):

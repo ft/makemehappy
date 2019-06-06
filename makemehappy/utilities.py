@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 import pprint
+import subprocess
 import sys
 import yaml
 
@@ -63,3 +64,14 @@ xppx = pprint.PrettyPrinter(indent = 4)
 
 def pp(thing):
     xppx.pprint(thing)
+
+def logOutput(log, pipe):
+    for line in iter(pipe.readline, b''):
+        log.info(line.decode().strip())
+
+def loggedProcess(log, cmd):
+    proc = subprocess.Popen(
+        cmd, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+    with proc.stdout:
+        logOutput(log, proc.stdout)
+    return proc.wait()

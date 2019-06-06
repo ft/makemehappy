@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+import makemehappy.utilities as mmh
+
 def maybeToolchain(tc):
     if ('name' in tc):
         return tc['name']
@@ -61,20 +63,22 @@ def findToolchain(ext, tc):
             return candidate
     raise(Exception())
 
-def cmakeConfigure(ext, root, instance):
-    subprocess.run(['cmake',
-                    '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
-                    '-DCMAKE_TOOLCHAIN_FILE={}'.format(
-                        findToolchain(ext, instance['toolchain'])),
-                    '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
-                    '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
-                    '-DINTERFACE_TARGET={}'.format(instance['interface']),
-                    root])
+def cmakeConfigure(log, ext, root, instance):
+    return mmh.loggedProcess(
+        log,
+        ['cmake',
+         '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
+         '-DCMAKE_TOOLCHAIN_FILE={}'.format(
+             findToolchain(ext, instance['toolchain'])),
+         '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
+         '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
+         '-DINTERFACE_TARGET={}'.format(instance['interface']),
+         root])
 
-def cmakeBuild(instance):
-    subprocess.run(['cmake', '--build', '.'])
+def cmakeBuild(log, instance):
+    return mmh.loggedProcess(log, ['cmake', '--build', '.'])
 
-def cmakeTest(instance):
+def cmakeTest(log, instance):
     # The last line of this command reads  like this: "Total Tests: N" …where N
     # is the number of registered tests. Fetch this integer from stdout and on-
     # ly run ctest for real, if tests were registered using add_test().
@@ -82,20 +86,21 @@ def cmakeTest(instance):
     last = txt.splitlines()[-1]
     num = int(last.decode().split(' ')[-1])
     if (num > 0):
-        subprocess.run(['ctest', '--extra-verbose'])
+        return mmh.loggedProcess(log, ['ctest', '--extra-verbose'])
+    return None
 
-def build(ext, root, instance):
+def build(log, ext, root, instance):
     dname = instanceDirectory(instance)
     dnamefull = os.path.join(root, 'build', dname)
     os.mkdir(dnamefull)
     os.chdir(dnamefull)
-    cmakeConfigure(ext, root, instance)
-    cmakeBuild(instance)
-    cmakeTest(instance)
+    cmakeConfigure(log, ext, root, instance)
+    cmakeBuild(log, instance)
+    cmakeTest(log, instance)
     os.chdir(root)
 
-def allofthem(mod, ext):
+def allofthem(log, mod, ext):
     olddir = os.getcwd()
     instances = generateInstances(mod)
     for instance in instances:
-        build(ext, olddir, instance)
+        build(log, ext, olddir, instance)
