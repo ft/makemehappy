@@ -61,6 +61,7 @@ fi
 if [ "$gotgit" -gt 0 ]; then
     if [ "$("$git" rev-parse --is-inside-work-tree)" = 'true' ]; then
         version="$(git describe --always)"
+        version=${version#v}
     fi
 fi
 
