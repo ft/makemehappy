@@ -139,8 +139,8 @@ class CodeUnderTest:
         self.toplevel = None
 
     def name(self):
-        if (isinstance(self.moduleData, dict) and 'name' in self.module):
-            return self.module['name']
+        if (isinstance(self.moduleData, dict) and 'name' in self.moduleData):
+            return self.moduleData['name']
         return 'MakeMeHappyModule'
 
     def loadModule(self):
