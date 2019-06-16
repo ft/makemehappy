@@ -3,27 +3,22 @@ import hashlib
 import os
 import shutil
 import time
-import yaml
 
 def timeString():
     now = datetime.datetime.now()
     return now.strftime("%Y-%m-%d_%H:%M:%S.%f")
 
-def tempString(string):
-    s = string + timeString()
-    return hashlib.sha1(s.encode('utf-8')).hexdigest()
+def tempString(seed):
+    string = seed + timeString()
+    return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
-def tempDirName(mod):
-    prefix = 'mmh-'
-    if ('name' in mod):
-        prefix = prefix + mod['name'] + '-'
-    suffix = '-root'
-    return prefix + tempString(yaml.dump(mod)) + suffix
+def tempDirName(seed, name):
+    return 'mmh-' + name + '-' + tempString(seed) + '-root'
 
-def mkTempDir(mod):
+def mkTempDir(seed, name):
     root = str(os.getenv('TMPDIR', os.path.join('/', 'tmp')))
     while True:
-        d = os.path.join(root, tempDirName(mod))
+        d = os.path.join(root, tempDirName(seed, name))
         try:
             os.mkdir(d)
             return d
@@ -31,14 +26,14 @@ def mkTempDir(mod):
             time.sleep(0.1)
 
 class BuildRoot:
-    def __init__(self, log, mod, name = None):
+    def __init__(self, log, seed, modName, dirName = None):
         self.initdirs = [ 'build', 'deps' ]
         self.log = log
         self.calldir = os.path.realpath(os.getcwd())
-        if (name == None):
-            self.root = mkTempDir(mod.data)
+        if (dirName == None):
+            self.root = mkTempDir(seed, modName)
         else:
-            self.root = name
+            self.root = dirName
             os.mkdir(self.root, 0o755)
 
         self.log.info("Setting up build-directory: {}".format(self.root))

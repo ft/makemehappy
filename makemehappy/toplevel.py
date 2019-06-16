@@ -57,22 +57,30 @@ def generateFooter(fh):
           file = fh)
     print("add_subdirectory(code-under-test)", file = fh)
 
-def isTLDep(cud, needle):
-    return (needle in (entry['name'] for entry in cud))
+def isTLDep(cut, needle):
+    return (needle in (entry['name'] for entry in cut))
 
-def mergeDependencies(cud, further):
-    rest = list((x for x in further if not(isTLDep(cud, x['name']))))
-    return cud + rest
+def mergeDependencies(cut, further):
+    rest = list((x for x in further if not(isTLDep(cut, x['name']))))
+    return cut + rest
 
-def generateToplevel(log, cfg, src, trace, ext, mod, fname):
-    with open(fname, 'w') as fh:
-        generateHeader(fh)
-        generateCMakeModulePath(fh, ext.modulePath())
-        generateTestHeader(fh)
-        tp = {}
-        for entry in trace.data:
-            if ('cmake-third-party' in entry):
-                tp = { **tp, **entry['cmake-third-party'] }
-        tp = { **tp, **mod.cmake3rdParty() }
-        generateDependencies(fh, trace.modDependencies(), tp)
-        generateFooter(fh)
+class Toplevel:
+    def __init__(self, log, thirdParty, modulePath, trace):
+        self.log = log
+        self.thirdParty = thirdParty
+        self.trace = trace
+        self.modulePath = modulePath
+        self.filename = 'CMakeLists.txt'
+
+    def generateToplevel(self):
+        with open(self.filename, 'w') as fh:
+            generateHeader(fh)
+            generateCMakeModulePath(fh, self.modulePath)
+            generateTestHeader(fh)
+            tp = {}
+            for entry in self.trace.data:
+                if ('cmake-third-party' in entry):
+                    tp = { **tp, **entry['cmake-third-party'] }
+            tp = { **tp, **self.thirdParty }
+            generateDependencies(fh, self.trace.modDependencies(), tp)
+            generateFooter(fh)

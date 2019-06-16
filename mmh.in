@@ -5,14 +5,14 @@ import os
 import sys
 
 import makemehappy.build as build
-import makemehappy.dependencies as dep
 import makemehappy.utilities as mmh
 import makemehappy.toplevel as top
 
 from logbook import warn, Logger, StreamHandler
 from makemehappy.buildroot import BuildRoot
-from makemehappy.cud import CodeUnderTest
+from makemehappy.cut import CodeUnderTest
 from makemehappy.yamlstack import YamlStack, SourceStack
+
 
 version = "@@VERSION@@"
 fullname = "MakeMeHappy"
@@ -94,32 +94,28 @@ if (cmd == "build"):
     if (os.path.isfile(cmdargs.module) == False):
         mmh.warn("Module definition does not exist: {}".format(cmdargs.module))
         exit(1)
-    mod = CodeUnderTest(log, cmdargs.module)
-    mod.load()
-    root = None
-    if (isinstance(cmdargs.directory, str)):
-        root = BuildRoot(log, mod, cmdargs.directory)
-    else:
-        root = BuildRoot(log, mod)
-    root.populate()
-    root.linkCodeUnderTest()
-    root.cd()
-    ds = mod.dependencies()
-    src.load()
-    fr = dep.fetch(log, src, dep.Stack(ds), dep.Trace())
-    if (fr == False):
-        mmh.warn("Fetching dependencies failed. Giving up.")
-        exit(1)
-    ext = dep.CMakeExtensions(mod, fr)
-    top.generateToplevel(log, cfg, src, fr, ext, mod, 'CMakeLists.txt')
-    build.allofthem(log, mod, ext)
+
+    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut.loadModule()
+    cut.loadSources()
+    cut.initRoot(cmdargs.directory)
+    cut.populateRoot()
+    cut.linkIntoRoot()
+    cut.changeToRoot()
+    cut.loadDependencies()
+    cut.generateToplevel()
+    cut.build()
+
     if (cmdargs.preserve == False):
-        root.cleanup()
+        cut.cleanupRoot()
+
 elif (cmd == "dump-description"):
     data = mmh.load(cmdargs.module)
     mmh.pp(data)
+
 elif (isinstance(cmd, str)):
     print("Not implemented yet: {}".format(cmd))
+
 else:
     mmh.warn("Unknown command: {}".format(cmdargs.rest[0]))
     exit(1)
