@@ -22,16 +22,16 @@ StreamHandler(sys.stdout).push_application()
 log = Logger(fullname)
 
 cfg = YamlStack(log, 'Configuration',
-                '@@DATADIR@@/config.yaml',
-                '@@ETCDIR@@/config.yaml',
+                mmh.dotFile('config.yaml'),
                 mmh.xdgFile('config.yaml'),
-                mmh.dotFile('config.yaml'))
+                '@@ETCDIR@@/config.yaml',
+                '@@DATADIR@@/config.yaml')
 
 src = SourceStack(log, 'Source Definition',
-                  '@@DATADIR@@/sources.yaml',
-                  '@@ETCDIR@@/sources.yaml',
+                  mmh.dotFile('sources.yaml'),
                   mmh.xdgFile('sources.yaml'),
-                  mmh.dotFile('sources.yaml'))
+                  '@@ETCDIR@@/sources.yaml',
+                  '@@DATADIR@@/sources.yaml')
 
 ap = argparse.ArgumentParser()
 
