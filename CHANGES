@@ -1,0 +1,33 @@
+ User-visible changes in make-me-happy
+=======================================
+
+* scratch → 0.1 (released 2019-06-17):
+
+- First proof-of-concept that can build ufw
+
+** Diff-Stat:
+
+  .gitignore               |  18 ++++
+  LICENCE                  |  25 +++++
+  Makefile                 |  23 +++++
+  ROADMAP.org              |  59 ++++++++++++
+  configure                |  74 +++++++++++++++
+  data/config.yaml         |  35 +++++++
+  data/sources.yaml        |   5 +
+  doc/Makefile             |  37 ++++++++
+  doc/manual.css           |  75 +++++++++++++++
+  doc/mmh.mdwn             |  44 +++++++++
+  doc/template.latex       | 157 ++++++++++++++++++++++++++++++
+  etc/config.yaml          |   2 +
+  etc/sources.yaml         |   2 +
+  makemehappy/build.py     | 106 +++++++++++++++++++++
+  makemehappy/buildroot.py |  65 +++++++++++++
+  makemehappy/cut.py       | 216 ++++++++++++++++++++++++++++++++++++++++++
+  makemehappy/module.py    |   4 +
+  makemehappy/toplevel.py  |  86 +++++++++++++++++
+  makemehappy/utilities.py |  79 +++++++++++++++
+  makemehappy/yamlstack.py |  38 ++++++++
+  mmh.in                   | 123 ++++++++++++++++++++++++
+  module.yaml              |  42 ++++++++
+  sources.yaml             |  18 ++++
+  23 files changed, 1333 insertions(+)
