@@ -6,6 +6,16 @@ etcdir="/etc/$name"
 version="0.0.0"
 python=''
 
+if test "x$1" = "x--help"; then
+    cat <<EOF
+Fine tuning of the installation directories:
+--datadir=DIR         Configure distribution data directory
+--etcdir=DIR          Configure installation-wide data directory
+--python=FILE         Configure Python-3 binary name
+EOF
+    exit 0
+fi
+
 findprg() {
     _prg="$1"
     REPLY=''
