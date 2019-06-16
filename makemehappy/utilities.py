@@ -56,6 +56,8 @@ def load(file):
     (root,fn) = os.path.split(os.path.realpath(file))
     with open(file) as fh:
         data = yaml.load(fh.read())
+        if data == None:
+            data = {}
         data['root'] = root
         data['definition'] = fn
         return data
