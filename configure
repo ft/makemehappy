@@ -40,6 +40,7 @@ while [ "$#" -gt 0 ]; do
     *) printf 'Unknown option: "%s"\n' "$1"
        exit 1 ;;
     esac
+    shift
 done
 
 if [ -z "$python" ]; then
