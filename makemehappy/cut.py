@@ -211,3 +211,6 @@ class CodeUnderTest:
         if (has('buildconfigs', self.moduleData, list)):
             return self.moduleData['buildconfigs']
         return []
+
+    def cleanupRoot(self):
+        self.root.cleanup()
