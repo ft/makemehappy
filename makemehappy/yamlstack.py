@@ -30,6 +30,8 @@ class SourceStack(YamlStack):
             raise(Exception)
 
         for slice in self.data:
+            if not('modules' in slice):
+                continue
             if (needle in slice['modules']):
                 return slice['modules'][needle]
 
