@@ -126,6 +126,14 @@ def fetch(log, src, st, trace):
     # is empty.
     return fetch(log, src, st, trace)
 
+def stepFailed(data, step):
+    return (step in data and data[step] == False)
+
+def buildFailed(data):
+    return (stepFailed(data, 'configure-result') or
+            stepFailed(data, 'build-result') or
+            stepFailed(data, 'testsuite-result'))
+
 class ExecutionStatistics:
     # The statistics log is a list of dictionaries.
     def __init__(self):
@@ -157,6 +165,30 @@ class ExecutionStatistics:
         self.data[-1]['testsuite-stamp'] = datetime.datetime.now()
         self.data[-1]['testsuite-tests'] = num
         self.data[-1]['testsuite-result'] = (result == 0)
+
+    def wasSuccessful(self):
+        for entry in self.data:
+            if entry['type'] != 'build':
+                continue
+            if buildFailed(entry):
+                return False
+        return True
+
+    def countFailed(self):
+        n = 0
+        for entry in self.data:
+            if entry['type'] != 'build':
+                continue
+            if buildFailed(entry):
+                n = n + 1
+        return n
+
+    def countBuilds(self):
+        n = 0
+        for entry in self.data:
+            if entry['type'] == 'build':
+                n = n + 1
+        return n
 
 class CodeUnderTest:
     def __init__(self, log, cfg, sources, module):
@@ -256,3 +288,12 @@ class CodeUnderTest:
         self.stats.checkpoint('finish')
         self.log.info('Raw Statistics Data:')
         mmh.pp(self.stats.data)
+
+    def wasSuccessful(self):
+        return self.stats.wasSuccessful()
+
+    def countBuilds(self):
+        return self.stats.countBuilds()
+
+    def countFailed(self):
+        return self.stats.countFailed()
