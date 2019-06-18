@@ -1,3 +1,4 @@
+import datetime
 import os
 import yaml
 
@@ -125,6 +126,38 @@ def fetch(log, src, st, trace):
     # is empty.
     return fetch(log, src, st, trace)
 
+class ExecutionStatistics:
+    # The statistics log is a list of dictionaries.
+    def __init__(self):
+        self.data = []
+
+    def checkpoint(self, description):
+        self.data.append( { 'type': 'checkpoint',
+                            'description': description,
+                            'time-stamp': datetime.datetime.now() } )
+
+    def build(self, toolchain, cpu, interface, buildcfg, buildtool):
+        self.data.append( { 'type':      'build',
+                            'toolchain': toolchain,
+                            'cpu':       cpu,
+                            'interface': interface,
+                            'buildcfg':  buildcfg,
+                            'buildtool': buildtool,
+                            'time-stamp': datetime.datetime.now() } )
+
+    def logConfigure(self, result):
+        self.data[-1]['configure-stamp'] = datetime.datetime.now()
+        self.data[-1]['configure-result'] = (result == 0)
+
+    def logBuild(self, result):
+        self.data[-1]['build-stamp'] = datetime.datetime.now()
+        self.data[-1]['build-result'] = (result == 0)
+
+    def logTestsuite(self, num, result):
+        self.data[-1]['testsuite-stamp'] = datetime.datetime.now()
+        self.data[-1]['testsuite-tests'] = num
+        self.data[-1]['testsuite-result'] = (result == 0)
+
 class CodeUnderTest:
     def __init__(self, log, cfg, sources, module):
         self.log = log
@@ -137,6 +170,7 @@ class CodeUnderTest:
         self.depstack = None
         self.extensions = None
         self.toplevel = None
+        self.stats = ExecutionStatistics()
 
     def name(self):
         if (isinstance(self.moduleData, dict) and 'name' in self.moduleData):
@@ -172,6 +206,7 @@ class CodeUnderTest:
         return []
 
     def loadDependencies(self):
+        self.stats.checkpoint('load-dependencies')
         self.depstack = Stack(self.dependencies())
         self.deptrace = Trace()
         fetch(self.log, self.sources, self.depstack, self.deptrace)
@@ -183,6 +218,7 @@ class CodeUnderTest:
         return None
 
     def generateToplevel(self):
+        self.stats.checkpoint('generate-toplevel')
         self.toplevel = Toplevel(self.log,
                                  self.cmake3rdParty(),
                                  self.extensions.modulePath(),
@@ -213,4 +249,10 @@ class CodeUnderTest:
         return []
 
     def cleanupRoot(self):
+        self.stats.checkpoint('cleanup')
         self.root.cleanup()
+
+    def renderStatistics(self):
+        self.stats.checkpoint('finish')
+        self.log.info('Raw Statistics Data:')
+        mmh.pp(self.stats.data)

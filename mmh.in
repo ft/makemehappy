@@ -109,6 +109,8 @@ if (cmd == "build"):
     if (cmdargs.preserve == False):
         cut.cleanupRoot()
 
+    cut.renderStatistics()
+
 elif (cmd == "dump-description"):
     data = mmh.load(cmdargs.module)
     mmh.pp(data)

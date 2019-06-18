@@ -46,14 +46,15 @@ those. Lists or patterns or both, I'm not sure yet.
 * Wishlist
 ** DONE Forget "tools" — check all dependencies into "deps"
 ** TODO Zsh completion would be nice
-** TODO Gather statistics while running
+** ACTIVE Gather statistics while running
 *** TODO How many dependency versions had a patch-level mismatch?
 *** TODO How many dependency versions had a minor mismatch?
 *** TODO How many dependency versions had a major mismatch?
-*** TODO How many build-instances succeeded/failed?
-*** TODO How many build-instances had their test runs succeed/fail?
-*** TODO How much time did individual steps take to execute?
+*** DONE How many build-instances succeeded/failed?
+*** DONE How many build-instances had their test runs succeed/fail?
+*** DONE How much time did individual steps take to execute?
 - Build-Root Init
 - Dependency Fetch
 - Toplevel Generation
 - Individual Build-Instances
+*** ACTIVE Render statistics nicely at program termination

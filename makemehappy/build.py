@@ -40,7 +40,12 @@ def generateInstances(mod):
                                    'buildtool': tool })
     return instances
 
-def instanceDirectory(instance):
+def instanceDirectory(stats, instance):
+    stats.build(instance['toolchain'],
+                instance['architecture'],
+                instance['interface'],
+                instance['buildcfg'],
+                instance['buildtool'])
     return "{}_{}_{}_{}_{}".format(instance['toolchain'],
                                    instance['architecture'],
                                    instance['interface'],
@@ -63,8 +68,8 @@ def findToolchain(ext, tc):
             return candidate
     raise(Exception())
 
-def cmakeConfigure(log, ext, root, instance):
-    return mmh.loggedProcess(
+def cmakeConfigure(log, stats, ext, root, instance):
+    rc = mmh.loggedProcess(
         log,
         ['cmake',
          '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
@@ -74,11 +79,15 @@ def cmakeConfigure(log, ext, root, instance):
          '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
          '-DINTERFACE_TARGET={}'.format(instance['interface']),
          root])
+    stats.logConfigure(rc)
+    return (rc == 0)
 
-def cmakeBuild(log, instance):
-    return mmh.loggedProcess(log, ['cmake', '--build', '.'])
+def cmakeBuild(log, stats, instance):
+    rc = mmh.loggedProcess(log, ['cmake', '--build', '.'])
+    stats.logBuild(rc)
+    return (rc == 0)
 
-def cmakeTest(log, instance):
+def cmakeTest(log, stats, instance):
     # The last line of this command reads  like this: "Total Tests: N" …where N
     # is the number of registered tests. Fetch this integer from stdout and on-
     # ly run ctest for real, if tests were registered using add_test().
@@ -86,21 +95,25 @@ def cmakeTest(log, instance):
     last = txt.splitlines()[-1]
     num = int(last.decode().split(' ')[-1])
     if (num > 0):
-        return mmh.loggedProcess(log, ['ctest', '--extra-verbose'])
-    return None
+        rc = mmh.loggedProcess(log, ['ctest', '--extra-verbose'])
+        stats.logTestsuite(num, rc)
+        return (rc == 0)
+    return True
 
-def build(log, ext, root, instance):
-    dname = instanceDirectory(instance)
+def build(log, stats, ext, root, instance):
+    dname = instanceDirectory(stats, instance)
     dnamefull = os.path.join(root, 'build', dname)
     os.mkdir(dnamefull)
     os.chdir(dnamefull)
-    cmakeConfigure(log, ext, root, instance)
-    cmakeBuild(log, instance)
-    cmakeTest(log, instance)
+    rc = cmakeConfigure(log, stats, ext, root, instance)
+    if rc:
+        rc = cmakeBuild(log, stats, instance)
+        if rc:
+            cmakeTest(log, stats, instance)
     os.chdir(root)
 
 def allofthem(log, mod, ext):
     olddir = os.getcwd()
     instances = generateInstances(mod)
     for instance in instances:
-        build(log, ext, olddir, instance)
+        build(log, mod.stats, ext, olddir, instance)
