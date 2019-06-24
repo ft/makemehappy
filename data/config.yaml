@@ -1,5 +1,5 @@
 toolchains:
-  - name: gcc
+  - name: gnu
     architecture: native
     features:
       - 8bit-byte
@@ -9,7 +9,7 @@ toolchains:
     features:
       - 8bit-byte
     interface: posix
-  - name: gcc-arm-none-eabi
+  - name: gnu-arm-none-eabi
     architecture: cortex-m4-hardfp
     features:
       - 8bit-byte
