@@ -394,17 +394,26 @@ class CodeUnderTest:
     def toolchains(self):
         if (has('toolchains', self.moduleData, list)):
             return self.moduleData['toolchains']
-        return []
+        try:
+            return self.cfg.lookup('toolchains')
+        except Exception:
+            return []
 
     def buildtools(self):
         if (has('buildtools', self.moduleData, list)):
             return self.moduleData['buildtools']
-        return []
+        try:
+            return self.cfg.lookup('buildtools')
+        except Exception:
+            return []
 
     def buildconfigs(self):
         if (has('buildconfigs', self.moduleData, list)):
             return self.moduleData['buildconfigs']
-        return []
+        try:
+            return self.cfg.lookup('buildconfigs')
+        except Exception:
+            return []
 
     def cleanupRoot(self):
         self.stats.checkpoint('cleanup')

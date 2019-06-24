@@ -11,8 +11,7 @@ import makemehappy.toplevel as top
 from logbook import warn, Logger, StreamHandler
 from makemehappy.buildroot import BuildRoot
 from makemehappy.cut import CodeUnderTest
-from makemehappy.yamlstack import YamlStack, SourceStack
-
+from makemehappy.yamlstack import ConfigStack, SourceStack
 
 version = "@@VERSION@@"
 fullname = "MakeMeHappy"
@@ -21,11 +20,11 @@ name = "mmh"
 StreamHandler(sys.stdout).push_application()
 log = Logger(fullname)
 
-cfg = YamlStack(log, 'Configuration',
-                mmh.dotFile('config.yaml'),
-                mmh.xdgFile('config.yaml'),
-                '@@ETCDIR@@/config.yaml',
-                '@@DATADIR@@/config.yaml')
+cfg = ConfigStack(log, 'Configuration',
+                  mmh.dotFile('config.yaml'),
+                  mmh.xdgFile('config.yaml'),
+                  '@@ETCDIR@@/config.yaml',
+                  '@@DATADIR@@/config.yaml')
 
 src = SourceStack(log, 'Source Definition',
                   mmh.dotFile('sources.yaml'),
@@ -95,6 +94,7 @@ if (cmd == "build"):
         mmh.warn("Module definition does not exist: {}".format(cmdargs.module))
         exit(1)
 
+    cfg.load()
     cut = CodeUnderTest(log, cfg, src, cmdargs.module)
     cut.loadModule()
     cut.loadSources()

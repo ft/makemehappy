@@ -18,6 +18,16 @@ def maybeInterface(tc):
         return tc['interface']
     return 'none'
 
+def toolchainViable(md, tc):
+    if not('requires' in md):
+        return True
+    if not('features' in tc):
+        return False
+    for entry in md['requires']:
+        if not(entry in tc['features']):
+            return False
+    return True
+
 def generateInstances(mod):
     chains = mod.toolchains()
     cfgs = mod.buildconfigs()
@@ -31,6 +41,8 @@ def generateInstances(mod):
         tools = [ 'make' ]
     instances = []
     for tc in chains:
+        if not(toolchainViable(mod.moduleData, tc)):
+            continue
         for cfg in cfgs:
             for tool in tools:
                 instances.append({ 'toolchain': maybeToolchain(tc),
@@ -115,5 +127,6 @@ def build(log, stats, ext, root, instance):
 def allofthem(log, mod, ext):
     olddir = os.getcwd()
     instances = generateInstances(mod)
+    log.info('Using {} build-instances.'.format(len(instances)))
     for instance in instances:
         build(log, mod.stats, ext, olddir, instance)

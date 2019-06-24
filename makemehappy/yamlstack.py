@@ -36,3 +36,17 @@ class SourceStack(YamlStack):
                 return slice['modules'][needle]
 
         raise(Exception)
+
+class ConfigStack(YamlStack):
+    def __init__(self, log, desc, *lst):
+        YamlStack.__init__(self, log, desc, *lst)
+
+    def lookup(self, needle):
+        if (self.data == False):
+            raise(Exception)
+
+        for slice in self.data:
+            if needle in slice:
+                return slice[needle]
+
+        raise Exception
