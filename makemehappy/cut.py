@@ -267,7 +267,7 @@ class ExecutionStatistics:
     def renderBuildResult(self, datum):
         result = 'Success'
         if buildFailed(datum):
-            result = 'Failure'
+            result = 'Failure   ---!!!---'
         self.log.info(''.ljust(79, '-'))
         self.log.info('{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}'
                       .format(toolchain = 'Toolchain',
@@ -275,7 +275,7 @@ class ExecutionStatistics:
                               interf = 'Interface',
                               config = 'Config',
                               tool = 'Buildtool'))
-        self.log.info('{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}  {result:>10}'
+        self.log.info('{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}    {result}'
                       .format('',
                               toolchain = datum['toolchain'],
                               cpu = datum['cpu'],
