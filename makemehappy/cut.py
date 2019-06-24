@@ -1,4 +1,5 @@
 import datetime
+import math
 import os
 import yaml
 
@@ -134,9 +135,35 @@ def buildFailed(data):
             stepFailed(data, 'build-result') or
             stepFailed(data, 'testsuite-result'))
 
+def endoftime(datum):
+    t = datum['type']
+    if t == 'build':
+        return datum['time-stamp']
+    elif t == 'checkpoint':
+        if 'testsuite-stamp' in datum:
+            return datum['time-stamp']
+        elif 'build-stamp' in datum:
+            return datum['build-stamp']
+        elif 'configure-stamp' in datum:
+            return datum['configure-stamp']
+        else:
+            return datum['time-stamp']
+    else:
+        raise Exception
+
+def renderTimedelta(d):
+    minperday = 24 * 60
+    minutes = minperday * d.days + math.floor(d.seconds / 60.)
+    seconds = d.seconds % 60
+    milli = round(d.microseconds/1000)
+    return "{mins:03d}:{secs:02d}.{msecs:03d}".format(mins = minutes,
+                                                      secs = seconds,
+                                                      msecs = milli)
+
 class ExecutionStatistics:
     # The statistics log is a list of dictionaries.
-    def __init__(self):
+    def __init__(self, log):
+        self.log = log
         self.data = []
 
     def checkpoint(self, description):
@@ -190,8 +217,108 @@ class ExecutionStatistics:
                 n = n + 1
         return n
 
+    def renderTimeDifference(self, prev, current):
+        p = endoftime(prev)
+        c = endoftime(current)
+        time = renderTimedelta(current['time-stamp'] - prev['time-stamp'])
+        self.log.info('    {title:<10} {time:>12}'.
+                      format(title = 'Time:',
+                             time = time))
+
+    def renderCheckpoint(self, datum):
+        self.log.info('Checkpoint: {}'.format(datum['description']))
+
+    def renderStepResult(self, datum, title, prefix):
+        result = 'Success'
+        time = ''
+
+        if (prefix + '-stamp') in datum:
+            if prefix == 'configure':
+                time = renderTimedelta(datum['configure-stamp'] -
+                                       datum['time-stamp'])
+            elif prefix == 'build':
+                time = renderTimedelta(datum['build-stamp'] -
+                                       datum['configure-stamp'])
+            elif prefix == 'testsuite':
+                time = renderTimedelta(datum['testsuite-stamp'] -
+                                       datum['build-stamp'])
+            else:
+                raise Exception
+
+        if not((prefix + '-result') in datum):
+            result = '---'
+        elif not(datum[prefix + '-result']):
+            result = 'Failure'
+
+        self.log.info('    {title:>9}: {time:>12}  {result:>10}'.
+                      format(title = title,
+                             time = time,
+                             result = result))
+
+    def renderConfigureStepResult(self, datum):
+        self.renderStepResult(datum, 'Configure', 'configure')
+
+    def renderBuildStepResult(self, datum):
+        self.renderStepResult(datum, 'Build', 'build')
+
+    def renderTestStepResult(self, datum):
+        self.renderStepResult(datum, 'Testsuite', 'testsuite')
+
+    def renderBuildResult(self, datum):
+        result = 'Success'
+        if buildFailed(datum):
+            result = 'Failure'
+        self.log.info(''.ljust(79, '-'))
+        self.log.info('{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}'
+                      .format(toolchain = 'Toolchain',
+                              cpu = 'Architecture',
+                              interf = 'Interface',
+                              config = 'Config',
+                              tool = 'Buildtool'))
+        self.log.info('{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}  {result:>10}'
+                      .format('',
+                              toolchain = datum['toolchain'],
+                              cpu = datum['cpu'],
+                              interf = datum['interface'],
+                              config = datum['buildcfg'],
+                              tool = datum['buildtool'],
+                              result = result))
+        self.renderConfigureStepResult(datum)
+        self.renderBuildStepResult(datum)
+        self.renderTestStepResult(datum)
+
+    def renderStatistics(self):
+        self.log.info('')
+        self.log.info('Build Summary:')
+        self.log.info('')
+        last = None
+        for entry in self.data:
+            if not('type' in entry):
+                self.log.warn('Statistics log entry has no type. Ignoring!')
+                continue
+
+            if not(last == None):
+                self.renderTimeDifference(last, entry)
+
+            last = entry
+            t = entry['type']
+            if t == 'build':
+                self.renderBuildResult(entry)
+            elif t == 'checkpoint':
+                self.renderCheckpoint(entry)
+            else:
+                self.log.warn('Statistics log entry has unknown type: {}'
+                              .format(t))
+        self.log.info('')
+        time = renderTimedelta(self.data[-1]['time-stamp'] -
+                               self.data[0]['time-stamp'])
+        self.log.info('Total runtime: {time}'.format(time = time))
+        self.log.info('')
+
 class CodeUnderTest:
     def __init__(self, log, cfg, sources, module):
+        self.stats = ExecutionStatistics(log)
+        self.stats.checkpoint('module-initialisation')
         self.log = log
         self.cfg = cfg
         self.module = module
@@ -202,7 +329,6 @@ class CodeUnderTest:
         self.depstack = None
         self.extensions = None
         self.toplevel = None
-        self.stats = ExecutionStatistics()
 
     def name(self):
         if (isinstance(self.moduleData, dict) and 'name' in self.moduleData):
@@ -286,8 +412,7 @@ class CodeUnderTest:
 
     def renderStatistics(self):
         self.stats.checkpoint('finish')
-        self.log.info('Raw Statistics Data:')
-        mmh.pp(self.stats.data)
+        self.stats.renderStatistics()
 
     def wasSuccessful(self):
         return self.stats.wasSuccessful()

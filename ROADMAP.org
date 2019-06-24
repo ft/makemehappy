@@ -57,4 +57,4 @@ those. Lists or patterns or both, I'm not sure yet.
 - Dependency Fetch
 - Toplevel Generation
 - Individual Build-Instances
-*** ACTIVE Render statistics nicely at program termination
+*** DONE Render statistics nicely at program termination
