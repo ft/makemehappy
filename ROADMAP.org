@@ -42,7 +42,7 @@ patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
   mmh --dep-version "*=master" build
 
 …to build a module with all dependency versions set to ‘master’.
-** TODO Add YamlStack variant for configuration parsing
+** DONE Add YamlStack variant for configuration parsing
 ** TODO Add option to keep running when a build-instance fails
 ** TODO Add a way to define dependencies for third-party modules
 ** DONE With non-temporary build-roots, invert --preserve
