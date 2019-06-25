@@ -78,7 +78,7 @@ class Stack:
     def push(self, entry):
         self.data = [entry] + self.data
 
-def fetch(log, src, st, trace):
+def fetch(cfg, log, src, st, trace):
     if (st.empty() == True):
         return trace
 
@@ -96,12 +96,12 @@ def fetch(log, src, st, trace):
 
         p = os.path.join('deps', dep['name'])
         newmod = os.path.join(p, 'module.yaml')
-        mmh.loggedProcess(log, ['git', 'clone', source, p])
+        mmh.loggedProcess(cfg, log, ['git', 'clone', source, p])
 
         # Check out the requested revision
         olddir = os.getcwd()
         os.chdir(p)
-        mmh.loggedProcess(log, ['git', 'checkout', dep['revision']])
+        mmh.loggedProcess(cfg, log, ['git', 'checkout', dep['revision']])
         os.chdir(olddir)
 
         newmodata = None
@@ -125,7 +125,7 @@ def fetch(log, src, st, trace):
 
     # And recurse with the new stack and trace; we're done when the new stack
     # is empty.
-    return fetch(log, src, st, trace)
+    return fetch(cfg, log, src, st, trace)
 
 def stepFailed(data, step):
     return (step in data and data[step] == False)
@@ -367,7 +367,7 @@ class CodeUnderTest:
         self.stats.checkpoint('load-dependencies')
         self.depstack = Stack(self.dependencies())
         self.deptrace = Trace()
-        fetch(self.log, self.sources, self.depstack, self.deptrace)
+        fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
         self.extensions = CMakeExtensions(self.moduleData, self.deptrace)
 
     def cmakeModules(self):
@@ -384,7 +384,7 @@ class CodeUnderTest:
         self.toplevel.generateToplevel()
 
     def build(self):
-        build.allofthem(self.log, self, self.extensions)
+        build.allofthem(self.cfg, self.log, self, self.extensions)
 
     def cmake3rdParty(self):
         if (has('cmake-third-party', self.moduleData, dict)):

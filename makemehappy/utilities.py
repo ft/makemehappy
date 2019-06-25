@@ -71,9 +71,11 @@ def logOutput(log, pipe):
     for line in iter(pipe.readline, b''):
         log.info(line.decode().strip())
 
-def loggedProcess(log, cmd):
-    proc = subprocess.Popen(
-        cmd, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
-    with proc.stdout:
-        logOutput(log, proc.stdout)
-    return proc.wait()
+def loggedProcess(cfg, log, cmd):
+    if cfg.lookup('log-all'):
+        proc = subprocess.Popen(
+            cmd, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+        with proc.stdout:
+            logOutput(log, proc.stdout)
+        return proc.wait()
+    subprocess.run(cmd)
