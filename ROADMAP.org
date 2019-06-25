@@ -4,7 +4,7 @@
 ** DONE Make dependency fetcher build its dep-trace correctly
 ** DONE Write output to log
 ** TODO Write log to log file
-** TODO Handle external program return codes correctly
+** DONE Handle external program return codes correctly
 ** DONE Run all configured build-instances
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
