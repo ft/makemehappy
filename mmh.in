@@ -8,17 +8,18 @@ import makemehappy.build as build
 import makemehappy.utilities as mmh
 import makemehappy.toplevel as top
 
-from logbook import warn, Logger, StreamHandler
+from logbook import Logger
 from makemehappy.buildroot import BuildRoot
 from makemehappy.cut import CodeUnderTest
 from makemehappy.yamlstack import ConfigStack, SourceStack
+from makemehappy.loghandler import MMHLogHandler
 
 version = "@@VERSION@@"
 fullname = "MakeMeHappy"
 name = "mmh"
 
-StreamHandler(sys.stdout).push_application()
 log = Logger(fullname)
+log.handlers.append(MMHLogHandler())
 
 cfg = ConfigStack(log, 'Configuration',
                   mmh.dotFile('config.yaml'),
@@ -92,6 +93,10 @@ for item in cmdargs.source:
 
 if cmdargs.log_to_file:
     cmdargs.log_all = True
+    if cmdargs.log_file is not None:
+        log.handlers[0].setFile(cmdargs.log_file)
+else:
+    log.handlers[0].setFile(False)
 
 def adjustConfig(cfg, args):
     layer = {}
@@ -125,6 +130,10 @@ if (cmd == "build"):
     cut.loadModule()
     cut.loadSources()
     cut.initRoot(cmdargs.directory)
+    if cmdargs.log_file is None:
+        fn = cut.root.name() + '.log'
+        print('Logging to: {}'.format(fn))
+        log.handlers[0].setFile(fn)
     cut.populateRoot()
     cut.linkIntoRoot()
     cut.changeToRoot()
