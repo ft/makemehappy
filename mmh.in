@@ -90,6 +90,9 @@ for item in cmdargs.source:
         exit(1)
     src.push(cmdargs.source)
 
+if cmdargs.log_to_file:
+    cmdargs.log_all = True
+
 def adjustConfig(cfg, args):
     layer = {}
     adjustments = 0
