@@ -52,17 +52,20 @@ def generateInstances(mod):
                                    'buildtool': tool })
     return instances
 
+def instanceName(instance):
+    return "{}_{}_{}_{}_{}".format(instance['toolchain'],
+                                   instance['architecture'],
+                                   instance['interface'],
+                                   instance['buildcfg'],
+                                   instance['buildtool'])
+
 def instanceDirectory(stats, instance):
     stats.build(instance['toolchain'],
                 instance['architecture'],
                 instance['interface'],
                 instance['buildcfg'],
                 instance['buildtool'])
-    return "{}_{}_{}_{}_{}".format(instance['toolchain'],
-                                   instance['architecture'],
-                                   instance['interface'],
-                                   instance['buildcfg'],
-                                   instance['buildtool'])
+    return instanceName(instance)
 
 def cmakeBuildtool(name):
     if (name == 'make'):
@@ -127,6 +130,9 @@ def build(log, stats, ext, root, instance):
 def allofthem(log, mod, ext):
     olddir = os.getcwd()
     instances = generateInstances(mod)
-    log.info('Using {} build-instances.'.format(len(instances)))
+    log.info('Using {} build-instances:'.format(len(instances)))
     for instance in instances:
+        log.info('    {}'.format(instanceName(instance)))
+    for instance in instances:
+        log.info('Building instance: {}'.format(instanceName(instance)))
         build(log, mod.stats, ext, olddir, instance)
