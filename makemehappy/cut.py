@@ -160,9 +160,16 @@ def renderTimedelta(d):
                                                       secs = seconds,
                                                       msecs = milli)
 
+def maybeInfo(c, l, text):
+    if c.lookup('log-all'):
+        l.info(text)
+    else:
+        print(text)
+
 class ExecutionStatistics:
     # The statistics log is a list of dictionaries.
-    def __init__(self, log):
+    def __init__(self, cfg, log):
+        self.cfg = cfg
         self.log = log
         self.data = []
 
@@ -221,12 +228,13 @@ class ExecutionStatistics:
         p = endoftime(prev)
         c = endoftime(current)
         time = renderTimedelta(current['time-stamp'] - prev['time-stamp'])
-        self.log.info('    {title:<10} {time:>12}'.
-                      format(title = 'Time:',
-                             time = time))
+        maybeInfo(self.cfg, self.log,
+                  ' {title:<10} {time:>12}'
+                  .format(title = 'Time:', time = time))
 
     def renderCheckpoint(self, datum):
-        self.log.info('Checkpoint: {}'.format(datum['description']))
+        maybeInfo(self.cfg, self.log,
+                  'Checkpoint: {}'.format(datum['description']))
 
     def renderStepResult(self, datum, title, prefix):
         result = 'Success'
@@ -250,10 +258,11 @@ class ExecutionStatistics:
         elif not(datum[prefix + '-result']):
             result = 'Failure'
 
-        self.log.info('    {title:>9}: {time:>12}  {result:>10}'.
-                      format(title = title,
-                             time = time,
-                             result = result))
+        maybeInfo(self.cfg, self.log,
+                  '    {title:>9}: {time:>12}  {result:>10}'
+                  .format(title = title,
+                          time = time,
+                          result = result))
 
     def renderConfigureStepResult(self, datum):
         self.renderStepResult(datum, 'Configure', 'configure')
@@ -268,29 +277,31 @@ class ExecutionStatistics:
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
-        self.log.info(''.ljust(79, '-'))
-        self.log.info('{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}'
-                      .format(toolchain = 'Toolchain',
-                              cpu = 'Architecture',
-                              interf = 'Interface',
-                              config = 'Config',
-                              tool = 'Buildtool'))
-        self.log.info('{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}    {result}'
-                      .format('',
-                              toolchain = datum['toolchain'],
-                              cpu = datum['cpu'],
-                              interf = datum['interface'],
-                              config = datum['buildcfg'],
-                              tool = datum['buildtool'],
-                              result = result))
+        maybeInfo(self.cfg, self.log, ''.ljust(79, '-'))
+        maybeInfo(self.cfg, self.log,
+                  '{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}'
+                  .format(toolchain = 'Toolchain',
+                          cpu = 'Architecture',
+                          interf = 'Interface',
+                          config = 'Config',
+                          tool = 'Buildtool'))
+        maybeInfo(self.cfg, self.log,
+                  '{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}    {result}'
+                  .format('',
+                          toolchain = datum['toolchain'],
+                          cpu = datum['cpu'],
+                          interf = datum['interface'],
+                          config = datum['buildcfg'],
+                          tool = datum['buildtool'],
+                          result = result))
         self.renderConfigureStepResult(datum)
         self.renderBuildStepResult(datum)
         self.renderTestStepResult(datum)
 
     def renderStatistics(self):
-        self.log.info('')
-        self.log.info('Build Summary:')
-        self.log.info('')
+        maybeInfo(self.cfg, self.log, '')
+        maybeInfo(self.cfg, self.log, 'Build Summary:')
+        maybeInfo(self.cfg, self.log, '')
         last = None
         for entry in self.data:
             if not('type' in entry):
@@ -309,15 +320,16 @@ class ExecutionStatistics:
             else:
                 self.log.warn('Statistics log entry has unknown type: {}'
                               .format(t))
-        self.log.info('')
+        maybeInfo(self.cfg, self.log, '')
         time = renderTimedelta(self.data[-1]['time-stamp'] -
                                self.data[0]['time-stamp'])
-        self.log.info('Total runtime: {time}'.format(time = time))
-        self.log.info('')
+        maybeInfo(self.cfg, self.log,
+                  'Total runtime: {time}'.format(time = time))
+        maybeInfo(self.cfg, self.log, '')
 
 class CodeUnderTest:
     def __init__(self, log, cfg, sources, module):
-        self.stats = ExecutionStatistics(log)
+        self.stats = ExecutionStatistics(cfg, log)
         self.stats.checkpoint('module-initialisation')
         self.log = log
         self.cfg = cfg
