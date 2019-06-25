@@ -3,25 +3,7 @@
 ** DONE Add support for extending CMAKE_MODULE_PATH
 ** DONE Make dependency fetcher build its dep-trace correctly
 ** DONE Write output to log
-** ACTIVE Write log to log file
-Here is how I'd actually like to handle this:
-
-- Per default everything goes to stdout.
-- Send internal output to the logging facility.
-- Send external output to stdout/stderr directly.
-
-Add three flags:
-
-- --log-all (-L) — send everything to logging facility (current behaviour).
-- --log-to-file (-l) — everything goes through logging, but nothing (except the
-  name of the file, which is printed to stout goes to the logfile. The default
-  output file matches the build-directory's name + '.log'.
-- --log-file FILE (-f FILE) — Override the default logging file name.
-
-Rationale: The main purpose of MakeMeHappy is to facilitate CI. CI systems come
-with error parsers for lots of toolchains. Our custom logging prefix may break
-these parsers. In order to avoid this, the defaults will not change external
-program output.
+** DONE Write log to log file
 ** DONE Handle external program return codes correctly
 ** DONE Run all configured build-instances
 …not just the default native build using make.
@@ -29,7 +11,6 @@ program output.
 * Secondary
 ** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
 ** TODO Implement version dependency judgements
-** TODO Allow output to both terminal and log
 ** TODO Add more sub-commands
 *** TODO Run compilation instances from build-tree
 - [ ] All
@@ -71,8 +52,4 @@ those. Lists or patterns or both, I'm not sure yet.
 *** DONE How many build-instances succeeded/failed?
 *** DONE How many build-instances had their test runs succeed/fail?
 *** DONE How much time did individual steps take to execute?
-- Build-Root Init
-- Dependency Fetch
-- Toplevel Generation
-- Individual Build-Instances
 *** DONE Render statistics nicely at program termination
