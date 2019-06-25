@@ -1,11 +1,43 @@
  User-visible changes in make-me-happy
 =======================================
 
-* scratch → 0.1 (released 2019-06-17):
+* v0.1 → v0.2 (released 2019-06-26):
+
+** New Features:
+
+- Execution statistics are gathered and summarised upon program termination
+  (61a0483).
+
+- Exit status now depends on the combined results of all build instances. Only
+  if all instances succeed, does mmh return success (45c3f5b2).
+
+- Tool definitions are now taken from configuration (however, modules can still
+  override — a602f888).
+
+- Handle output correctly; per default external programs don't push their
+  output through logging facility. This can be forced, though. All output can
+  also be dumped to file, in which case all output goes through the logging
+  facility as well (63927123).
+
+** Diffstat:
+
+  ROADMAP.org               |  20 ++-
+  data/config.yaml          |   7 +-
+  makemehappy/build.py      |  64 +++++++---
+  makemehappy/cut.py        | 247 ++++++++++++++++++++++++++++++++++++--
+  makemehappy/loghandler.py |  38 ++++++
+  makemehappy/utilities.py  |  15 ++-
+  makemehappy/yamlstack.py  |  17 +++
+  mmh.in                    |  62 ++++++++--
+  sources.yaml              |  18 ---
+  9 files changed, 416 insertions(+), 72 deletions(-)
+
+
+* scratch → v0.1 (released 2019-06-17):
 
 - First proof-of-concept that can build ufw
 
-** Diff-Stat:
+** Diffstat:
 
   .gitignore               |  18 ++++
   LICENCE                  |  25 +++++
