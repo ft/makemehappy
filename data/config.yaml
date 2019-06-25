@@ -1,3 +1,6 @@
+log-all: false
+log-to-file: false
+
 toolchains:
   - name: gnu
     architecture: native

@@ -3,7 +3,7 @@
 ** DONE Add support for extending CMAKE_MODULE_PATH
 ** DONE Make dependency fetcher build its dep-trace correctly
 ** DONE Write output to log
-** TODO Write log to log file
+** ACTIVE Write log to log file
 Here is how I'd actually like to handle this:
 
 - Per default everything goes to stdout.

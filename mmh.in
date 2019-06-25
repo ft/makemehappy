@@ -46,6 +46,16 @@ ap.add_argument("-m", "--module",
 ap.add_argument("-p", "--preserve", action = "store_true",
                 help = "preserve build root instead of deleting it")
 
+ap.add_argument("-L", "--log-all", action = "store_true",
+                help = "send all output to logging facility")
+
+ap.add_argument("-l", "--log-to-file", action = "store_true",
+                help = "log output to file (implies --log-all)")
+
+ap.add_argument("-f", "--log-file",
+                default = None,
+                help = "specify log-file name to use")
+
 ap.add_argument("-s", "--source",
                 default = [ ],
                 action = "append",
@@ -80,6 +90,18 @@ for item in cmdargs.source:
         exit(1)
     src.push(cmdargs.source)
 
+def adjustConfig(cfg, args):
+    layer = {}
+    adjustments = 0
+    if args.log_all == True:
+        layer['log-all'] = not(cfg.lookup('log-all'))
+        adjustments = adjustments + 1
+    if args.log_to_file == True:
+        layer['log-to-file'] = not(cfg.lookup('log-to-file'))
+        adjustments = adjustments + 1
+    if adjustments > 0:
+        cfg.pushLayer(layer)
+
 cmd = mmh.lookupCommand(cmdargs.rest)
 
 if (len(cmdargs.rest) == 0):
@@ -95,6 +117,7 @@ if (cmd == "build"):
         exit(1)
 
     cfg.load()
+    adjustConfig(cfg, cmdargs)
     cut = CodeUnderTest(log, cfg, src, cmdargs.module)
     cut.loadModule()
     cut.loadSources()

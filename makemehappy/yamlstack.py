@@ -9,6 +9,9 @@ class YamlStack:
         self.files = lst
         self.data = False
 
+    def pushLayer(self, layer):
+        self.data.insert(0, layer)
+
     def push(self, item):
         self.log.info("{}: {}".format(self.desc, item))
         self.files = self.files + [item]
