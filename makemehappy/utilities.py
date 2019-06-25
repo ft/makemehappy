@@ -78,4 +78,5 @@ def loggedProcess(cfg, log, cmd):
         with proc.stdout:
             logOutput(log, proc.stdout)
         return proc.wait()
-    subprocess.run(cmd)
+    rc = subprocess.run(cmd)
+    return rc.returncode
