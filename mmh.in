@@ -130,7 +130,7 @@ if (cmd == "build"):
     cut.loadModule()
     cut.loadSources()
     cut.initRoot(cmdargs.directory)
-    if cmdargs.log_file is None:
+    if cmdargs.log_to_file is True and cmdargs.log_file is None:
         fn = cut.root.name() + '.log'
         print('Logging to: {}'.format(fn))
         log.handlers[0].setFile(fn)
