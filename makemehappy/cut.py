@@ -277,16 +277,16 @@ class ExecutionStatistics:
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
-        maybeInfo(self.cfg, self.log, ''.ljust(79, '-'))
+        maybeInfo(self.cfg, self.log, ''.ljust(90, '-'))
         maybeInfo(self.cfg, self.log,
-                  '{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}'
+                  '{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}'
                   .format(toolchain = 'Toolchain',
                           cpu = 'Architecture',
                           interf = 'Interface',
                           config = 'Config',
                           tool = 'Buildtool'))
         maybeInfo(self.cfg, self.log,
-                  '{toolchain:>20} {cpu:>20} {interf:>16} {config:>8} {tool:>10}    {result}'
+                  '{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}     {result}'
                   .format('',
                           toolchain = datum['toolchain'],
                           cpu = datum['cpu'],
