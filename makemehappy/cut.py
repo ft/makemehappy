@@ -229,8 +229,8 @@ class ExecutionStatistics:
         c = endoftime(current)
         time = renderTimedelta(current['time-stamp'] - prev['time-stamp'])
         maybeInfo(self.cfg, self.log,
-                  ' {title:<10} {time:>12}'
-                  .format(title = 'Time:', time = time))
+                  '    {title:<9}: {time:>12}'
+                  .format(title = 'Time', time = time))
 
     def renderCheckpoint(self, datum):
         maybeInfo(self.cfg, self.log,
