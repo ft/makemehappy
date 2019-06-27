@@ -40,6 +40,24 @@ class SourceStack(YamlStack):
 
         raise(Exception)
 
+def queryItem(data, item):
+        rv = []
+        for layer in data:
+            if item in layer:
+                rv.extend(layer[item])
+        rv = list(set(rv))
+        rv.sort()
+        return rv
+
+def queryToolchain(data, item):
+    rv = []
+    for layer in data:
+        if 'toolchains' in layer:
+            rv.extend(list(x[item] for x in layer['toolchains'] if item in x))
+    rv = list(set(rv))
+    rv.sort()
+    return rv
+
 class ConfigStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
@@ -53,3 +71,18 @@ class ConfigStack(YamlStack):
                 return slice[needle]
 
         raise Exception
+
+    def allToolchains(self):
+        return queryToolchain(self.data, 'name')
+
+    def allInterfaces(self):
+        return queryToolchain(self.data, 'interface')
+
+    def allArchitectures(self):
+        return queryToolchain(self.data, 'architecture')
+
+    def allBuildtools(self):
+        return queryItem(self.data, 'buildtools')
+
+    def allBuildConfigs(self):
+        return queryItem(self.data, 'buildconfigs')

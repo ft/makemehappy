@@ -57,6 +57,30 @@ ap.add_argument("-f", "--log-file",
                 default = None,
                 help = "specify log-file name to use")
 
+ap.add_argument("-T", "--toolchains",
+                default = None,
+                help = "select toolchains to include in build")
+
+ap.add_argument("-B", "--buildtools",
+                default = None,
+                help = "select buildtools to include in build")
+
+ap.add_argument("-C", "--buildcfgs",
+                default = None,
+                help = "select build configurations to include in build")
+
+ap.add_argument("-A", "--architectures",
+                default = None,
+                help = "select architectures to include in build")
+
+ap.add_argument("-Q", "--query",
+                default = None,
+                help = "query aspects about the program")
+
+ap.add_argument("-I", "--interfaces",
+                default = None,
+                help = "select interfaces to include in build")
+
 ap.add_argument("-s", "--source",
                 default = [ ],
                 action = "append",
@@ -74,6 +98,24 @@ ap.add_argument("rest",
                 help = "sub command to carry out")
 
 cmdargs = ap.parse_args()
+
+if cmdargs.query is not None:
+    cfg.load()
+    q = cmdargs.query
+    if (q == 'toolchains'):
+        print(" ".join(cfg.allToolchains()))
+    elif (q == 'interfaces'):
+        print(" ".join(cfg.allInterfaces()))
+    elif (q == 'architectures'):
+        print(" ".join(cfg.allArchitectures()))
+    elif (q == 'buildtools'):
+        print(" ".join(cfg.allBuildtools()))
+    elif (q == 'buildcfgs'):
+        print(" ".join(cfg.allBuildConfigs()))
+    else:
+        mmh.warn('Unknown query: {}'.format(q))
+        exit(1)
+    exit(0)
 
 if (isinstance(cmdargs.directory, str)):
     cmdargs.preserve = not(cmdargs.preserve)
