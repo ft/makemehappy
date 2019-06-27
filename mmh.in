@@ -101,20 +101,25 @@ cmdargs = ap.parse_args()
 
 if cmdargs.query is not None:
     cfg.load()
+    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    if (os.path.isfile(cmdargs.module) == True):
+        cut.loadModule()
     q = cmdargs.query
+    result = []
     if (q == 'toolchains'):
-        print(" ".join(cfg.allToolchains()))
+        result = cut.allToolchains()
     elif (q == 'interfaces'):
-        print(" ".join(cfg.allInterfaces()))
+        result = cut.allInterfaces()
     elif (q == 'architectures'):
-        print(" ".join(cfg.allArchitectures()))
+        result = cut.allArchitectures()
     elif (q == 'buildtools'):
-        print(" ".join(cfg.allBuildtools()))
-    elif (q == 'buildcfgs'):
-        print(" ".join(cfg.allBuildConfigs()))
+        result = cut.allBuildtools()
+    elif (q == 'buildconfigs'):
+        result = cut.allBuildConfigs()
     else:
         mmh.warn('Unknown query: {}'.format(q))
         exit(1)
+    print(" ".join(result))
     exit(0)
 
 if (isinstance(cmdargs.directory, str)):

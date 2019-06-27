@@ -5,11 +5,14 @@ import yaml
 
 import makemehappy.utilities as mmh
 import makemehappy.build as build
+import makemehappy.yamlstack as ys
 
 from makemehappy.buildroot import BuildRoot
 from makemehappy.toplevel import Toplevel
 
 def has(key, dic, t):
+    if not(isinstance(dic, dict)):
+        return False
     if not(key in dic):
         return False
     if not(isinstance(dic[key], t)):
@@ -426,6 +429,37 @@ class CodeUnderTest:
             return self.cfg.lookup('buildconfigs')
         except Exception:
             return []
+
+    def queryToolchain(self, start, item):
+        result = start
+        if (has('toolchains', self.moduleData, list)):
+            result.extend(ys.queryToolchain([self.moduleData], item))
+        result = list(set(result))
+        result.sort()
+        return result
+
+    def queryItem(self, start, item):
+        result = start
+        if has(item, self.moduleData, list):
+            result.extend(self.moduleData[item])
+        result = list(set(result))
+        result.sort()
+        return result
+
+    def allToolchains(self):
+        return self.queryToolchain(self.cfg.allToolchains(), 'name')
+
+    def allInterfaces(self):
+        return self.queryToolchain(self.cfg.allInterfaces(), 'interface')
+
+    def allArchitectures(self):
+        return self.queryToolchain(self.cfg.allArchitectures(), 'architecture')
+
+    def allBuildtools(self):
+        return self.queryItem(self.cfg.allBuildtools(), 'buildtools')
+
+    def allBuildConfigs(self):
+        return self.queryItem(self.cfg.allBuildConfigs(), 'buildconfigs')
 
     def cleanupRoot(self):
         self.stats.checkpoint('cleanup')

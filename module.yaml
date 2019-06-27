@@ -10,7 +10,7 @@ dependencies:
     revision: v0.2.32
 
 toolchains:
-  - name: gcc
+  - name: gnu
     architecture: native
     version: default
     interface: posix
@@ -18,7 +18,7 @@ toolchains:
     architecture: native
     version: default
     interface: posix
-  - name: gcc-arm-none-eabi
+  - name: gnu-arm-none-eabi
     architecture: cortex-m4-hardfp
     version: default
     interface: none
@@ -34,6 +34,7 @@ toolchains:
 buildtools:
   - make
   - ninja
+  - jollet
 
 buildconfigs:
   - debug
