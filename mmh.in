@@ -145,6 +145,17 @@ if cmdargs.log_to_file:
 else:
     log.handlers[0].setFile(False)
 
+if cmdargs.toolchains is not None:
+    cmdargs.toolchains = cmdargs.toolchains.split(',')
+if cmdargs.buildtools is not None:
+    cmdargs.buildtools = cmdargs.buildtools.split(',')
+if cmdargs.buildconfigs is not None:
+    cmdargs.buildconfigs = cmdargs.buildconfigs.split(',')
+if cmdargs.architectures is not None:
+    cmdargs.architectures = cmdargs.architectures.split(',')
+if cmdargs.interfaces is not None:
+    cmdargs.interfaces = cmdargs.interfaces.split(',')
+
 def adjustConfig(cfg, args):
     layer = {}
     adjustments = 0
