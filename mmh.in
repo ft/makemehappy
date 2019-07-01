@@ -65,7 +65,7 @@ ap.add_argument("-B", "--buildtools",
                 default = None,
                 help = "select buildtools to include in build")
 
-ap.add_argument("-C", "--buildcfgs",
+ap.add_argument("-C", "--buildconfigs",
                 default = None,
                 help = "select build configurations to include in build")
 
