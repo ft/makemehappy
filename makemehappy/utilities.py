@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 import pprint
+import re
 import subprocess
 import sys
 import yaml
@@ -80,3 +81,17 @@ def loggedProcess(cfg, log, cmd):
         return proc.wait()
     rc = subprocess.run(cmd)
     return rc.returncode
+
+def starPattern(s):
+    return '*' in s
+
+def questionPattern(s):
+    return '?' in s
+
+bracketExpression = re.compile(r'\[.*\]')
+
+def bracketPattern(s):
+    return re.search(bracketExpression, s) != None
+
+def isPattern(s):
+    return starPattern(s) or questionPattern(s) or bracketPattern(s)
