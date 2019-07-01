@@ -28,10 +28,19 @@ def extendPath(root, lst, datum):
     else:
         raise(Exception())
 
+def addExtension(mods, idx, entry, name):
+    if (idx in entry):
+        if name not in mods:
+            mods[name] = {}
+            mods[name]['root'] = entry['root']
+        mods[name][idx] = entry[idx]
+
 class CMakeExtensions:
-    def __init__(self, moduleData, trace):
+    def __init__(self, moduleData, trace, order):
         self.modulepath = []
         self.toolchainpath = []
+        mods = {}
+        tools = {}
         midx = 'cmake-modules'
         tidx = 'cmake-toolchains'
         if (midx in moduleData):
@@ -39,10 +48,20 @@ class CMakeExtensions:
         if (tidx in moduleData):
             extendPath(moduleData['root'], self.toolchainpath, moduleData[tidx])
         for entry in trace.data:
-            if (midx in entry):
-                extendPath(entry['root'], self.modulepath, entry[midx])
-            if (tidx in entry):
-                extendPath(entry['root'], self.toolchainpath, entry[tidx])
+            if 'root' not in entry:
+                continue
+            name = entry['name']
+            addExtension(mods, midx, entry, name)
+            addExtension(mods, tidx, entry, name)
+        for entry in order:
+            if (entry in mods) and (midx in mods[entry]):
+                extendPath(mods[entry]['root'],
+                           self.modulepath,
+                           mods[entry][midx])
+            if (entry in mods) and (tidx in mods[entry]):
+                extendPath(mods[entry]['root'],
+                           self.toolchainpath,
+                           mods[entry][tidx])
 
     def modulePath(self):
         return self.modulepath
@@ -330,6 +349,13 @@ class ExecutionStatistics:
                   'Total runtime: {time}'.format(time = time))
         maybeInfo(self.cfg, self.log, '')
 
+def isSatisfied(deps, done, name):
+    lst = list(x['name'] for x in deps[name])
+    for dep in lst:
+        if not(dep in done):
+            return False
+    return True
+
 class CodeUnderTest:
     def __init__(self, log, cfg, sources, module):
         self.stats = ExecutionStatistics(cfg, log)
@@ -338,6 +364,7 @@ class CodeUnderTest:
         self.cfg = cfg
         self.module = module
         self.sources = sources
+        self.deporder = None
         self.root = None
         self.moduleData = None
         self.depstack = None
@@ -378,12 +405,41 @@ class CodeUnderTest:
             return self.moduleData['dependencies']
         return []
 
+    def calculateDependencyOrder(self):
+        rv = []
+        deps = self.deptrace.modDependencies()
+        lst = list(deps.keys())
+        none = list(name for name in lst if (len(deps[name]) == 0))
+
+        for entry in none:
+            rv.append(entry)
+
+        done = none
+        rest = list(name for name in lst if (len(deps[name]) > 0))
+
+        while (len(rest) > 0):
+            lastdone = len(done)
+            for item in rest:
+                if (isSatisfied(deps, done, item)):
+                    rv.append(item)
+                    done = [item] + done
+                    rest = list(x for x in rest if (x != item))
+            newdone = len(done)
+            if (newdone == lastdone):
+                # Couldn't take a single item off of the rest in the last
+                # iteration. That means that dependencies can't be satisfied.
+                raise Exception()
+        return rv
+
     def loadDependencies(self):
         self.stats.checkpoint('load-dependencies')
         self.depstack = Stack(self.dependencies())
         self.deptrace = Trace()
         fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
-        self.extensions = CMakeExtensions(self.moduleData, self.deptrace)
+        self.deporder = self.calculateDependencyOrder()
+        self.extensions = CMakeExtensions(self.moduleData,
+                                          self.deptrace,
+                                          self.deporder)
 
     def cmakeModules(self):
         if (has('cmake-modules', self.moduleData, str)):
@@ -395,7 +451,8 @@ class CodeUnderTest:
         self.toplevel = Toplevel(self.log,
                                  self.cmake3rdParty(),
                                  self.extensions.modulePath(),
-                                 self.deptrace)
+                                 self.deptrace,
+                                 self.deporder)
         self.toplevel.generateToplevel()
 
     def build(self):
