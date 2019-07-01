@@ -26,6 +26,11 @@ def insertInclude(fh, name, tp):
     else:
         print("add_subdirectory(deps/{})".format(name), file = fh)
 
+def generateVariables(fh, variables):
+    mmh.pp(variables)
+    for key in variables.keys():
+        print('set({} "{}")'.format(key, variables[key]), file = fh)
+
 def generateDependencies(fh, deps, thirdParty):
     for item in deps:
         insertInclude(fh, item, thirdParty)
@@ -43,12 +48,13 @@ def mergeDependencies(cut, further):
     return cut + rest
 
 class Toplevel:
-    def __init__(self, log, thirdParty, modulePath, trace, deporder):
+    def __init__(self, log, var, thirdParty, modulePath, trace, deporder):
         self.log = log
         self.thirdParty = thirdParty
         self.trace = trace
         self.modulePath = modulePath
         self.deporder = deporder
+        self.variables = var
         self.filename = 'CMakeLists.txt'
 
     def generateToplevel(self):
@@ -61,5 +67,11 @@ class Toplevel:
                 if ('cmake-extensions' in entry):
                     tp = { **tp, **entry['cmake-extensions'] }
             tp = { **tp, **self.thirdParty }
+            var = {}
+            for entry in self.trace.data:
+                if ('variables' in entry):
+                    var = { **var, **entry['variables'] }
+            var = { **var, **self.variables }
+            generateVariables(fh, var)
             generateDependencies(fh, self.deporder, tp)
             generateFooter(fh)
