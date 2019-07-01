@@ -79,8 +79,8 @@ class Toplevel:
             generateTestHeader(fh)
             tp = {}
             for entry in self.trace.data:
-                if ('cmake-third-party' in entry):
-                    tp = { **tp, **entry['cmake-third-party'] }
+                if ('cmake-extensions' in entry):
+                    tp = { **tp, **entry['cmake-extensions'] }
             tp = { **tp, **self.thirdParty }
             generateDependencies(fh, self.trace.modDependencies(), tp)
             generateFooter(fh)

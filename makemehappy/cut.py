@@ -402,8 +402,8 @@ class CodeUnderTest:
         build.allofthem(self.cfg, self.log, self, self.extensions)
 
     def cmake3rdParty(self):
-        if (has('cmake-third-party', self.moduleData, dict)):
-            return self.moduleData['cmake-third-party']
+        if (has('cmake-extensions', self.moduleData, dict)):
+            return self.moduleData['cmake-extensions']
         return {}
 
     def toolchains(self):
