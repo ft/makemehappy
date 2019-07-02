@@ -31,7 +31,11 @@ class Toplevel:
         moduleroot = 'deps/{}'.format(name)
         exp = mako.Template(inc).render(moduleroot = moduleroot)
         if exp == inc:
-            return self.expandIncludeTemplate(inc + '(${moduleroot})', name)
+            new = inc + '(${moduleroot})'
+            self.log.warn(
+                'Deprecated inclusion clause: "{}", use "{}" instead!'
+                .format(inc, new))
+            return self.expandIncludeTemplate(new, name)
         return exp
 
     def insertInclude(self, fh, name, tp):
