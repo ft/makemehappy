@@ -4,48 +4,6 @@ defaultCMakeVersion = "3.1.0"
 defaultProjectName = "MakeMeHappy"
 defaultLanguages = "C CXX ASM"
 
-def generateHeader(fh):
-    for s in ["cmake_minimum_required(VERSION {})".format(defaultCMakeVersion),
-              "project({} {})".format(defaultProjectName, defaultLanguages)]:
-        print(s, file = fh)
-
-def generateCMakeModulePath(fh, moddirs):
-    for p in moddirs:
-        print("list(APPEND CMAKE_MODULE_PATH \"{}\")".format(p), file = fh)
-
-def generateTestHeader(fh):
-    print("include(CTest)", file = fh)
-    print("enable_testing()", file = fh)
-
-def expandIncludeTemplate(inc, name):
-    moduleroot = 'deps/{}'.format(name)
-    exp = mako.Template(inc).render(moduleroot = moduleroot)
-    if exp == inc:
-        return expandIncludeTemplate(inc + '(${moduleroot})', name)
-    return exp
-
-def insertInclude(fh, name, tp):
-    if (name in tp):
-        inc = tp[name]['include']
-        if (isinstance(inc, str)):
-            print("include({})".format(tp[name]['module']), file = fh)
-            print(expandIncludeTemplate(inc, name), file = fh)
-    else:
-        print("add_subdirectory(deps/{})".format(name), file = fh)
-
-def generateVariables(fh, variables):
-    for key in variables.keys():
-        print('set({} "{}")'.format(key, variables[key]), file = fh)
-
-def generateDependencies(fh, deps, thirdParty):
-    for item in deps:
-        insertInclude(fh, item, thirdParty)
-
-def generateFooter(fh):
-    print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",
-          file = fh)
-    print("add_subdirectory(code-under-test)", file = fh)
-
 class Toplevel:
     def __init__(self, log, var, thirdParty, modulePath, trace, deporder):
         self.log = log
@@ -56,11 +14,53 @@ class Toplevel:
         self.variables = var
         self.filename = 'CMakeLists.txt'
 
+    def generateHeader(self, fh):
+        for s in ["cmake_minimum_required(VERSION {})".format(defaultCMakeVersion),
+                "project({} {})".format(defaultProjectName, defaultLanguages)]:
+            print(s, file = fh)
+
+    def generateCMakeModulePath(self, fh, moddirs):
+        for p in moddirs:
+            print("list(APPEND CMAKE_MODULE_PATH \"{}\")".format(p), file = fh)
+
+    def generateTestHeader(self, fh):
+        print("include(CTest)", file = fh)
+        print("enable_testing()", file = fh)
+
+    def expandIncludeTemplate(self, inc, name):
+        moduleroot = 'deps/{}'.format(name)
+        exp = mako.Template(inc).render(moduleroot = moduleroot)
+        if exp == inc:
+            return self.expandIncludeTemplate(inc + '(${moduleroot})', name)
+        return exp
+
+    def insertInclude(self, fh, name, tp):
+        if (name in tp):
+            inc = tp[name]['include']
+            if (isinstance(inc, str)):
+                print("include({})".format(tp[name]['module']), file = fh)
+                print(self.expandIncludeTemplate(inc, name), file = fh)
+        else:
+            print("add_subdirectory(deps/{})".format(name), file = fh)
+
+    def generateVariables(self, fh, variables):
+        for key in variables.keys():
+            print('set({} "{}")'.format(key, variables[key]), file = fh)
+
+    def generateDependencies(self, fh, deps, thirdParty):
+        for item in deps:
+            self.insertInclude(fh, item, thirdParty)
+
+    def generateFooter(self, fh):
+        print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",
+            file = fh)
+        print("add_subdirectory(code-under-test)", file = fh)
+
     def generateToplevel(self):
         with open(self.filename, 'w') as fh:
-            generateHeader(fh)
-            generateCMakeModulePath(fh, self.modulePath)
-            generateTestHeader(fh)
+            self.generateHeader(fh)
+            self.generateCMakeModulePath(fh, self.modulePath)
+            self.generateTestHeader(fh)
             tp = {}
             for entry in self.trace.data:
                 if ('cmake-extensions' in entry):
@@ -71,6 +71,6 @@ class Toplevel:
                 if ('variables' in entry):
                     var = { **var, **entry['variables'] }
             var = { **var, **self.variables }
-            generateVariables(fh, var)
-            generateDependencies(fh, self.deporder, tp)
-            generateFooter(fh)
+            self.generateVariables(fh, var)
+            self.generateDependencies(fh, self.deporder, tp)
+            self.generateFooter(fh)
