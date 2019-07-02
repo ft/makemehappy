@@ -1,4 +1,3 @@
-import makemehappy.utilities as mmh
 
 defaultCMakeVersion = "3.1.0"
 defaultProjectName = "MakeMeHappy"
@@ -27,7 +26,6 @@ def insertInclude(fh, name, tp):
         print("add_subdirectory(deps/{})".format(name), file = fh)
 
 def generateVariables(fh, variables):
-    mmh.pp(variables)
     for key in variables.keys():
         print('set({} "{}")'.format(key, variables[key]), file = fh)
 
@@ -39,13 +37,6 @@ def generateFooter(fh):
     print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",
           file = fh)
     print("add_subdirectory(code-under-test)", file = fh)
-
-def isTLDep(cut, needle):
-    return (needle in (entry['name'] for entry in cut))
-
-def mergeDependencies(cut, further):
-    rest = list((x for x in further if not(isTLDep(cut, x['name']))))
-    return cut + rest
 
 class Toplevel:
     def __init__(self, log, var, thirdParty, modulePath, trace, deporder):
