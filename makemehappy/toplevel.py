@@ -1,3 +1,4 @@
+import mako.template as mako
 
 defaultCMakeVersion = "3.1.0"
 defaultProjectName = "MakeMeHappy"
@@ -16,12 +17,19 @@ def generateTestHeader(fh):
     print("include(CTest)", file = fh)
     print("enable_testing()", file = fh)
 
+def expandIncludeTemplate(inc, name):
+    moduleroot = 'deps/{}'.format(name)
+    exp = mako.Template(inc).render(moduleroot = moduleroot)
+    if exp == inc:
+        return expandIncludeTemplate(inc + '(${moduleroot})', name)
+    return exp
+
 def insertInclude(fh, name, tp):
     if (name in tp):
         inc = tp[name]['include']
         if (isinstance(inc, str)):
             print("include({})".format(tp[name]['module']), file = fh)
-            print("{}(deps/{})".format(inc, name), file = fh)
+            print(expandIncludeTemplate(inc, name), file = fh)
     else:
         print("add_subdirectory(deps/{})".format(name), file = fh)
 
