@@ -20,4 +20,18 @@ clean:
 mmh: mmh.in
 	./configure
 
-.PHONY: all clean docs help script
+install: script docs
+	install --mode=0755 -d $(DESTDIR)/usr/bin
+	install --mode=0755 mmh $(DESTDIR)/usr/bin/mmh
+	install --mode=0755 -d $(DESTDIR)/etc/MakeMeHappy
+	install --mode=0644 etc/*.yaml $(DESTDIR)/etc/MakeMeHappy
+	install --mode=0755 -d $(DESTDIR)/usr/share/MakeMeHappy
+	install --mode=0644 data/*.yaml $(DESTDIR)/usr/share/MakeMeHappy
+	install --mode=0755 -d $(DESTDIR)/usr/lib/python3/dist-packages/makemehappy
+	install --mode=0644 makemehappy/*.py $(DESTDIR)/usr/lib/python3/dist-packages/makemehappy
+	install --mode=0755 -d $(DESTDIR)/usr/share/doc/makemehappy
+	install --mode=0644 doc/mmh.pdf $(DESTDIR)/usr/share/doc/makemehappy/MakeMeHappy.pdf
+	install --mode=0755 -d $(DESTDIR)/usr/share/man/man1
+	install --mode=0644 doc/mmh.1 $(DESTDIR)/usr/share/man/man1
+
+.PHONY: all clean docs help install script
