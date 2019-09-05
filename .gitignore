@@ -3,6 +3,7 @@
 *~
 \#*\#
 \#*
+*.log
 *.tmp
 *.orig
 GPATH
@@ -16,3 +17,8 @@ doc/*.html
 doc/*.info
 doc/*.pdf
 doc/*.texi
+debian/files
+debian/makemehappy.*.debhelper
+debian/makemehappy.substvars
+debian/makemehappy/
+
