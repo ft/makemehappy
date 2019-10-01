@@ -1,0 +1,22 @@
+MakeMeHappy — Automated Module Builds for C/C++
+-----------------------------------------------
+
+The purpose of MakeMeHappy is to facilitate automated continuous integration of
+loosely coupled C and C++ modules. It features dependencies resolution, builds
+against a host of different toolchains and automatic test-suite execution.
+
+It is a companion tool for the ufw library (https://github.com/ft/ufw).
+
+See the reference manual in doc/ for details.
+
+Dependencies:
+
+- Python 3
+- Mako (python3)
+- YAML (python3)
+- logbook (python3)
+- pandoc reasonably complete LaTeX installation for building documentation
+
+Building:
+
+Type ‘make’ to generate the mmh script and the system's documentation.
