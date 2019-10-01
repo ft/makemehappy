@@ -1,6 +1,54 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.2 → v0.3 (released 2019-10-01):
+
+** Breaking Compatibility:
+
+- Rename "--buildcfgs" to "--buildconfigs" (f6021ca0).
+
+- Rename "cmake-third-party" to "cmake-extension" (bca0cc1f).
+
+** New Features:
+
+- Adds "--query" to extract execution information (1c172525)
+
+- "include" can now be boolean to avoid adding build-steps for a
+  dependency (409c6fd1a).
+
+- "include" now expands templates (0266dbe2).
+
+- Add support for setting CMake variables in module definition (84c1ba8).
+
+- Adds debian packaging information.
+
+** Bugfixes:
+
+- Fixes some invocations of "--log-to-file" (9c536f4c).
+
+- Various cosmetic bug fixes in summary output.
+
+** Diffstat:
+
+    .gitignore               |   6 ++
+    Makefile                 |  16 ++++-
+    README                   |  22 +++++++
+    debian/changelog         |   5 ++
+    debian/compat            |   1 +
+    debian/control           |  20 ++++++
+    debian/copyright         |  49 +++++++++++++++
+    debian/rules             |  23 +++++++
+    debian/source/format     |   1 +
+    etc/sources.yaml         |  95 +++++++++++++++++++++++++++-
+    makemehappy/cut.py       | 125 ++++++++++++++++++++++++++++++++-----
+    makemehappy/toplevel.py  | 130 +++++++++++++++++++--------------------
+    makemehappy/utilities.py |  15 +++++
+    makemehappy/yamlstack.py |  33 ++++++++++
+    mmh.in                   |  60 +++++++++++++++++-
+    module.yaml              |   5 +-
+    16 files changed, 518 insertions(+), 88 deletions(-)
+
+
 * v0.1 → v0.2 (released 2019-06-26):
 
 ** New Features:
