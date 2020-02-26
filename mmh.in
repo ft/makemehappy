@@ -215,6 +215,47 @@ elif (cmd == "dump-description"):
     data = mmh.load(cmdargs.module)
     mmh.pp(data)
 
+elif (cmd == "download-sources"):
+    if (len(cmdargs.rest) > 2):
+        log.error("Usage: download-sources [DestinationDirectory]")
+        exit(1)
+
+    destination = '.'
+    if (len(cmdargs.rest) == 2):
+        destination = cmdargs.rest[1]
+
+    cfg.load()
+    src.load()
+    loaded = {}
+    failed = {}
+    for source in src.data:
+        if not('modules' in source):
+            continue
+        for module in source['modules']:
+            if (module in loaded):
+                log.info("Module {} already defined by {}",
+                         loaded[module]['definition'])
+                continue
+            sf = os.path.join(source['root'], source['definition'])
+            dd = os.path.join(destination, module)
+            repo = source['modules'][module]['repository']
+            log.info("Downloading module {} from {}...", module, repo)
+            rc = mmh.loggedProcess(cfg, log, ['git', 'clone', repo, dd])
+            if (rc == 0):
+                log.info("Downloading module {} was successful.", module)
+            else:
+                log.error("Downloading module {} was failed!", module)
+                failed[module] = {'source': sf, 'repository': repo }
+            loaded[module] = {'source': sf, 'repository': repo }
+    if (len(failed) == 0):
+        log.info("Downloading ALL sources succeeded!")
+    else:
+        log.error("Downloading {} of {} sources failed!",
+                  len(failed), len(loaded))
+        for fail in failed:
+            log.error("  Module {} from {} [{}]",
+                      fail, failed[fail]['repository'], failed[fail]['source'])
+
 elif (isinstance(cmd, str)):
     print("Not implemented yet: {}".format(cmd))
 
