@@ -5,6 +5,10 @@ modules:
       repository: https://github.com/ARM-software/CMSIS-Driver.git
     arm-cmsis-freertos:
       repository: https://github.com/ARM-software/CMSIS-FreeRTOS.git
+    freertos-kernel:
+      repository: https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+    freertos-system:
+      repository: https://github.com/FreeRTOS/FreeRTOS.git
     libtap:
       repository: https://github.com/zorgnax/libtap.git
     st-cmsis-device-f0:
