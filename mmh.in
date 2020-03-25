@@ -234,7 +234,7 @@ elif (cmd == "download-sources"):
         for module in source['modules']:
             if (module in loaded):
                 log.info("Module {} already defined by {}",
-                         loaded[module]['definition'])
+                         module, loaded[module]['source'])
                 continue
             sf = os.path.join(source['root'], source['definition'])
             dd = os.path.join(destination, module)
