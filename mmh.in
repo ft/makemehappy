@@ -247,7 +247,7 @@ elif (cmd == "download-sources"):
                 log.error("Downloading module {} was failed!", module)
                 failed[module] = {'source': sf, 'repository': repo }
             loaded[module] = {'source': sf, 'repository': repo }
-    for mod in loaded:
+    for mod in sorted(loaded):
         log.info("  Success: {} from {} [{}]",
                  mod,
                  loaded[mod]['repository'],
@@ -257,7 +257,7 @@ elif (cmd == "download-sources"):
     else:
         log.error("Downloading {} of {} sources failed!",
                   len(failed), len(loaded))
-        for fail in failed:
+        for fail in sorted(failed):
             log.error("  Failure: {} from {} [{}]",
                       fail,
                       failed[fail]['repository'],
