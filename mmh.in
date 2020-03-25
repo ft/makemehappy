@@ -247,14 +247,21 @@ elif (cmd == "download-sources"):
                 log.error("Downloading module {} was failed!", module)
                 failed[module] = {'source': sf, 'repository': repo }
             loaded[module] = {'source': sf, 'repository': repo }
+    for mod in loaded:
+        log.info("  Success: {} from {} [{}]",
+                 mod,
+                 loaded[mod]['repository'],
+                 loaded[mod]['source'])
     if (len(failed) == 0):
         log.info("Downloading ALL sources succeeded!")
     else:
         log.error("Downloading {} of {} sources failed!",
                   len(failed), len(loaded))
         for fail in failed:
-            log.error("  Module {} from {} [{}]",
-                      fail, failed[fail]['repository'], failed[fail]['source'])
+            log.error("  Failure: {} from {} [{}]",
+                      fail,
+                      failed[fail]['repository'],
+                      failed[fail]['source'])
 
 elif (isinstance(cmd, str)):
     print("Not implemented yet: {}".format(cmd))
