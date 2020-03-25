@@ -34,4 +34,7 @@ install: script docs
 	install --mode=0755 -d $(DESTDIR)/usr/share/man/man1
 	install --mode=0644 doc/mmh.1 $(DESTDIR)/usr/share/man/man1
 
-.PHONY: all clean docs help install script
+package:
+	make -f debian/rules generate-orig-tarball && debuild -uc -us
+
+.PHONY: all clean docs help install package script
