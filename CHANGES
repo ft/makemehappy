@@ -1,6 +1,31 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.3 → v0.4 (released 2020-03-26):
+
+** New Features
+
+- Add ARM cmsis repository
+
+- Add FreeRTOS repositories
+
+- Add ST cmsis device support repositories
+
+- Add ST device HAL repositories
+
+- Add download-sources command that attempts to download all configured
+  modules, respecting the definition stack.
+
+** Diffstat:
+
+    Makefile                 |  5 ++-
+    data/sources.yaml        | 66 ++++++++++++++++++++++++++++++++++++++++
+    debian/changelog         |  6 ++++
+    makemehappy/utilities.py |  1 +
+    mmh.in                   | 48 +++++++++++++++++++++++++++++
+    5 files changed, 125 insertions(+), 1 deletion(-)
+
+
 * v0.2 → v0.3 (released 2019-10-01):
 
 ** Breaking Compatibility:
