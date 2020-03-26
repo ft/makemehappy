@@ -244,7 +244,7 @@ elif (cmd == "download-sources"):
             if (rc == 0):
                 log.info("Downloading module {} was successful.", module)
             else:
-                log.error("Downloading module {} was failed!", module)
+                log.error("Downloading module {} failed!", module)
                 failed[module] = {'source': sf, 'repository': repo }
             loaded[module] = {'source': sf, 'repository': repo }
     for mod in sorted(loaded):
