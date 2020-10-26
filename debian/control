@@ -1,0 +1,20 @@
+Source: makemehappy
+Section: python
+Priority: optional
+Maintainer: Frank Terbeck <ft@bewatermyfriend.org>
+Build-Depends: debhelper (>= 9), dh-python, python3-all
+Standards-Version: 3.9.8
+Homepage: https://github.com/ft/makemehappy
+
+Package: makemehappy
+Architecture: all
+Depends: python3-all,
+         python3-logbook,
+         python3-mako,
+         python3-yaml,
+         ${misc:Depends},
+         ${python3:Depends}
+Description: Module build automation
+ MakeMeHappy is a tool to help automate the build process of
+ loosely coupled modules against a variety of toolchains and
+ target architectures. Its main use is to facilitate CI.
