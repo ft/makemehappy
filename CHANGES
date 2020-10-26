@@ -1,6 +1,25 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.4 → v0.5 (released 2020-10-26):
+
+** Miscellaneous Changes
+
+- Use yaml.SafeLoader to avoid possible exploits.
+- Move debian packaging to debian branch.
+
+** Diffstat:
+
+    debian/changelog         | 11 ---------
+    debian/compat            |  1 -
+    debian/control           | 20 ----------------
+    debian/copyright         | 49 ----------------------------------------
+    debian/rules             | 23 -------------------
+    debian/source/format     |  1 -
+    makemehappy/utilities.py |  2 +-
+    7 files changed, 1 insertion(+), 106 deletions(-)
+
+
 * v0.3 → v0.4 (released 2020-03-26):
 
 ** New Features
