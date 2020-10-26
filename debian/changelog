@@ -1,3 +1,14 @@
+makemehappy (0.5-1) unstable; urgency=medium
+
+  [ Manoel Brunnen ]
+  * [f181b3f5] Use the yaml.SafeLoader
+
+  [ Frank Terbeck ]
+  * [2c67337a] Remove debian packaging — will be tracked in separate branch
+  * [e8c87f4e] Re-add debian packaging information
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Mon, 26 Oct 2020 21:59:07 +0100
+
 makemehappy (0.4-1) unstable; urgency=medium
 
   * Update to latest upstream release.
