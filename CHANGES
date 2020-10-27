@@ -1,6 +1,19 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.5 → v0.6 (released 2020-10-27):
+
+** Miscellaneous Changes
+
+- Make git and the git repository optional dependencies when generating the mmh
+  script.
+
+** Diffstat:
+
+ configure | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
+
+
 * v0.4 → v0.5 (released 2020-10-26):
 
 ** Miscellaneous Changes

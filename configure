@@ -3,7 +3,12 @@
 name='MakeMeHappy'
 datadir="/usr/share/$name"
 etcdir="/etc/$name"
-version="0.0.0"
+parseCHANGES='
+if (m/^\* v[^v]*(v[0-9]+\.[0-9]+[^ ]*) +\(released/) {
+    print $1;
+    exit 0
+}'
+version="no-version-yet"
 python=''
 
 if test "x$1" = "x--help"; then
@@ -59,14 +64,26 @@ if [ -z "$python" ]; then
 fi
 
 if [ "$gotgit" -gt 0 ]; then
-    if [ "$("$git" rev-parse --is-inside-work-tree)" = 'true' ]; then
+    if [ "$("$git" rev-parse --is-inside-work-tree 2>/dev/null)" = 'true' ]
+    then
         version="$(git describe --always)"
         version=${version#v}
         if test -n "$(git diff-index --name-only HEAD --)"; then
             version=${version}-dirty
         fi
+    else
+        printf 'Running outside of git repository!\n'
     fi
 fi
+
+if [ "$version" = "no-version-yet" ]; then
+    # Either, there's no git installed, or we don't have git repository infor-
+    # mation while trying to figure out the project's version. Fall back the to
+    # the version in the latest release note in CHANGES.
+    version=$(perl -ne "$parseCHANGES" < CHANGES)
+fi
+
+printf 'Version will be set to %s\n' "$version"
 
 printf 'Generating mmh from mmh.in...\n'
 sed -e "s|@@DATADIR@@|${datadir}|" \
