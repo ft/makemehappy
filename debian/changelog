@@ -9,8 +9,9 @@ makemehappy (0.6-1) unstable; urgency=medium
   * [a318637e] State that debian/rules doesn't required root
   * [eaab71f0] Add doc-base configuration
   * [1630c26f] Add debian specific gitignore
+  * [f683ce75] Disable pristine tar in gbp.conf
 
- -- Frank Terbeck <ft@bewatermyfriend.org>  Wed, 28 Oct 2020 02:47:06 +0100
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Wed, 28 Oct 2020 03:31:03 +0100
 
 makemehappy (0.5-1) unstable; urgency=medium
 
