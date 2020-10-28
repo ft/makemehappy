@@ -11,6 +11,7 @@ Build-Depends: debhelper (>= 12),
                texlive-latex-extra,
                lmodern,
                texinfo
+Rules-Requires-Root: no
 Standards-Version: 4.5.0
 Homepage: https://github.com/ft/makemehappy
 
