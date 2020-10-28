@@ -1,0 +1,4 @@
+# Managing debianisation and upstream in one repository.
+makemehappy: debian-watch-file-is-missing
+# Not putting time into this for now.
+makemehappy: upstream-metadata-file-is-missing
