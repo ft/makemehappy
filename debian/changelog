@@ -1,3 +1,17 @@
+makemehappy (0.6-1) unstable; urgency=medium
+
+  * New upstream release.
+  * [635f7b91] Bumping debhelper compatibility level to 12
+  * [af92858d] Bump standards version to 4.5.0
+  * [6d495d85] Move package to devel instead of python which is meant for libraries
+  * [9d62ff6d] Improve build-depends to support building documentation
+  * [9623f7b4] Add lintian overrides for upstream-meta-file and watch-file
+  * [a318637e] State that debian/rules doesn't required root
+  * [eaab71f0] Add doc-base configuration
+  * [1630c26f] Add debian specific gitignore
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Wed, 28 Oct 2020 02:47:06 +0100
+
 makemehappy (0.5-1) unstable; urgency=medium
 
   [ Manoel Brunnen ]
