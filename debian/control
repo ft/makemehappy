@@ -2,7 +2,15 @@ Source: makemehappy
 Section: devel
 Priority: optional
 Maintainer: Frank Terbeck <ft@bewatermyfriend.org>
-Build-Depends: debhelper (>= 12), dh-python, python3-all
+Build-Depends: debhelper (>= 12),
+               dh-python,
+               python3-all,
+               pandoc,
+               texlive-fonts-recommended,
+               texlive-latex-recommended,
+               texlive-latex-extra,
+               lmodern,
+               texinfo
 Standards-Version: 4.5.0
 Homepage: https://github.com/ft/makemehappy
 
