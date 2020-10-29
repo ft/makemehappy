@@ -28,6 +28,21 @@ class SourceStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
 
+    def allSources(self):
+        rv = []
+        if (self.data == False):
+            raise(Exception)
+
+        for slice in self.data:
+            if not('modules' in slice):
+                continue
+            for module in slice['modules']:
+                if (module in rv):
+                    continue
+                rv.append(module)
+
+        return rv
+
     def lookup(self, needle):
         if (self.data == False):
             raise(Exception)

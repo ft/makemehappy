@@ -220,6 +220,17 @@ elif (cmd == "dump-description"):
     data = mmh.load(cmdargs.module)
     mmh.pp(data)
 
+elif (cmd == "show-source"):
+    src.load()
+    names = cmdargs.rest[1:]
+    if (len(names) == 0):
+        names = src.allSources();
+
+    for name in names:
+        data = src.lookup(name)
+        print("{}: ".format(name), end='')
+        print(data)
+
 elif (cmd == "download-sources"):
     if (len(cmdargs.rest) > 2):
         log.error("Usage: download-sources [DestinationDirectory]")
