@@ -72,6 +72,14 @@ class ConfigStack(YamlStack):
 
         raise Exception
 
+    def fetchToolchain(self, name):
+        for layer in self.data:
+            if 'toolchains' in layer:
+                for tc in layer['toolchains']:
+                    if (tc['name'] == name):
+                        return tc
+        raise(Exception)
+
     def allToolchains(self):
         return queryToolchain(self.data, 'name')
 

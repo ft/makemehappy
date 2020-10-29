@@ -381,6 +381,20 @@ class CodeUnderTest:
         self.log.info("Loading module description: {}".format(self.module))
         self.moduleData = mmh.load(self.module)
 
+    def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools, interfaces):
+        if toolchains is not None:
+            self.moduleData['toolchains'] = []
+            for tc in toolchains:
+                self.moduleData['toolchains'].append(self.cfg.fetchToolchain(tc))
+        if architectures is not None:
+            self.moduleData['architectures'] = architectures
+        if buildconfigs is not None:
+            self.moduleData['buildconfigs'] = buildconfigs
+        if buildtools is not None:
+            self.moduleData['buildtools'] = buildtools
+        if interfaces is not None:
+            self.moduleData['interfaces'] = interfaces
+
     def loadSources(self):
         self.log.info("Loading source definitions...")
         self.sources.load()
