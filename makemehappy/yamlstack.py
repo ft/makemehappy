@@ -28,6 +28,15 @@ class SourceStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
 
+    def load(self):
+        super(SourceStack, self).load()
+        for slice in self.data:
+            if not('modules' in slice):
+                continue
+            for module in slice['modules']:
+                if (not ('type' in slice['modules'][module])):
+                    slice['modules'][module]['type'] = 'git'
+
     def allSources(self):
         rv = []
         if (self.data == False):
