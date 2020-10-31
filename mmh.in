@@ -177,10 +177,57 @@ if (len(cmdargs.rest) == 0):
 elif (cmd != False):
     log.info("Starting up using '{}' command".format(cmd))
 
-if (cmd == "build"):
-    if (os.path.isfile(cmdargs.module) == False):
-        mmh.warn("Module definition does not exist: {}".format(cmdargs.module))
+def requireModuleDefinition(args):
+    if (os.path.isfile(args.module) == False):
+        mmh.warn("Module definition does not exist: {}".format(args.module))
         exit(1)
+
+if (cmd == "build-tree-init"):
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut.initRoot(cmdargs.directory)
+    cut.populateRoot()
+    cut.linkIntoRoot()
+
+elif (cmd == "fetch-dependencies"):
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut.initRoot(cmdargs.directory)
+    cut.loadModule()
+    cut.loadSources()
+    cut.changeToRoot()
+    cut.loadDependencies()
+
+elif (cmd == "generate-toplevel"):
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut.initRoot(cmdargs.directory)
+    cut.loadModule()
+    cut.loadSources()
+    cut.loadDependencies()
+    cut.changeToRoot()
+    cut.generateToplevel()
+
+elif (cmd == "run-instance"):
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut.initRoot(cmdargs.directory)
+    cut.loadModule()
+    cut.loadSources()
+    cut.loadDependencies()
+    cut.changeToRoot()
+    cut.build()
+
+elif (cmd == "build"):
+    requireModuleDefinition(cmdargs)
 
     cfg.load()
     adjustConfig(cfg, cmdargs)
