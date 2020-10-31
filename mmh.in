@@ -169,7 +169,6 @@ if cmdargs.interfaces is not None:
     cmdargs.interfaces = cmdargs.interfaces.split(',')
 
 cmdargs.cmake = cmakeParameters
-print("DEBUG: ", cmdargs)
 
 def adjustConfig(cfg, args):
     layer = {}
