@@ -5,13 +5,14 @@ defaultProjectName = "MakeMeHappy"
 defaultLanguages = "C CXX ASM"
 
 class Toplevel:
-    def __init__(self, log, var, thirdParty, modulePath, trace, deporder):
+    def __init__(self, log, var, defaults, thirdParty, modulePath, trace, deporder):
         self.log = log
         self.thirdParty = thirdParty
         self.trace = trace
         self.modulePath = modulePath
         self.deporder = deporder
         self.variables = var
+        self.defaults = defaults
         self.filename = 'CMakeLists.txt'
 
     def generateHeader(self, fh):
@@ -51,6 +52,12 @@ class Toplevel:
         for key in variables.keys():
             print('set({} "{}")'.format(key, variables[key]), file = fh)
 
+    def generateDefaults(self, fh, defaults):
+        for key in defaults.keys():
+            print('if (NOT {})'.format(key), file = fh)
+            print('  set({} "{}")'.format(key, defaults[key]), file = fh)
+            print('endif()', file = fh)
+
     def generateDependencies(self, fh, deps, thirdParty):
         for item in deps:
             self.insertInclude(fh, item, thirdParty)
@@ -76,5 +83,11 @@ class Toplevel:
                     var = { **var, **entry['variables'] }
             var = { **var, **self.variables }
             self.generateVariables(fh, var)
+            var = {}
+            for entry in self.trace.data:
+                if ('defaults' in entry):
+                    var = { **var, **entry['defaults'] }
+            var = { **var, **self.defaults }
+            self.generateDefaults(fh, var)
             self.generateDependencies(fh, self.deporder, tp)
             self.generateFooter(fh)

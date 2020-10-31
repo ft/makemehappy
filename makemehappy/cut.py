@@ -468,6 +468,7 @@ class CodeUnderTest:
         self.stats.checkpoint('generate-toplevel')
         self.toplevel = Toplevel(self.log,
                                  self.variables(),
+                                 self.defaults(),
                                  self.cmake3rdParty(),
                                  self.extensions.modulePath(),
                                  self.deptrace,
@@ -480,6 +481,11 @@ class CodeUnderTest:
     def cmake3rdParty(self):
         if (has('cmake-extensions', self.moduleData, dict)):
             return self.moduleData['cmake-extensions']
+        return {}
+
+    def defaults(self):
+        if (has('defaults', self.moduleData, dict)):
+            return self.moduleData['defaults']
         return {}
 
     def variables(self):

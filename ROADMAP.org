@@ -56,7 +56,7 @@ system allows or requires that.
 ** TODO Allow handing a directory into "run" command
 That way we could rerun a specific instance without having to manually listing
 all characteristics of that instance.
-** TODO Add a second value kind to variables: defaults
+** DONE Add a second value kind to variables: defaults
 This:
 
   variables:
