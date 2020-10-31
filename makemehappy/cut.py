@@ -360,11 +360,12 @@ def isSatisfied(deps, done, name):
     return True
 
 class CodeUnderTest:
-    def __init__(self, log, cfg, sources, module):
+    def __init__(self, log, cfg, args, sources, module):
         self.stats = ExecutionStatistics(cfg, log)
         self.stats.checkpoint('module-initialisation')
         self.log = log
         self.cfg = cfg
+        self.args = args
         self.module = module
         self.sources = sources
         self.deporder = None

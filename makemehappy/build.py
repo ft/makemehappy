@@ -84,17 +84,16 @@ def findToolchain(ext, tc):
             return candidate
     raise(Exception())
 
-def cmakeConfigure(cfg, log, stats, ext, root, instance):
-    rc = mmh.loggedProcess(
-        cfg, log,
-        ['cmake',
-         '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
-         '-DCMAKE_TOOLCHAIN_FILE={}'.format(
-             findToolchain(ext, instance['toolchain'])),
-         '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
-         '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
-         '-DINTERFACE_TARGET={}'.format(instance['interface']),
-         root])
+def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
+    cmd = ['cmake',
+           '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
+           '-DCMAKE_TOOLCHAIN_FILE={}'.format(
+               findToolchain(ext, instance['toolchain'])),
+           '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
+           '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
+           '-DINTERFACE_TARGET={}'.format(instance['interface'])
+           ] + args.cmake + [root]
+    rc = mmh.loggedProcess(cfg, log, cmd)
     stats.logConfigure(rc)
     return (rc == 0)
 
@@ -129,7 +128,7 @@ def cleanInstance(log, d):
         except Exception as e:
             log.error('Could not remove {}. Reason: {}'.format(path, e))
 
-def build(cfg, log, stats, ext, root, instance):
+def build(cfg, log, args, stats, ext, root, instance):
     dname = instanceDirectory(stats, instance)
     dnamefull = os.path.join(root, 'build', dname)
     if (os.path.exists(dnamefull)):
@@ -138,7 +137,7 @@ def build(cfg, log, stats, ext, root, instance):
     else:
         os.mkdir(dnamefull)
     os.chdir(dnamefull)
-    rc = cmakeConfigure(cfg, log, stats, ext, root, instance)
+    rc = cmakeConfigure(cfg, log, args, stats, ext, root, instance)
     if rc:
         rc = cmakeBuild(cfg, log, stats, instance)
         if rc:
@@ -153,4 +152,4 @@ def allofthem(cfg, log, mod, ext):
         log.info('    {}'.format(instanceName(instance)))
     for instance in instances:
         log.info('Building instance: {}'.format(instanceName(instance)))
-        build(cfg, log, mod.stats, ext, olddir, instance)
+        build(cfg, log, mod.args, mod.stats, ext, olddir, instance)

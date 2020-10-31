@@ -33,6 +33,18 @@ src = SourceStack(log, 'Source Definition',
                   '@@ETCDIR@@/sources.yaml',
                   '@@DATADIR@@/sources.yaml')
 
+cmakeParameters = None
+cmakeSeparator = None
+try:
+    cmakeSeparator = sys.argv.index('++')
+    if (cmakeSeparator == len(sys.argv)):
+        cmakeParameters = []
+    else:
+        cmakeParameters = sys.argv[cmakeSeparator+1:]
+    sys.argv = sys.argv[0:cmakeSeparator]
+except ValueError:
+    cmakeParameters = []
+
 ap = argparse.ArgumentParser()
 
 ap.add_argument("-d", "--directory",
@@ -101,7 +113,7 @@ cmdargs = ap.parse_args()
 
 if cmdargs.query is not None:
     cfg.load()
-    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     if (os.path.isfile(cmdargs.module) == True):
         cut.loadModule()
     q = cmdargs.query
@@ -156,6 +168,9 @@ if cmdargs.architectures is not None:
 if cmdargs.interfaces is not None:
     cmdargs.interfaces = cmdargs.interfaces.split(',')
 
+cmdargs.cmake = cmakeParameters
+print("DEBUG: ", cmdargs)
+
 def adjustConfig(cfg, args):
     layer = {}
     adjustments = 0
@@ -186,7 +201,7 @@ if (cmd == "build-tree-init"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.initRoot(cmdargs.directory)
     cut.populateRoot()
     cut.linkIntoRoot()
@@ -195,7 +210,7 @@ elif (cmd == "fetch-dependencies"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.initRoot(cmdargs.directory)
     cut.loadModule()
     cut.loadSources()
@@ -206,7 +221,7 @@ elif (cmd == "generate-toplevel"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.initRoot(cmdargs.directory)
     cut.loadModule()
     cut.loadSources()
@@ -215,10 +230,11 @@ elif (cmd == "generate-toplevel"):
     cut.generateToplevel()
 
 elif (cmd == "run-instance"):
+    print(cmdargs)
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.initRoot(cmdargs.directory)
     cut.loadModule()
     cut.loadSources()
@@ -231,7 +247,7 @@ elif (cmd == "build"):
 
     cfg.load()
     adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.loadModule()
     cut.cliAdjust(toolchains    = cmdargs.toolchains,
                   architectures = cmdargs.architectures,

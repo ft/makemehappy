@@ -46,7 +46,7 @@ those.
 That way you can set up a complex run once and never have to do that in later
 runs again. Add another command to reset/replace previously recorded command
 line arguments.
-** TODO Allow handing command line arguments to cmake in instance runs
+** DONE Allow handing command line arguments to cmake in instance runs
 Lets do this:
 
   mmh [ARGS] [COMMAND-WITH-ARGS...] [-- CMAKE-ARGUMENTS]
