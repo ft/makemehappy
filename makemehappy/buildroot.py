@@ -30,13 +30,21 @@ class BuildRoot:
         self.initdirs = [ 'build', 'deps' ]
         self.log = log
         self.calldir = os.path.realpath(os.getcwd())
+        existing = False
+
         if (dirName == None):
             self.root = mkTempDir(seed, modName)
+        elif (os.path.exists(dirName)):
+            existing = True
+            self.root = dirName
         else:
             self.root = dirName
             os.mkdir(self.root, 0o755)
 
-        self.log.info("Setting up build-directory: {}".format(self.root))
+        if existing:
+            self.log.info("Using build-directory: {}".format(self.root))
+        else:
+            self.log.info("Setting up build-directory: {}".format(self.root))
 
     def name(self):
         return self.root
