@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 
 import makemehappy.utilities as mmh
@@ -115,10 +116,27 @@ def cmakeTest(cfg, log, stats, instance):
         return (rc == 0)
     return True
 
+def cleanInstance(log, d):
+    log.info('Cleaning up {}'.format(d))
+    for f in os.listdir(d):
+        path = os.path.join(d, f)
+        log.debug('  Removing {}'.format(path))
+        try:
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.unlink(path)
+        except Exception as e:
+            log.error('Could not remove {}. Reason: {}'.format(path, e))
+
 def build(cfg, log, stats, ext, root, instance):
     dname = instanceDirectory(stats, instance)
     dnamefull = os.path.join(root, 'build', dname)
-    os.mkdir(dnamefull)
+    if (os.path.exists(dnamefull)):
+        log.info("Instance directory exists: {}".format(dnamefull))
+        cleanInstance(log, dnamefull)
+    else:
+        os.mkdir(dnamefull)
     os.chdir(dnamefull)
     rc = cmakeConfigure(cfg, log, stats, ext, root, instance)
     if rc:
