@@ -286,6 +286,15 @@ elif (cmd == "run-instance"):
     cut.changeToRoot()
     cut.build()
 
+    cut.renderStatistics()
+    if cut.wasSuccessful():
+        log.info('All {} builds succeeded.'.format(cut.countBuilds()))
+        exit(0)
+    else:
+        log.info('{} build(s) out of {} failed.'
+                 .format(cut.countFailed(), cut.countBuilds()))
+        exit(1)
+
 elif (cmd == "build"):
     requireModuleDefinition(cmdargs)
 
