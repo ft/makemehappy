@@ -82,6 +82,59 @@ This may be useful in conjunction with passing through cmake arguments:
   mmh -d ci -- -DFOOBAR=something-else
 
 In order to *optionally* run different variants of a build.
+** TODO In extension generation, an implementing module should be optional
+It is possible that extensions rely on a certain way to use a CMake built-in
+facility without requiring an additional module to be included. The include
+step should therefore be optional.
+** TODO Allow extensions to use add_subdirectory
+We might want to be able to do something along the lines of this:
+
+cmake-extensions:
+  some-board-definition-module:
+   include: add_subdirectory(deps/some-board-definition-module/${cmake[TARGET_BOARD]})
+
+To generate this:
+
+   add_subdirectory(deps/some-board-definition-module/${TARGET_BOARD})
+
+This allows using collections of modules in a meta-module. There are certainly
+other ways to achieve something similar, but this is easily done, so we should
+allow for it.
+** TODO Add a separate initialisation clause for cmake extensions
+Some modules may need a separate initialisation step that extends whatever the
+inclusion step does.
+
+mymod:
+  include: add_libtap(${moduleroot})
+  init: init_my_module()
+  module: MyModSupport
+
+This will be more powerful with generation-waypoints in places. See below.
+** TODO Introduce waypoints that for extension generation
+With third party extensions you get a way of replacing add_subdirectory() calls
+with arbitrary cmake functions or macros. The generation of that looks like
+this:
+
+   include(ModuleThatImplementsExtension)
+   add_thisextension(deps/thisextension)
+
+If you need to push the generation of ~add_thisextension()~ pack until
+something else has happened, however, there is currently no way to achieve
+that. With way points, it would be possible to make ~add_thisextension()~
+create a ~pre-inclusion~ waypoint and any extensions registered to it, would
+generate their code before this waypoint. The possible waypoint variants should
+be this:
+
+- pre-module
+- post-module
+- pre-inclusion
+- post-inclusion
+- pre-initialisation
+- post-initialisation
+
+This is more complex of a problem, especially with module interdependencies to
+be considered. Some third-party modules, that border upon having circular
+dependencies can't really be used without something like this.
 * Wishlist
 ** DONE Forget "tools" — check all dependencies into "deps"
 ** TODO Zsh completion would be nice
