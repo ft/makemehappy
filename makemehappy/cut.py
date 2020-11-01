@@ -359,6 +359,46 @@ def isSatisfied(deps, done, name):
             return False
     return True
 
+def outputMMHYAML(version, fn, data, args):
+    if (data == None):
+        data = {}
+    data.pop('definition', None)
+    data.pop('root', None)
+    data['version'] = version
+    data['parameters'] = {}
+    if (args.architectures != None):
+        data['parameters']['architectures'] = args.architectures
+    if (args.buildconfigs != None):
+        data['parameters']['buildconfigs'] = args.buildconfigs
+    if (args.buildtools != None):
+        data['parameters']['buildtools'] = args.buildtools
+    if (args.interfaces != None):
+        data['parameters']['interfaces'] = args.interfaces
+    if (args.toolchains != None):
+        data['parameters']['toolchains'] = args.toolchains
+    if (args.cmake != None):
+        data['parameters']['cmake'] = args.cmake
+    if not data['parameters']:
+        data.pop('parameters', None)
+    mmh.dump(fn, data)
+
+def updateMMHYAML(log, root, version, args):
+    fn = os.path.join(root, 'MakeMeHappy.yaml')
+    data = None
+
+    if (os.path.exists(fn)):
+        data = mmh.load(fn)
+
+    if (not mmh.matchingVersion(version, data)):
+        log.info('Creating instance config: {}'.format(fn))
+        outputMMHYAML(version, fn, data, args)
+        return
+
+    if (not mmh.noArguments(args)):
+        log.info('Updating instance config: {}'.format(fn))
+        outputMMHYAML(version, fn, data, args)
+        return
+
 class CodeUnderTest:
     def __init__(self, log, cfg, args, sources, module):
         self.stats = ExecutionStatistics(cfg, log)
@@ -403,11 +443,13 @@ class CodeUnderTest:
         self.log.info("Loading source definitions...")
         self.sources.load()
 
-    def initRoot(self, d):
+    def initRoot(self, version, args):
         self.root = BuildRoot(log = self.log,
                               seed = yaml.dump(self.moduleData),
                               modName = self.name(),
-                              dirName = d)
+                              dirName = args.directory)
+        if (args.fromyaml == False):
+            updateMMHYAML(self.log, self.root.root, version, args)
 
     def populateRoot(self):
         self.root.populate()

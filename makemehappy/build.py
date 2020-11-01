@@ -85,6 +85,12 @@ def findToolchain(ext, tc):
     raise(Exception())
 
 def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
+    cmakeArgs = None
+    if (args.cmake == None):
+        cmakeArgs = []
+    else:
+        cmakeArgs = args.cmake
+
     cmd = ['cmake',
            '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
            '-DCMAKE_TOOLCHAIN_FILE={}'.format(
@@ -92,7 +98,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
            '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
            '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
            '-DINTERFACE_TARGET={}'.format(instance['interface'])
-           ] + args.cmake + [root]
+           ] + cmakeArgs + [root]
     rc = mmh.loggedProcess(cfg, log, cmd)
     stats.logConfigure(rc)
     return (rc == 0)

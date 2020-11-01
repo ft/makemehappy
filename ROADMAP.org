@@ -42,7 +42,7 @@ forward code.
 If the module.yaml file defines 40 or 50 possible combinations of toolchains,
 build configurations, tools and the like, it would be useful to pick from
 those.
-** TODO Record initial command line args in buildroot/makemehappy.yaml
+** DONE Record initial command line args in buildroot/makemehappy.yaml
 That way you can set up a complex run once and never have to do that in later
 runs again. Add another command to reset/replace previously recorded command
 line arguments.

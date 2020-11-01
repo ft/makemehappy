@@ -55,6 +55,21 @@ def lookupCommand(cmds):
 
     return False
 
+def matchingVersion(version, data):
+    if (data == None):
+        return False
+    if (not 'version' in data):
+        return False
+    return (data['version'] == version)
+
+def noParameters(args):
+    return (args.architectures == None and
+            args.buildconfigs  == None and
+            args.buildtools    == None and
+            args.interfaces    == None and
+            args.toolchains    == None and
+            args.cmake         == None)
+
 def load(file):
     (root,fn) = os.path.split(os.path.realpath(file))
     with open(file) as fh:
@@ -64,6 +79,10 @@ def load(file):
         data['root'] = root
         data['definition'] = fn
         return data
+
+def dump(fn, data):
+    with open(fn, 'w') as fh:
+        yaml.dump(data, fh)
 
 xppx = pprint.PrettyPrinter(indent = 4)
 
