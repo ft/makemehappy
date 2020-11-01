@@ -125,7 +125,6 @@ def cleanInstance(log, d):
     log.info('Cleaning up {}'.format(d))
     for f in os.listdir(d):
         path = os.path.join(d, f)
-        log.debug('  Removing {}'.format(path))
         try:
             if os.path.isdir(path):
                 shutil.rmtree(path)
