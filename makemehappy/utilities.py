@@ -37,6 +37,7 @@ mmhCommands = {
     'dump-description': { 'aliases': [ "dump" ] },
     'fetch-dependencies': { 'aliases': [ 'fetch', 'deps' ] },
     'generate-toplevel': { 'aliases': [ 'top' ] },
+    'reset-setup': { 'aliases': [ 'reset' ] },
     'run-instance': { 'aliases': [ 'run' ] },
     'show-source': { 'aliases': [ 'source' ] }
 }

@@ -170,8 +170,9 @@ if cmdargs.interfaces is not None:
 
 cmdargs.cmake = cmakeParameters
 
+cmd = mmh.lookupCommand(cmdargs.rest)
 cmdargs.fromyaml = False
-if (cmdargs.directory != None and mmh.noParameters(cmdargs)):
+if (cmd != 'reset-setup' and cmdargs.directory != None and mmh.noParameters(cmdargs)):
     fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
     if (os.path.exists(fn)):
         data = mmh.load(fn)
@@ -204,8 +205,6 @@ def adjustConfig(cfg, args):
         adjustments = adjustments + 1
     if adjustments > 0:
         cfg.pushLayer(layer)
-
-cmd = mmh.lookupCommand(cmdargs.rest)
 
 if (len(cmdargs.rest) == 0):
     cmd = 'build'
@@ -260,6 +259,15 @@ elif (cmd == "generate-toplevel"):
     cut.loadDependencies()
     cut.changeToRoot()
     cut.generateToplevel()
+
+elif (cmd == "reset-setup"):
+    if (cmdargs.directory == None):
+        print("reset-argument only works with -d!")
+        exit(1)
+
+    fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
+    data = { 'version': version }
+    mmh.dump(fn, data)
 
 elif (cmd == "run-instance"):
     requireModuleDefinition(cmdargs)
