@@ -47,7 +47,8 @@ class Toplevel:
         if (name in tp):
             inc = tp[name]['include']
             if (isinstance(inc, str)):
-                print("include({})".format(tp[name]['module']), file = fh)
+                if ('module' in tp[name]):
+                    print("include({})".format(tp[name]['module']), file = fh)
                 print(self.expandIncludeTemplate(inc, name), file = fh)
         else:
             print("add_subdirectory(deps/{})".format(name), file = fh)

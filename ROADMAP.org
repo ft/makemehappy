@@ -82,11 +82,11 @@ This may be useful in conjunction with passing through cmake arguments:
   mmh -d ci -- -DFOOBAR=something-else
 
 In order to *optionally* run different variants of a build.
-** TODO In extension generation, an implementing module should be optional
+** DONE In extension generation, an implementing module should be optional
 It is possible that extensions rely on a certain way to use a CMake built-in
 facility without requiring an additional module to be included. The include
 step should therefore be optional.
-** TODO Allow extensions to use add_subdirectory
+** DONE Allow extensions to use add_subdirectory
 We might want to be able to do something along the lines of this:
 
 cmake-extensions:
