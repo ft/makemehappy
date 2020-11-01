@@ -91,7 +91,7 @@ We might want to be able to do something along the lines of this:
 
 cmake-extensions:
   some-board-definition-module:
-   include: add_subdirectory(deps/some-board-definition-module/${cmake[TARGET_BOARD]})
+   include: add_subdirectory(deps/${moduleroot}/${cmake('TARGET_BOARD')})
 
 To generate this:
 

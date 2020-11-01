@@ -4,6 +4,9 @@ defaultCMakeVersion = "3.1.0"
 defaultProjectName = "MakeMeHappy"
 defaultLanguages = "C CXX ASM"
 
+def cmakeVariable(name):
+    return '${' + name + '}'
+
 class Toplevel:
     def __init__(self, log, var, defaults, thirdParty, modulePath, trace, deporder):
         self.log = log
@@ -30,7 +33,8 @@ class Toplevel:
 
     def expandIncludeTemplate(self, inc, name):
         moduleroot = 'deps/{}'.format(name)
-        exp = mako.Template(inc).render(moduleroot = moduleroot)
+        exp = mako.Template(inc).render(moduleroot = moduleroot,
+                                        cmake = cmakeVariable)
         if exp == inc:
             new = inc + '(${moduleroot})'
             self.log.warn(
