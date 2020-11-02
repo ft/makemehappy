@@ -29,7 +29,7 @@ def extendPath(root, lst, datum):
     elif (isinstance(datum, list)):
         lst.extend(new)
     else:
-        raise(InvalidPathExtension(root, lst, datum)
+        raise(InvalidPathExtension(root, lst, datum))
 
 def addExtension(mods, idx, entry, name):
     if (idx in entry):
@@ -179,7 +179,7 @@ def endoftime(datum):
         else:
             return datum['time-stamp']
     else:
-        raise(InvalidTimeStampKind(datum['type'])
+        raise(InvalidTimeStampKind(datum['type']))
 
 def renderTimedelta(d):
     minperday = 24 * 60
