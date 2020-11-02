@@ -1,4 +1,5 @@
 import mako.template as mako
+import re
 
 defaultCMakeVersion = "3.1.0"
 defaultProjectName = "MakeMeHappy"
@@ -6,6 +7,9 @@ defaultLanguages = "C CXX ASM"
 
 def cmakeVariable(name):
     return '${' + name + '}'
+
+def deprecatedTemplate(inc):
+    return re.match('^[0-9a-z_]+$', inc) != None
 
 class Toplevel:
     def __init__(self, log, var, defaults, thirdParty, modulePath, trace, deporder):
@@ -33,14 +37,15 @@ class Toplevel:
 
     def expandIncludeTemplate(self, inc, name):
         moduleroot = 'deps/{}'.format(name)
-        exp = mako.Template(inc).render(moduleroot = moduleroot,
-                                        cmake = cmakeVariable)
-        if exp == inc:
+        if deprecatedTemplate(inc):
             new = inc + '(${moduleroot})'
             self.log.warn(
                 'Deprecated inclusion clause: "{}", use "{}" instead!'
                 .format(inc, new))
-            return self.expandIncludeTemplate(new, name)
+            inc = new
+        exp = mako.Template(inc).render(
+            moduleroot = moduleroot,
+            cmake = cmakeVariable)
         return exp
 
     def insertInclude(self, fh, name, tp):
@@ -52,6 +57,12 @@ class Toplevel:
                 print(self.expandIncludeTemplate(inc, name), file = fh)
         else:
             print("add_subdirectory(deps/{})".format(name), file = fh)
+
+    def insertInit(self, fh, name, tp):
+        if (name in tp):
+            inc = tp[name]['init']
+            if (isinstance(inc, str)):
+                print(self.expandIncludeTemplate(inc, name), file = fh)
 
     def generateVariables(self, fh, variables):
         for key in variables.keys():
@@ -66,6 +77,8 @@ class Toplevel:
     def generateDependencies(self, fh, deps, thirdParty):
         for item in deps:
             self.insertInclude(fh, item, thirdParty)
+        for item in deps:
+            self.insertInit(fh, item, thirdParty)
 
     def generateFooter(self, fh):
         print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",

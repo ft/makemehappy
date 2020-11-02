@@ -100,7 +100,7 @@ To generate this:
 This allows using collections of modules in a meta-module. There are certainly
 other ways to achieve something similar, but this is easily done, so we should
 allow for it.
-** TODO Add a separate initialisation clause for cmake extensions
+** DONE Add a separate initialisation clause for cmake extensions
 Some modules may need a separate initialisation step that extends whatever the
 inclusion step does.
 
@@ -109,7 +109,7 @@ mymod:
   init: init_my_module()
   module: MyModSupport
 
-This will be more powerful with generation-waypoints in places. See below.
+This will be more powerful with generation-waypoints in place. See below.
 ** TODO Introduce waypoints that for extension generation
 With third party extensions you get a way of replacing add_subdirectory() calls
 with arbitrary cmake functions or macros. The generation of that looks like
