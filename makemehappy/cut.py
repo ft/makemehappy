@@ -407,6 +407,9 @@ def updateMMHYAML(log, root, version, args):
         outputMMHYAML(version, fn, data, args)
         return
 
+class CircularDependency(Exception):
+    pass
+
 class CodeUnderTest:
     def __init__(self, log, cfg, args, sources, module):
         self.stats = ExecutionStatistics(cfg, log)
@@ -496,7 +499,7 @@ class CodeUnderTest:
             if (newdone == lastdone):
                 # Couldn't take a single item off of the rest in the last
                 # iteration. That means that dependencies can't be satisfied.
-                raise Exception()
+                raise(CircularDependency(done, deps))
         return rv
 
     def loadDependencies(self):
