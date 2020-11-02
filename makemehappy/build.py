@@ -75,14 +75,17 @@ def cmakeBuildtool(name):
         return 'Ninja'
     return 'Unknown Buildtool'
 
+class UnknownToolchain(Exception):
+    pass
+
 def findToolchain(ext, tc):
     tcp = ext.toolchainPath()
-    ext = '.cmake'
+    extension = '.cmake'
     for d in tcp:
-        candidate = os.path.join(d, tc + ext)
+        candidate = os.path.join(d, tc + extension)
         if (os.path.exists(candidate)):
             return candidate
-    raise(Exception())
+    raise(UnknownToolchain(tcp, tc))
 
 def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     cmakeArgs = None
