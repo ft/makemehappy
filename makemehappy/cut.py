@@ -119,15 +119,14 @@ def fetch(cfg, log, src, st, trace):
         p = os.path.join('deps', dep['name'])
         newmod = os.path.join(p, 'module.yaml')
         if (os.path.exists(p)):
-            log.info("Module directory exists. Skipping clone.")
+            log.info("Module directory exists. Skipping initialisation.")
         else:
             mmh.loggedProcess(cfg, log, ['git', 'clone', source, p])
-
-        # Check out the requested revision
-        olddir = os.getcwd()
-        os.chdir(p)
-        mmh.loggedProcess(cfg, log, ['git', 'checkout', dep['revision']])
-        os.chdir(olddir)
+            # Check out the requested revision
+            olddir = os.getcwd()
+            os.chdir(p)
+            mmh.loggedProcess(cfg, log, ['git', 'checkout', dep['revision']])
+            os.chdir(olddir)
 
         newmodata = None
         if (os.path.isfile(newmod)):
