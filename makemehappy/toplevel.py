@@ -59,10 +59,10 @@ class Toplevel:
             print("add_subdirectory(deps/{})".format(name), file = fh)
 
     def insertInit(self, fh, name, tp):
-        if (name in tp):
-            inc = tp[name]['init']
-            if (isinstance(inc, str)):
-                print(self.expandIncludeTemplate(inc, name), file = fh)
+        if (name in tp and 'init' in tp[name]):
+            init = tp[name]['init']
+            if (isinstance(init, str)):
+                print(self.expandIncludeTemplate(init, name), file = fh)
 
     def generateVariables(self, fh, variables):
         for key in variables.keys():
