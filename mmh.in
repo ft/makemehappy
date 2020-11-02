@@ -282,8 +282,8 @@ elif (cmd == "run-instance"):
                   buildtools    = cmdargs.buildtools,
                   interfaces    = cmdargs.interfaces)
     cut.loadSources()
-    cut.loadDependencies()
     cut.changeToRoot()
+    cut.loadDependencies()
     cut.build()
 
     cut.renderStatistics()
