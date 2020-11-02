@@ -150,6 +150,10 @@ cmake-extension-variants:
     - mymod-c
   # Also, maybe via pattern:
   mymod: ^mymod-.*$
+** TODO Allow source types other than git; symlinks especially
+Allowing symlinks gives users the ability to inject ongoing development of
+modules into the dependency chain of other modules, making it possible to
+develop modules side by side.
 * Wishlist
 ** DONE Forget "tools" — check all dependencies into "deps"
 ** TODO Zsh completion would be nice
