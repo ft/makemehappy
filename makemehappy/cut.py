@@ -162,6 +162,9 @@ def buildFailed(data):
             stepFailed(data, 'build-result') or
             stepFailed(data, 'testsuite-result'))
 
+class InvalidTimeStampKind(Exception):
+    pass
+
 def endoftime(datum):
     t = datum['type']
     if t == 'build':
@@ -176,7 +179,7 @@ def endoftime(datum):
         else:
             return datum['time-stamp']
     else:
-        raise Exception
+        raise(InvalidTimeStampKind(datum['type'])
 
 def renderTimedelta(d):
     minperday = 24 * 60
@@ -192,6 +195,9 @@ def maybeInfo(c, l, text):
         l.info(text)
     else:
         print(text)
+
+class InvalidStepKind(Exception):
+    pass
 
 class ExecutionStatistics:
     # The statistics log is a list of dictionaries.
@@ -278,7 +284,7 @@ class ExecutionStatistics:
                 time = renderTimedelta(datum['testsuite-stamp'] -
                                        datum['build-stamp'])
             else:
-                raise Exception
+                raise(InvalidStepKind(prefix))
 
         if not((prefix + '-result') in datum):
             result = '---'
