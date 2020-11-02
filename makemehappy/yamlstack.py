@@ -6,7 +6,7 @@ class YamlStack:
     def __init__(self, log, desc, *lst):
         self.log = log
         self.desc = desc
-        self.files = lst
+        self.files = list(lst)
         self.data = False
 
     def pushLayer(self, layer):
