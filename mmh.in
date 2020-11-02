@@ -256,8 +256,8 @@ elif (cmd == "generate-toplevel"):
                   buildtools    = cmdargs.buildtools,
                   interfaces    = cmdargs.interfaces)
     cut.loadSources()
-    cut.loadDependencies()
     cut.changeToRoot()
+    cut.loadDependencies()
     cut.generateToplevel()
 
 elif (cmd == "reset-setup"):
