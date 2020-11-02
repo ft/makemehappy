@@ -70,7 +70,7 @@ class Toplevel:
 
     def generateDefaults(self, fh, defaults):
         for key in defaults.keys():
-            print('if (NOT {})'.format(key), file = fh)
+            print('if (NOT DEFINED {})'.format(key), file = fh)
             print('  set({} "{}")'.format(key, defaults[key]), file = fh)
             print('endif()', file = fh)
 
