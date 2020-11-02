@@ -19,6 +19,9 @@ def has(key, dic, t):
         return False
     return True
 
+class InvalidPathExtension(Exception):
+    pass
+
 def extendPath(root, lst, datum):
     new = os.path.join(root, datum)
     if (isinstance(datum, str)):
@@ -26,7 +29,7 @@ def extendPath(root, lst, datum):
     elif (isinstance(datum, list)):
         lst.extend(new)
     else:
-        raise(Exception())
+        raise(InvalidPathExtension(root, lst, datum)
 
 def addExtension(mods, idx, entry, name):
     if (idx in entry):
