@@ -17,9 +17,11 @@ def lookupVariant(table, name):
             regex = table[key]
             if (re.match(regex, name) != None):
                 return key
-        if (isinstance(table[key], list)):
+        elif (isinstance(table[key], list)):
             if (name in table[key]):
                 return key
+        else:
+            raise(Exception)
     return name
 
 class Toplevel:
