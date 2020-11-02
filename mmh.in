@@ -148,7 +148,7 @@ for item in cmdargs.source:
     if (os.path.isfile(item) == False):
         mmh.warn("Source definition does not exist: {}".format(item))
         exit(1)
-    src.push(cmdargs.source)
+    src.push(item)
 
 if cmdargs.log_to_file:
     cmdargs.log_all = True
