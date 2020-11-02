@@ -24,7 +24,7 @@ def lookupVariant(table, name):
             if (name in table[key]):
                 return key
         else:
-            raise(InvalidVariant(name, key, table[key])
+            raise(InvalidVariant(name, key, table[key]))
     return name
 
 class Toplevel:
