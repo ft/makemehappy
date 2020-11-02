@@ -90,6 +90,16 @@ class Toplevel:
             if (isinstance(init, str)):
                 print(self.expandIncludeTemplate(init, realname), file = fh)
 
+    def insertBasic(self, fh, name, tp):
+        realname = name
+        if (not name in tp):
+            name = lookupVariant(variants, name)
+
+        if (name in tp and 'basic' in tp[name]):
+            init = tp[name]['basic']
+            if (isinstance(init, str)):
+                print(self.expandIncludeTemplate(init, realname), file = fh)
+
     def generateVariables(self, fh, variables):
         for key in variables.keys():
             print('set({} "{}")'.format(key, variables[key]), file = fh)
@@ -101,6 +111,8 @@ class Toplevel:
             print('endif()', file = fh)
 
     def generateDependencies(self, fh, deps, thirdParty, variants):
+        for item in deps:
+           self.insertBasic(fh, item, thirdParty, variants)
         for item in deps:
             self.insertInclude(fh, item, thirdParty, variants)
         for item in deps:
