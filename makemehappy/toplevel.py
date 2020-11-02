@@ -11,6 +11,9 @@ def cmakeVariable(name):
 def deprecatedTemplate(inc):
     return re.match('^[0-9a-z_]+$', inc) != None
 
+class InvalidVariant(Exception):
+    pass
+
 def lookupVariant(table, name):
     for key in table:
         if (isinstance(table[key], str)):
@@ -21,7 +24,7 @@ def lookupVariant(table, name):
             if (name in table[key]):
                 return key
         else:
-            raise(Exception)
+            raise(InvalidVariant(name, key, table[key])
     return name
 
 class Toplevel:
