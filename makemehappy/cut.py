@@ -512,6 +512,7 @@ class CodeUnderTest:
                                  self.variables(),
                                  self.defaults(),
                                  self.cmake3rdParty(),
+                                 self.cmakeVariants(),
                                  self.extensions.modulePath(),
                                  self.deptrace,
                                  self.deporder)
@@ -523,6 +524,11 @@ class CodeUnderTest:
     def cmake3rdParty(self):
         if (has('cmake-extensions', self.moduleData, dict)):
             return self.moduleData['cmake-extensions']
+        return {}
+
+    def cmakeVariants(self):
+        if (has('cmake-extension-variants', self.moduleData, dict)):
+            return self.moduleData['cmake-extension-variants']
         return {}
 
     def defaults(self):

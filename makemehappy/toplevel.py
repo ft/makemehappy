@@ -11,10 +11,23 @@ def cmakeVariable(name):
 def deprecatedTemplate(inc):
     return re.match('^[0-9a-z_]+$', inc) != None
 
+def lookupVariant(table, name):
+    for key in table:
+        if (isinstance(table[key], str)):
+            regex = table[key]
+            if (re.match(regex, name) != None):
+                return key
+        if (isinstance(table[key], list)):
+            if (name in table[key]):
+                return key
+    return name
+
 class Toplevel:
-    def __init__(self, log, var, defaults, thirdParty, modulePath, trace, deporder):
+    def __init__(self, log, var, defaults, thirdParty, cmakeVariants,
+                 modulePath, trace, deporder):
         self.log = log
         self.thirdParty = thirdParty
+        self.cmakeVariants = cmakeVariants
         self.trace = trace
         self.modulePath = modulePath
         self.deporder = deporder
@@ -48,21 +61,29 @@ class Toplevel:
             cmake = cmakeVariable)
         return exp
 
-    def insertInclude(self, fh, name, tp):
+    def insertInclude(self, fh, name, tp, variants):
+        realname = name
+        if (not name in tp):
+            name = lookupVariant(variants, name)
+
         if (name in tp):
             inc = tp[name]['include']
             if (isinstance(inc, str)):
                 if ('module' in tp[name]):
                     print("include({})".format(tp[name]['module']), file = fh)
-                print(self.expandIncludeTemplate(inc, name), file = fh)
+                print(self.expandIncludeTemplate(inc, realname), file = fh)
         else:
             print("add_subdirectory(deps/{})".format(name), file = fh)
 
-    def insertInit(self, fh, name, tp):
+    def insertInit(self, fh, name, tp, variants):
+        realname = name
+        if (not name in tp):
+            name = lookupVariant(variants, name)
+
         if (name in tp and 'init' in tp[name]):
             init = tp[name]['init']
             if (isinstance(init, str)):
-                print(self.expandIncludeTemplate(init, name), file = fh)
+                print(self.expandIncludeTemplate(init, realname), file = fh)
 
     def generateVariables(self, fh, variables):
         for key in variables.keys():
@@ -74,11 +95,11 @@ class Toplevel:
             print('  set({} "{}")'.format(key, defaults[key]), file = fh)
             print('endif()', file = fh)
 
-    def generateDependencies(self, fh, deps, thirdParty):
+    def generateDependencies(self, fh, deps, thirdParty, variants):
         for item in deps:
-            self.insertInclude(fh, item, thirdParty)
+            self.insertInclude(fh, item, thirdParty, variants)
         for item in deps:
-            self.insertInit(fh, item, thirdParty)
+            self.insertInit(fh, item, thirdParty, variants)
 
     def generateFooter(self, fh):
         print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",
@@ -95,6 +116,11 @@ class Toplevel:
                 if ('cmake-extensions' in entry):
                     tp = { **tp, **entry['cmake-extensions'] }
             tp = { **tp, **self.thirdParty }
+            variants = {}
+            for entry in self.trace.data:
+                if ('cmake-extension-variants' in entry):
+                    variants = { **variants, **entry['cmake-extension-variants'] }
+            variants = { **variants, **self.cmakeVariants }
             var = {}
             for entry in self.trace.data:
                 if ('variables' in entry):
@@ -107,5 +133,5 @@ class Toplevel:
                     var = { **var, **entry['defaults'] }
             var = { **var, **self.defaults }
             self.generateDefaults(fh, var)
-            self.generateDependencies(fh, self.deporder, tp)
+            self.generateDependencies(fh, self.deporder, tp, variants)
             self.generateFooter(fh)

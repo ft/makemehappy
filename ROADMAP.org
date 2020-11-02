@@ -135,7 +135,7 @@ be this:
 This is more complex of a problem, especially with module interdependencies to
 be considered. Some third-party modules, that border upon having circular
 dependencies can't really be used without something like this.
-** TODO Make it possible for an extension to be used by more than one module
+** DONE Make it possible for an extension to be used by more than one module
 cmake-extensions:
   mymod:
     include: add_libtap(${moduleroot})
@@ -149,7 +149,7 @@ cmake-extension-variants:
     - mymod-b
     - mymod-c
   # Also, maybe via pattern:
-  mymod: mymod-*
+  mymod: ^mymod-.*$
 * Wishlist
 ** DONE Forget "tools" — check all dependencies into "deps"
 ** TODO Zsh completion would be nice
