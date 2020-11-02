@@ -66,39 +66,21 @@ class Toplevel:
             cmake = cmakeVariable)
         return exp
 
-    def insertInclude(self, fh, name, tp, variants):
+    def insertTemplate(self, fh, name, tp, variants, section, default = None):
         realname = name
         if (not name in tp):
             name = lookupVariant(variants, name)
 
-        if (name in tp):
-            inc = tp[name]['include']
-            if (isinstance(inc, str)):
-                if ('module' in tp[name]):
-                    print("include({})".format(tp[name]['module']), file = fh)
-                print(self.expandIncludeTemplate(inc, realname), file = fh)
+        if (name in tp and section in tp[name]):
+            tmpl = tp[name][section]
+            if ('module' in tp[name] and (not 'included' in tp[name])):
+                tp[name]['included'] = True
+                print("include({})".format(tp[name]['module']), file = fh)
+            if (isinstance(tmpl, str)):
+                print(self.expandIncludeTemplate(tmpl, realname), file = fh)
         else:
-            print("add_subdirectory(deps/{})".format(name), file = fh)
-
-    def insertInit(self, fh, name, tp, variants):
-        realname = name
-        if (not name in tp):
-            name = lookupVariant(variants, name)
-
-        if (name in tp and 'init' in tp[name]):
-            init = tp[name]['init']
-            if (isinstance(init, str)):
-                print(self.expandIncludeTemplate(init, realname), file = fh)
-
-    def insertBasic(self, fh, name, tp):
-        realname = name
-        if (not name in tp):
-            name = lookupVariant(variants, name)
-
-        if (name in tp and 'basic' in tp[name]):
-            init = tp[name]['basic']
-            if (isinstance(init, str)):
-                print(self.expandIncludeTemplate(init, realname), file = fh)
+            if (default != None):
+                default(name)
 
     def generateVariables(self, fh, variables):
         for key in variables.keys():
@@ -112,11 +94,14 @@ class Toplevel:
 
     def generateDependencies(self, fh, deps, thirdParty, variants):
         for item in deps:
-           self.insertBasic(fh, item, thirdParty, variants)
+            self.insertTemplate(fh, item, thirdParty, variants, 'basic')
         for item in deps:
-            self.insertInclude(fh, item, thirdParty, variants)
+            self.insertTemplate(fh, item, thirdParty, variants, 'include',
+                                lambda name:
+                                print("add_subdirectory(deps/{})".format(name),
+                                      file = fh))
         for item in deps:
-            self.insertInit(fh, item, thirdParty, variants)
+            self.insertTemplate(fh, item, thirdParty, variants, 'init')
 
     def generateFooter(self, fh):
         print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",
