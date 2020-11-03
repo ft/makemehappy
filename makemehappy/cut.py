@@ -402,7 +402,7 @@ def updateMMHYAML(log, root, version, args):
         outputMMHYAML(version, fn, data, args)
         return
 
-    if (not mmh.noArguments(args)):
+    if (not mmh.noParameters(args)):
         log.info('Updating instance config: {}'.format(fn))
         outputMMHYAML(version, fn, data, args)
         return
