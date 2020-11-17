@@ -1,3 +1,9 @@
+makemehappy (0.7-1) unstable; urgency=medium
+
+  * [79c002d7] New Upstream Release.
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Tue, 17 Nov 2020 01:02:56 +0100
+
 makemehappy (0.6-2) unstable; urgency=medium
 
   * [d14a06fe] Use debhelper-compat package to define compatibility level
