@@ -19,6 +19,9 @@ def has(key, dic, t):
         return False
     return True
 
+class InvalidPathExtension(Exception):
+    pass
+
 def extendPath(root, lst, datum):
     new = os.path.join(root, datum)
     if (isinstance(datum, str)):
@@ -26,7 +29,7 @@ def extendPath(root, lst, datum):
     elif (isinstance(datum, list)):
         lst.extend(new)
     else:
-        raise(Exception())
+        raise(InvalidPathExtension(root, lst, datum))
 
 def addExtension(mods, idx, entry, name):
     if (idx in entry):
@@ -118,13 +121,15 @@ def fetch(cfg, log, src, st, trace):
 
         p = os.path.join('deps', dep['name'])
         newmod = os.path.join(p, 'module.yaml')
-        mmh.loggedProcess(cfg, log, ['git', 'clone', source, p])
-
-        # Check out the requested revision
-        olddir = os.getcwd()
-        os.chdir(p)
-        mmh.loggedProcess(cfg, log, ['git', 'checkout', dep['revision']])
-        os.chdir(olddir)
+        if (os.path.exists(p)):
+            log.info("Module directory exists. Skipping initialisation.")
+        else:
+            mmh.loggedProcess(cfg, log, ['git', 'clone', source, p])
+            # Check out the requested revision
+            olddir = os.getcwd()
+            os.chdir(p)
+            mmh.loggedProcess(cfg, log, ['git', 'checkout', dep['revision']])
+            os.chdir(olddir)
 
         newmodata = None
         if (os.path.isfile(newmod)):
@@ -157,6 +162,9 @@ def buildFailed(data):
             stepFailed(data, 'build-result') or
             stepFailed(data, 'testsuite-result'))
 
+class InvalidTimeStampKind(Exception):
+    pass
+
 def endoftime(datum):
     t = datum['type']
     if t == 'build':
@@ -171,7 +179,7 @@ def endoftime(datum):
         else:
             return datum['time-stamp']
     else:
-        raise Exception
+        raise(InvalidTimeStampKind(datum['type']))
 
 def renderTimedelta(d):
     minperday = 24 * 60
@@ -187,6 +195,9 @@ def maybeInfo(c, l, text):
         l.info(text)
     else:
         print(text)
+
+class InvalidStepKind(Exception):
+    pass
 
 class ExecutionStatistics:
     # The statistics log is a list of dictionaries.
@@ -273,7 +284,7 @@ class ExecutionStatistics:
                 time = renderTimedelta(datum['testsuite-stamp'] -
                                        datum['build-stamp'])
             else:
-                raise Exception
+                raise(InvalidStepKind(prefix))
 
         if not((prefix + '-result') in datum):
             result = '---'
@@ -356,12 +367,56 @@ def isSatisfied(deps, done, name):
             return False
     return True
 
+def outputMMHYAML(version, fn, data, args):
+    if (data == None):
+        data = {}
+    data.pop('definition', None)
+    data.pop('root', None)
+    data['version'] = version
+    data['parameters'] = {}
+    if (args.architectures != None):
+        data['parameters']['architectures'] = args.architectures
+    if (args.buildconfigs != None):
+        data['parameters']['buildconfigs'] = args.buildconfigs
+    if (args.buildtools != None):
+        data['parameters']['buildtools'] = args.buildtools
+    if (args.interfaces != None):
+        data['parameters']['interfaces'] = args.interfaces
+    if (args.toolchains != None):
+        data['parameters']['toolchains'] = args.toolchains
+    if (args.cmake != None):
+        data['parameters']['cmake'] = args.cmake
+    if not data['parameters']:
+        data.pop('parameters', None)
+    mmh.dump(fn, data)
+
+def updateMMHYAML(log, root, version, args):
+    fn = os.path.join(root, 'MakeMeHappy.yaml')
+    data = None
+
+    if (os.path.exists(fn)):
+        data = mmh.load(fn)
+
+    if (not mmh.matchingVersion(version, data)):
+        log.info('Creating instance config: {}'.format(fn))
+        outputMMHYAML(version, fn, data, args)
+        return
+
+    if (not mmh.noParameters(args)):
+        log.info('Updating instance config: {}'.format(fn))
+        outputMMHYAML(version, fn, data, args)
+        return
+
+class CircularDependency(Exception):
+    pass
+
 class CodeUnderTest:
-    def __init__(self, log, cfg, sources, module):
+    def __init__(self, log, cfg, args, sources, module):
         self.stats = ExecutionStatistics(cfg, log)
         self.stats.checkpoint('module-initialisation')
         self.log = log
         self.cfg = cfg
+        self.args = args
         self.module = module
         self.sources = sources
         self.deporder = None
@@ -381,15 +436,31 @@ class CodeUnderTest:
         self.log.info("Loading module description: {}".format(self.module))
         self.moduleData = mmh.load(self.module)
 
+    def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools, interfaces):
+        if toolchains is not None:
+            self.moduleData['toolchains'] = []
+            for tc in toolchains:
+                self.moduleData['toolchains'].append(self.cfg.fetchToolchain(tc))
+        if architectures is not None:
+            self.moduleData['architectures'] = architectures
+        if buildconfigs is not None:
+            self.moduleData['buildconfigs'] = buildconfigs
+        if buildtools is not None:
+            self.moduleData['buildtools'] = buildtools
+        if interfaces is not None:
+            self.moduleData['interfaces'] = interfaces
+
     def loadSources(self):
         self.log.info("Loading source definitions...")
         self.sources.load()
 
-    def initRoot(self, d):
+    def initRoot(self, version, args):
         self.root = BuildRoot(log = self.log,
                               seed = yaml.dump(self.moduleData),
                               modName = self.name(),
-                              dirName = d)
+                              dirName = args.directory)
+        if (args.fromyaml == False):
+            updateMMHYAML(self.log, self.root.root, version, args)
 
     def populateRoot(self):
         self.root.populate()
@@ -428,7 +499,7 @@ class CodeUnderTest:
             if (newdone == lastdone):
                 # Couldn't take a single item off of the rest in the last
                 # iteration. That means that dependencies can't be satisfied.
-                raise Exception()
+                raise(CircularDependency(done, deps))
         return rv
 
     def loadDependencies(self):
@@ -450,7 +521,9 @@ class CodeUnderTest:
         self.stats.checkpoint('generate-toplevel')
         self.toplevel = Toplevel(self.log,
                                  self.variables(),
+                                 self.defaults(),
                                  self.cmake3rdParty(),
+                                 self.cmakeVariants(),
                                  self.extensions.modulePath(),
                                  self.deptrace,
                                  self.deporder)
@@ -462,6 +535,16 @@ class CodeUnderTest:
     def cmake3rdParty(self):
         if (has('cmake-extensions', self.moduleData, dict)):
             return self.moduleData['cmake-extensions']
+        return {}
+
+    def cmakeVariants(self):
+        if (has('cmake-extension-variants', self.moduleData, dict)):
+            return self.moduleData['cmake-extension-variants']
+        return {}
+
+    def defaults(self):
+        if (has('defaults', self.moduleData, dict)):
+            return self.moduleData['defaults']
         return {}
 
     def variables(self):

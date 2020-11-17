@@ -6,7 +6,7 @@ class YamlStack:
     def __init__(self, log, desc, *lst):
         self.log = log
         self.desc = desc
-        self.files = lst
+        self.files = list(lst)
         self.data = False
 
     def pushLayer(self, layer):
@@ -24,13 +24,43 @@ class YamlStack:
         self.data = list((self.fileload(x) for x in self.files
                           if os.path.isfile(x)))
 
+class NoSourceData(Exception):
+    pass
+
+class UnknownModule(Exception):
+    pass
+
 class SourceStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
 
+    def load(self):
+        super(SourceStack, self).load()
+        for slice in self.data:
+            if not('modules' in slice):
+                continue
+            for module in slice['modules']:
+                if (not ('type' in slice['modules'][module])):
+                    slice['modules'][module]['type'] = 'git'
+
+    def allSources(self):
+        rv = []
+        if (self.data == False):
+            raise(NoSourceData())
+
+        for slice in self.data:
+            if not('modules' in slice):
+                continue
+            for module in slice['modules']:
+                if (module in rv):
+                    continue
+                rv.append(module)
+
+        return rv
+
     def lookup(self, needle):
         if (self.data == False):
-            raise(Exception)
+            raise(NoSourceData())
 
         for slice in self.data:
             if not('modules' in slice):
@@ -38,7 +68,7 @@ class SourceStack(YamlStack):
             if (needle in slice['modules']):
                 return slice['modules'][needle]
 
-        raise(Exception)
+        raise(UnknownModule(needle))
 
 def queryItem(data, item):
         rv = []
@@ -58,19 +88,33 @@ def queryToolchain(data, item):
     rv.sort()
     return rv
 
+class NoSourceData(Exception):
+    pass
+
+class UnknownConfigItem(Exception):
+    pass
+
 class ConfigStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
 
     def lookup(self, needle):
         if (self.data == False):
-            raise(Exception)
+            raise(NoConfigData())
 
         for slice in self.data:
             if needle in slice:
                 return slice[needle]
 
-        raise Exception
+        raise(UnknownConfigItem(needle))
+
+    def fetchToolchain(self, name):
+        for layer in self.data:
+            if 'toolchains' in layer:
+                for tc in layer['toolchains']:
+                    if (tc['name'] == name):
+                        return tc
+        raise(UnknownConfigItem(name))
 
     def allToolchains(self):
         return queryToolchain(self.data, 'name')

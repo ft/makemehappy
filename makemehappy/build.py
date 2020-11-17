@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 
 import makemehappy.utilities as mmh
@@ -74,26 +75,34 @@ def cmakeBuildtool(name):
         return 'Ninja'
     return 'Unknown Buildtool'
 
+class UnknownToolchain(Exception):
+    pass
+
 def findToolchain(ext, tc):
     tcp = ext.toolchainPath()
-    ext = '.cmake'
+    extension = '.cmake'
     for d in tcp:
-        candidate = os.path.join(d, tc + ext)
+        candidate = os.path.join(d, tc + extension)
         if (os.path.exists(candidate)):
             return candidate
-    raise(Exception())
+    raise(UnknownToolchain(tcp, tc))
 
-def cmakeConfigure(cfg, log, stats, ext, root, instance):
-    rc = mmh.loggedProcess(
-        cfg, log,
-        ['cmake',
-         '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
-         '-DCMAKE_TOOLCHAIN_FILE={}'.format(
-             findToolchain(ext, instance['toolchain'])),
-         '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
-         '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
-         '-DINTERFACE_TARGET={}'.format(instance['interface']),
-         root])
+def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
+    cmakeArgs = None
+    if (args.cmake == None):
+        cmakeArgs = []
+    else:
+        cmakeArgs = args.cmake
+
+    cmd = ['cmake',
+           '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
+           '-DCMAKE_TOOLCHAIN_FILE={}'.format(
+               findToolchain(ext, instance['toolchain'])),
+           '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
+           '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
+           '-DINTERFACE_TARGET={}'.format(instance['interface'])
+           ] + cmakeArgs + [root]
+    rc = mmh.loggedProcess(cfg, log, cmd)
     stats.logConfigure(rc)
     return (rc == 0)
 
@@ -115,12 +124,28 @@ def cmakeTest(cfg, log, stats, instance):
         return (rc == 0)
     return True
 
-def build(cfg, log, stats, ext, root, instance):
+def cleanInstance(log, d):
+    log.info('Cleaning up {}'.format(d))
+    for f in os.listdir(d):
+        path = os.path.join(d, f)
+        try:
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.unlink(path)
+        except Exception as e:
+            log.error('Could not remove {}. Reason: {}'.format(path, e))
+
+def build(cfg, log, args, stats, ext, root, instance):
     dname = instanceDirectory(stats, instance)
     dnamefull = os.path.join(root, 'build', dname)
-    os.mkdir(dnamefull)
+    if (os.path.exists(dnamefull)):
+        log.info("Instance directory exists: {}".format(dnamefull))
+        cleanInstance(log, dnamefull)
+    else:
+        os.mkdir(dnamefull)
     os.chdir(dnamefull)
-    rc = cmakeConfigure(cfg, log, stats, ext, root, instance)
+    rc = cmakeConfigure(cfg, log, args, stats, ext, root, instance)
     if rc:
         rc = cmakeBuild(cfg, log, stats, instance)
         if rc:
@@ -135,4 +160,4 @@ def allofthem(cfg, log, mod, ext):
         log.info('    {}'.format(instanceName(instance)))
     for instance in instances:
         log.info('Building instance: {}'.format(instanceName(instance)))
-        build(cfg, log, mod.stats, ext, olddir, instance)
+        build(cfg, log, mod.args, mod.stats, ext, olddir, instance)

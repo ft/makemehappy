@@ -1,6 +1,51 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.6 → v0.7 (released 2020-11-17):
+
+** New Features
+
+- Support ‘--toolchains’, ‘--buildtools’, ‘--buildconfigs’, ‘--architectures’
+  and ‘--interfaces’.
+- Add ‘show-source’ command (alias: ‘source’).
+- Add ‘build-tree-init’ command (alias: ‘init’).
+- Add ‘fetch-dependencies’ command (aliases: ‘fetch’, ‘deps’).
+- Add ‘generate-toplevel’ command (alias: ‘top’).
+- Add ‘run-instance’ command (alias: ‘run’).
+- Add ‘reset-setup’ command (alias: ‘reset’).
+- Support rebuilding instances.
+- Support injecting CMake options into configuration call via command line.
+- Add a ‘defaults’ variant of ‘variables’ that only takes effect if a value is
+  not set yet when the top-level CMakefile executes.
+- Add a little bit of documentation.
+- Add ${cmake(CMAKE_VARIABLE_HERE)} to template expansions.
+- Add ‘basic’ and ‘init’ generation steps.
+- Add ‘cmake-extension-variants’ to use the same extension for multiple
+  modules.
+- Improved error reporting.
+
+** Bugfixes
+
+- Make some commands more resilient in case the build-directory is missing.
+- Don't try to re-clone dependencies that already exist in ‘deps’.
+- ‘module’ definitions in inclusion extensions are now optional.
+- Fix ‘--source’, which never worked.
+
+** Diffstat:
+
+  ROADMAP.org              | 120 +++++++++++++++++++++++++++++--
+  doc/Makefile             |  10 +--
+  doc/mmh.mdwn             | 112 +++++++++++++++++++++++++++--
+  makemehappy/build.py     |  63 +++++++++++-----
+  makemehappy/buildroot.py |  10 ++-
+  makemehappy/cut.py       | 111 +++++++++++++++++++++++++----
+  makemehappy/toplevel.py  |  85 ++++++++++++++++++----
+  makemehappy/utilities.py |  23 +++++-
+  makemehappy/yamlstack.py |  54 ++++++++++++--
+  mmh.in                   | 150 ++++++++++++++++++++++++++++++++++++---
+  10 files changed, 663 insertions(+), 75 deletions(-)
+
+
 * v0.5 → v0.6 (released 2020-10-27):
 
 ** Miscellaneous Changes

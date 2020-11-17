@@ -33,6 +33,18 @@ src = SourceStack(log, 'Source Definition',
                   '@@ETCDIR@@/sources.yaml',
                   '@@DATADIR@@/sources.yaml')
 
+cmakeParameters = None
+cmakeSeparator = None
+try:
+    cmakeSeparator = sys.argv.index('++')
+    if (cmakeSeparator == len(sys.argv)):
+        cmakeParameters = []
+    else:
+        cmakeParameters = sys.argv[cmakeSeparator+1:]
+    sys.argv = sys.argv[0:cmakeSeparator]
+except ValueError:
+    cmakeParameters = None
+
 ap = argparse.ArgumentParser()
 
 ap.add_argument("-d", "--directory",
@@ -101,7 +113,7 @@ cmdargs = ap.parse_args()
 
 if cmdargs.query is not None:
     cfg.load()
-    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     if (os.path.isfile(cmdargs.module) == True):
         cut.loadModule()
     q = cmdargs.query
@@ -136,7 +148,7 @@ for item in cmdargs.source:
     if (os.path.isfile(item) == False):
         mmh.warn("Source definition does not exist: {}".format(item))
         exit(1)
-    src.push(cmdargs.source)
+    src.push(item)
 
 if cmdargs.log_to_file:
     cmdargs.log_all = True
@@ -156,6 +168,32 @@ if cmdargs.architectures is not None:
 if cmdargs.interfaces is not None:
     cmdargs.interfaces = cmdargs.interfaces.split(',')
 
+cmdargs.cmake = cmakeParameters
+
+cmd = mmh.lookupCommand(cmdargs.rest)
+cmdargs.fromyaml = False
+if (cmd != 'reset-setup' and cmdargs.directory != None and mmh.noParameters(cmdargs)):
+    fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
+    if (os.path.exists(fn)):
+        data = mmh.load(fn)
+        cmdargs.fromyaml = True
+        if (mmh.matchingVersion(version, data)
+            and 'parameters' in data):
+            p = data['parameters']
+            log.info('Loading parameters from {}'.format(fn))
+            if 'architectures' in p:
+                cmdargs.architectures = p['architectures']
+            if 'buildconfigs' in p:
+                cmdargs.buildconfigs = p['buildconfigs']
+            if 'buildtools' in p:
+                cmdargs.buildtools = p['buildtools']
+            if 'interfaces' in p:
+                cmdargs.interfaces = p['interfaces']
+            if 'toolchains' in p:
+                cmdargs.toolchains = p['toolchains']
+            if 'cmake' in p:
+                cmdargs.cmake = p['cmake']
+
 def adjustConfig(cfg, args):
     layer = {}
     adjustments = 0
@@ -168,8 +206,6 @@ def adjustConfig(cfg, args):
     if adjustments > 0:
         cfg.pushLayer(layer)
 
-cmd = mmh.lookupCommand(cmdargs.rest)
-
 if (len(cmdargs.rest) == 0):
     cmd = 'build'
     cmdargs.rest = [ cmd ]
@@ -177,17 +213,102 @@ if (len(cmdargs.rest) == 0):
 elif (cmd != False):
     log.info("Starting up using '{}' command".format(cmd))
 
-if (cmd == "build"):
-    if (os.path.isfile(cmdargs.module) == False):
-        mmh.warn("Module definition does not exist: {}".format(cmdargs.module))
+def requireModuleDefinition(args):
+    if (os.path.isfile(args.module) == False):
+        mmh.warn("Module definition does not exist: {}".format(args.module))
         exit(1)
+
+if (cmd == "build-tree-init"):
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+    cut.initRoot(version, cmdargs)
+    cut.populateRoot()
+    cut.linkIntoRoot()
+
+elif (cmd == "fetch-dependencies"):
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+    cut.initRoot(version, cmdargs)
+    cut.loadModule()
+    cut.cliAdjust(toolchains    = cmdargs.toolchains,
+                  architectures = cmdargs.architectures,
+                  buildconfigs  = cmdargs.buildconfigs,
+                  buildtools    = cmdargs.buildtools,
+                  interfaces    = cmdargs.interfaces)
+    cut.loadSources()
+    cut.changeToRoot()
+    cut.loadDependencies()
+
+elif (cmd == "generate-toplevel"):
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+    cut.initRoot(version, cmdargs)
+    cut.loadModule()
+    cut.cliAdjust(toolchains    = cmdargs.toolchains,
+                  architectures = cmdargs.architectures,
+                  buildconfigs  = cmdargs.buildconfigs,
+                  buildtools    = cmdargs.buildtools,
+                  interfaces    = cmdargs.interfaces)
+    cut.loadSources()
+    cut.changeToRoot()
+    cut.loadDependencies()
+    cut.generateToplevel()
+
+elif (cmd == "reset-setup"):
+    if (cmdargs.directory == None):
+        print("reset-argument only works with -d!")
+        exit(1)
+
+    fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
+    data = { 'version': version }
+    mmh.dump(fn, data)
+
+elif (cmd == "run-instance"):
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+    cut.initRoot(version, cmdargs)
+    cut.loadModule()
+    cut.cliAdjust(toolchains    = cmdargs.toolchains,
+                  architectures = cmdargs.architectures,
+                  buildconfigs  = cmdargs.buildconfigs,
+                  buildtools    = cmdargs.buildtools,
+                  interfaces    = cmdargs.interfaces)
+    cut.loadSources()
+    cut.changeToRoot()
+    cut.loadDependencies()
+    cut.build()
+
+    cut.renderStatistics()
+    if cut.wasSuccessful():
+        log.info('All {} builds succeeded.'.format(cut.countBuilds()))
+        exit(0)
+    else:
+        log.info('{} build(s) out of {} failed.'
+                 .format(cut.countFailed(), cut.countBuilds()))
+        exit(1)
+
+elif (cmd == "build"):
+    requireModuleDefinition(cmdargs)
 
     cfg.load()
     adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, src, cmdargs.module)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.loadModule()
+    cut.cliAdjust(toolchains    = cmdargs.toolchains,
+                  architectures = cmdargs.architectures,
+                  buildconfigs  = cmdargs.buildconfigs,
+                  buildtools    = cmdargs.buildtools,
+                  interfaces    = cmdargs.interfaces)
     cut.loadSources()
-    cut.initRoot(cmdargs.directory)
+    cut.initRoot(version, cmdargs)
     if cmdargs.log_to_file is True and cmdargs.log_file is None:
         fn = cut.root.name() + '.log'
         print('Logging to: {}'.format(fn))
@@ -214,6 +335,17 @@ if (cmd == "build"):
 elif (cmd == "dump-description"):
     data = mmh.load(cmdargs.module)
     mmh.pp(data)
+
+elif (cmd == "show-source"):
+    src.load()
+    names = cmdargs.rest[1:]
+    if (len(names) == 0):
+        names = src.allSources();
+
+    for name in names:
+        data = src.lookup(name)
+        print("{}: ".format(name), end='')
+        print(data)
 
 elif (cmd == "download-sources"):
     if (len(cmdargs.rest) > 2):

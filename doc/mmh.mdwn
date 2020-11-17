@@ -1,26 +1,130 @@
 # NAME
 
-mmh - MakeMeHappy - Embedded Module Build Tool
+mmh - MakeMeHappy - Module Build Automation Tool
 
 
 # SYNOPSIS
-`mmh [-h] [-d DIRECTORY] [-m MODULE] [-p] [-s SOURCE] [-V] [-v] CMD...`
+
+`mmh [-h] [-d DIRECTORY] [-m MODULE] [-p] [-s SOURCE] [-V] [-v] CMD... [++ CMAKE-PARAMs...]`
 
 
 # DESCRIPTION
 
+`mmh` is a tool to automatically arrange a build-environment to build modular
+software projects. It is mostly aimed at languages like C and C++, that
+otherwise lack a wide-spread module system. In order for this to work, `mmh`
+uses CMake as its underlying build system. With CMake based module, it can work
+out-of-the box, mostly. For non-CMake based projects, it puts in place a couple
+of facilities to help incorporate them. `mmh` is mostly meant to be used with
+embedded projects in mind, and was mostly developed for use with the `ufw`
+library.
+
+## Motivation
+
+One possible approach to assemble larger software projects is to split logical
+parts into modules, create APIs and use multiple modules that, in combination,
+create a larger, more complex application or library. The Git version control
+system allows the assembly of precise states of such modules via its submodule
+system.
+
+Building such super projects is trivial, because — **by** **design** — the
+super project incorporates *all* required modules with all of their
+dependencies. Using CMake at the top-level of the super project makes it fairly
+easy to use the different modules, as instantiated by Git's submodule system,
+as well. The approach is very flexible and has the upside of enforcing API
+discipline as well.
+
+A problem, that arises from this approach however, is the building a *single*
+module. This is very common, especially with version control and continuous
+integration in place, where it is desirable to build a module and run its test
+suite any time a developer pushes/commits into the module's repository.
+
+This is where `mmh` comes into play. You can think of it as a tool that, given
+enough information, can generate an ephemeral kind of a super project, that
+includes the current state of a module with all its dependencies (as well as
+all recursive dependencies), and a top-level CMakeLists.txt that would build
+the depencencies, followed by the module itself. In addition, `mmh` supports
+exercising this build-tree using a combination or one or many `toolchains`,
+`architectures`, `buildconfigs`, `buildtools` and `interfaces`. All of that is
+powered by a layered configuration approach, that allows for fine-grained
+control of all of these parameters as well as module sources.
+
+## General Operations
+
+`mmh`'s default mode of operation is to check out a module and its dependencies
+on the fly, configure, build and optionally run its test-suite and report back
+the result of all builds it carried out. All this is ephemeral, so the
+generated build-tree is removed after `mmh` is done. This behaviour can be
+altered, of course, but this default mode of operation is taken, if `mmh` is
+called in a modules source directory, without any command like parameters at
+all. This is the effect of the `build` sub-command, that serves as `mmh`'s the
+default.
+
+The `build` command works in a number of steps:
+
+- Initialise a build-tree.
+- Fetch the target module's dependencies recursively.
+- Generate a top-level build-system that uses CMake.
+- Build one or *many* instances based on combinations of build-parameters in
+  dedicated build-trees, collecting statistics in the process.
+- Finally print a summary of the collected build-statistics.
+
+The available toolchains are based upon CMake's toolchain-files and the default
+set of supported toolchains is based on `ufw`'s set of sich toolchain-files.
+
 
 # EXAMPLES
+
+Building a module is predicated on the existence of a file called
+`module.yaml`. With it in place, you can run a combined build of all build
+instances like this:
+
+    % mmh
+
+…which is exactly equivalent to this:
+
+    % mmh build
+
+With that, the default behaviour will run the builds, summarise how the process
+went and remove the build tree created afterwards. In order to keep the build
+tree around, you can name a specific directory to use instead:
+
+    % mmh -d ci
+
+…which does the same operation as before, but instead of using a temporary
+directory that gets removed afterward, use the directory named `ci` and keep it
+around after running all instances.
+
+If this is done with all default settings and the `ufw` library as the target
+module, `mmh` will try and run forty(!) build instances. This excercised the
+code base with a lot of compilers, build-tools and build settings, but can take
+a bit of time. `mmh` allows to optionally pick the set of all these parameters.
+For examples, to only use `ninja` as a build tool, `gnu` and `clang` as
+toolchains and `debug` and `release`, you can do the following:
+
+    % mmh -d ci -T gnu,clang -B ninja -C release,debug
+
+…bringing down the number of instances to four instead of forty. You can also
+hand additional parameters to each configuration call to `cmake` using `++`
+followed by a list of such paramters at the end of a `mmh build` call:
+
+    % mmh -d ci -T gnu,clang -B ninja -C release,debug ++ -DAAA=aaa -DBBB=bbb
+
+With calls like this, `mmh` records the set of parameters used in a file in the
+generated build-tree, so that re-running the same build is as easy as this:
+
+    % mmh -d ci run-instance
 
 
 # SEE ALSO
 
-*cmake(1)*, *cmake-variables(7)*, *ctest(1)*
+*cmake(1)*, *cmake-variables(7)*, *ctest(1)*, *git(1)*, *gitworkflows(7)*,
+*make(1)*, *ninja(1)*
 
 
 # COPYRIGHT
 
-Copyright 2019 Frank Terbeck <ft@bewatermyfriend.org>, All rights reserved.
+Copyright 2019-2020 Frank Terbeck ‹ft@bewatermyfriend.org›, All rights reserved.
 
 Redistribution  and   use  in  source   and  binary  forms,  with   or  without
 modification, are permitted provided that the following conditions are met:

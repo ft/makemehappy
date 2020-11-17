@@ -13,7 +13,7 @@
 ** TODO Implement version dependency judgements
 ** TODO Add more sub-commands
 *** TODO Run compilation instances from build-tree
-- [ ] All
+- [X] All
 - [ ] One
 - [ ] Some
 ** TODO Add options to override dependency versions
@@ -32,16 +32,128 @@ Configure:
 - Python path
 - Data directory (`/usr/share/MakeMeHappy`)
 - Config directory (`/etc/MakeMeHappy`)
-** TODO Add Debian Packaging
+** DONE Add Debian Packaging
 ** TODO Flesh out user manual
 ** TODO Data read from YAML files should be verified
 If we don't, we need to check tons of conditions at the points the data is
 actually used. Checking data upfront allows us to write much more straight
 forward code.
-** TODO Allow the user to specify a subset of all defined build instances
+** DONE Allow the user to specify a subset of all defined build instances
 If the module.yaml file defines 40 or 50 possible combinations of toolchains,
 build configurations, tools and the like, it would be useful to pick from
-those. Lists or patterns or both, I'm not sure yet.
+those.
+** DONE Record initial command line args in buildroot/makemehappy.yaml
+That way you can set up a complex run once and never have to do that in later
+runs again. Add another command to reset/replace previously recorded command
+line arguments.
+** DONE Allow handing command line arguments to cmake in instance runs
+Lets do this:
+
+  mmh [ARGS] [COMMAND-WITH-ARGS...] [-- CMAKE-ARGUMENTS]
+
+That it's possible to run different variants of builds, if the module's build
+system allows or requires that.
+** TODO Allow handing a directory into "run" command
+That way we could rerun a specific instance without having to manually listing
+all characteristics of that instance.
+** DONE Add a second value kind to variables: defaults
+This:
+
+  variables:
+    FOOBAR: something
+
+…continues to generate this:
+
+  set(FOOBAR, "something")
+
+…while…
+
+  defaults:
+    FOOBAR: something
+
+…generates this:
+
+  if (NOT FOOBAR)
+    set(FOOBAR, "something")
+  endif()
+
+This may be useful in conjunction with passing through cmake arguments:
+
+  mmh -d ci -- -DFOOBAR=something-else
+
+In order to *optionally* run different variants of a build.
+** DONE In extension generation, an implementing module should be optional
+It is possible that extensions rely on a certain way to use a CMake built-in
+facility without requiring an additional module to be included. The include
+step should therefore be optional.
+** DONE Allow extensions to use add_subdirectory
+We might want to be able to do something along the lines of this:
+
+cmake-extensions:
+  some-board-definition-module:
+   include: add_subdirectory(deps/${moduleroot}/${cmake('TARGET_BOARD')})
+
+To generate this:
+
+   add_subdirectory(deps/some-board-definition-module/${TARGET_BOARD})
+
+This allows using collections of modules in a meta-module. There are certainly
+other ways to achieve something similar, but this is easily done, so we should
+allow for it.
+** DONE Add a separate initialisation clause for cmake extensions
+Some modules may need a separate initialisation step that extends whatever the
+inclusion step does.
+
+mymod:
+  include: add_libtap(${moduleroot})
+  init: init_my_module()
+  module: MyModSupport
+
+This will be more powerful with generation-waypoints in place. See below.
+** TODO Introduce waypoints that for extension generation
+With third party extensions you get a way of replacing add_subdirectory() calls
+with arbitrary cmake functions or macros. The generation of that looks like
+this:
+
+   include(ModuleThatImplementsExtension)
+   add_thisextension(deps/thisextension)
+
+If you need to push the generation of ~add_thisextension()~ pack until
+something else has happened, however, there is currently no way to achieve
+that. With way points, it would be possible to make ~add_thisextension()~
+create a ~pre-inclusion~ waypoint and any extensions registered to it, would
+generate their code before this waypoint. The possible waypoint variants should
+be this:
+
+- pre-module
+- post-module
+- pre-inclusion
+- post-inclusion
+- pre-initialisation
+- post-initialisation
+
+This is more complex of a problem, especially with module interdependencies to
+be considered. Some third-party modules, that border upon having circular
+dependencies can't really be used without something like this.
+** DONE Make it possible for an extension to be used by more than one module
+cmake-extensions:
+  mymod:
+    include: add_libtap(${moduleroot})
+    init: init_my_module()
+    module: MyModSupport
+
+cmake-extension-variants:
+  # Explicit list:
+  mymod:
+    - mymod-a
+    - mymod-b
+    - mymod-c
+  # Also, maybe via pattern:
+  mymod: ^mymod-.*$
+** TODO Allow source types other than git; symlinks especially
+Allowing symlinks gives users the ability to inject ongoing development of
+modules into the dependency chain of other modules, making it possible to
+develop modules side by side.
 * Wishlist
 ** DONE Forget "tools" — check all dependencies into "deps"
 ** TODO Zsh completion would be nice
