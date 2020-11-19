@@ -99,7 +99,7 @@ If this is done with all default settings and the `ufw` library as the target
 module, `mmh` will try and run forty(!) build instances. This exercised the
 code base with a lot of compilers, build-tools and build settings, but can take
 a bit of time. `mmh` allows users to optionally pick the respective sets of all
-these parameters. For examples, to only use `ninja` as a build tool, `gnu` and
+these parameters. For example, to only use `ninja` as a build tool, `gnu` and
 `clang` as toolchains and `debug` and `release`, you can do the following:
 
     % mmh -d ci -T gnu,clang -B ninja -C release,debug
