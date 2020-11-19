@@ -13,10 +13,10 @@ mmh - MakeMeHappy - Module Build Automation Tool
 `mmh` is a tool to automatically arrange a build-environment to build modular
 software projects. It is mostly aimed at languages like C and C++, that
 otherwise lack a wide-spread module system. In order for this to work, `mmh`
-uses CMake as its underlying build system. With CMake based module, it can work
-out-of-the box, mostly. For non-CMake based projects, it puts in place a couple
-of facilities to help incorporate them. `mmh` is mostly meant to be used with
-embedded projects in mind, and was mostly developed for use with the `ufw`
+uses CMake as its underlying build system. With CMake based modules, it can
+work out-of-the box, mostly. For non-CMake based projects, it puts in place a
+couple of facilities to help incorporate them. `mmh` is mostly meant to be used
+with embedded projects in mind, and was mostly developed for use with the `ufw`
 library.
 
 ## Motivation
@@ -43,7 +43,7 @@ This is where `mmh` comes into play. You can think of it as a tool that, given
 enough information, can generate an ephemeral kind of a super project, that
 includes the current state of a module with all its dependencies (as well as
 all recursive dependencies), and a top-level CMakeLists.txt that would build
-the depencencies, followed by the module itself. In addition, `mmh` supports
+the dependencies, followed by the module itself. In addition, `mmh` supports
 exercising this build-tree using a combination or one or many `toolchains`,
 `architectures`, `buildconfigs`, `buildtools` and `interfaces`. All of that is
 powered by a layered configuration approach, that allows for fine-grained
@@ -70,7 +70,7 @@ The `build` command works in a number of steps:
 - Finally print a summary of the collected build-statistics.
 
 The available toolchains are based upon CMake's toolchain-files and the default
-set of supported toolchains is based on `ufw`'s set of sich toolchain-files.
+set of supported toolchains is based on `ufw`'s set of such toolchain-files.
 
 
 # EXAMPLES
@@ -96,17 +96,17 @@ directory that gets removed afterward, use the directory named `ci` and keep it
 around after running all instances.
 
 If this is done with all default settings and the `ufw` library as the target
-module, `mmh` will try and run forty(!) build instances. This excercised the
+module, `mmh` will try and run forty(!) build instances. This exercised the
 code base with a lot of compilers, build-tools and build settings, but can take
-a bit of time. `mmh` allows to optionally pick the set of all these parameters.
-For examples, to only use `ninja` as a build tool, `gnu` and `clang` as
-toolchains and `debug` and `release`, you can do the following:
+a bit of time. `mmh` allows users to optionally pick the respective sets of all
+these parameters. For examples, to only use `ninja` as a build tool, `gnu` and
+`clang` as toolchains and `debug` and `release`, you can do the following:
 
     % mmh -d ci -T gnu,clang -B ninja -C release,debug
 
 …bringing down the number of instances to four instead of forty. You can also
 hand additional parameters to each configuration call to `cmake` using `++`
-followed by a list of such paramters at the end of a `mmh build` call:
+followed by a list of such parameters at the end of a `mmh build` call:
 
     % mmh -d ci -T gnu,clang -B ninja -C release,debug ++ -DAAA=aaa -DBBB=bbb
 
