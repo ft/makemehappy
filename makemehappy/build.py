@@ -46,11 +46,19 @@ def generateInstances(mod):
             continue
         for cfg in cfgs:
             for tool in tools:
-                instances.append({ 'toolchain': maybeToolchain(tc),
-                                   'architecture': maybeArch(tc),
-                                   'interface': maybeInterface(tc),
-                                   'buildcfg': cfg,
-                                   'buildtool': tool })
+                add = (lambda a:
+                    instances.append({'toolchain'   : maybeToolchain(tc),
+                                      'architecture': a,
+                                      'interface'   : maybeInterface(tc),
+                                      'buildcfg'    : cfg,
+                                      'buildtool'   : tool }))
+                arch = maybeArch(tc)
+                if (isinstance(arch, list)):
+                    for a in arch:
+                        add(a)
+                else:
+                    add(arch)
+
     return instances
 
 def instanceName(instance):

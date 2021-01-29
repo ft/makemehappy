@@ -13,7 +13,9 @@ toolchains:
       - 8bit-byte
     interface: posix
   - name: gnu-arm-none-eabi
-    architecture: cortex-m4-hardfp
+    architecture:
+      - cortex-m3
+      - cortex-m4-hardfp
     features:
       - 8bit-byte
     interface: none
