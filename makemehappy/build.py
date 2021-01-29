@@ -29,7 +29,7 @@ def toolchainViable(md, tc):
             return False
     return True
 
-def generateInstances(mod):
+def generateInstances(log, mod):
     chains = mod.toolchains()
     cfgs = mod.buildconfigs()
     tools = mod.buildtools()
@@ -44,6 +44,7 @@ def generateInstances(mod):
     for tc in chains:
         if not(toolchainViable(mod.moduleData, tc)):
             continue
+        warnings = {}
         for cfg in cfgs:
             for tool in tools:
                 add = (lambda a:
@@ -53,6 +54,17 @@ def generateInstances(mod):
                                       'buildcfg'    : cfg,
                                       'buildtool'   : tool }))
                 arch = maybeArch(tc)
+                if ('architectures' in mod.moduleData):
+                    result = []
+                    for a in mod.moduleData['architectures']:
+                        if (not a in arch and not a in warnings):
+                            log.warn(('{arch} is not in toolchain\'s list of '
+                                     +'architectures {archs}. Keeping it at '
+                                     +'user\'s request.')
+                                     .format('', arch = a, archs = arch))
+                        warnings[a] = True
+                        result.append(a)
+                    arch = result
                 if (isinstance(arch, list)):
                     for a in arch:
                         add(a)
@@ -162,7 +174,7 @@ def build(cfg, log, args, stats, ext, root, instance):
 
 def allofthem(cfg, log, mod, ext):
     olddir = os.getcwd()
-    instances = generateInstances(mod)
+    instances = generateInstances(log, mod)
     log.info('Using {} build-instances:'.format(len(instances)))
     for instance in instances:
         log.info('    {}'.format(instanceName(instance)))
