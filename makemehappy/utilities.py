@@ -33,6 +33,7 @@ def setVerbosity(value):
 mmhCommands = {
     'build': { 'aliases': [ ] },
     'build-tree-init': { 'aliases': [ 'init' ] },
+    'download-source': { 'aliases': [ 'download', 'get' ] },
     'download-sources': { 'aliases': [ ] },
     'dump-description': { 'aliases': [ "dump" ] },
     'fetch-dependencies': { 'aliases': [ 'fetch', 'deps' ] },

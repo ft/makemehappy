@@ -347,6 +347,20 @@ elif (cmd == "show-source"):
         print("{}: ".format(name), end='')
         print(data)
 
+elif (cmd == "download-source"):
+
+    if (len(cmdargs.rest) != 2):
+        log.error("Usage: download-source Module")
+        exit(1)
+
+    cfg.load()
+    src.load()
+
+    module = cmdargs.rest[1]
+    meta = src.lookup(module)
+    source = meta['repository']
+    mmh.loggedProcess(cfg, log, ['git', 'clone', source])
+
 elif (cmd == "download-sources"):
     if (len(cmdargs.rest) > 2):
         log.error("Usage: download-sources [DestinationDirectory]")
