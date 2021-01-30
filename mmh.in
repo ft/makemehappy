@@ -177,22 +177,29 @@ if (cmd != 'reset-setup' and cmdargs.directory != None and mmh.noParameters(cmda
     if (os.path.exists(fn)):
         data = mmh.load(fn)
         cmdargs.fromyaml = True
-        if (mmh.matchingVersion(version, data)
-            and 'parameters' in data):
-            p = data['parameters']
-            log.info('Loading parameters from {}'.format(fn))
-            if 'architectures' in p:
-                cmdargs.architectures = p['architectures']
-            if 'buildconfigs' in p:
-                cmdargs.buildconfigs = p['buildconfigs']
-            if 'buildtools' in p:
-                cmdargs.buildtools = p['buildtools']
-            if 'interfaces' in p:
-                cmdargs.interfaces = p['interfaces']
-            if 'toolchains' in p:
-                cmdargs.toolchains = p['toolchains']
-            if 'cmake' in p:
-                cmdargs.cmake = p['cmake']
+        if (mmh.matchingVersion(version, data)):
+            if ('parameters' in data):
+                p = data['parameters']
+                log.info('Loading parameters from {}'.format(fn))
+                if 'architectures' in p:
+                    cmdargs.architectures = p['architectures']
+                if 'buildconfigs' in p:
+                    cmdargs.buildconfigs = p['buildconfigs']
+                if 'buildtools' in p:
+                    cmdargs.buildtools = p['buildtools']
+                if 'interfaces' in p:
+                    cmdargs.interfaces = p['interfaces']
+                if 'toolchains' in p:
+                    cmdargs.toolchains = p['toolchains']
+                if 'cmake' in p:
+                    cmdargs.cmake = p['cmake']
+            if ('cmake' in data):
+                p = data['cmake']
+                log.info('Loading cmake-information from {}'.format(fn))
+                if 'module-path' in p:
+                    cmdargs.modulePath = p['module-path']
+                if 'toolchain-path' in p:
+                    cmdargs.toolchainPath = p['toolchain-path']
 
 def adjustConfig(cfg, args):
     layer = {}
