@@ -462,6 +462,15 @@ class CodeUnderTest:
         if (args.fromyaml == False):
             updateMMHYAML(self.log, self.root.root, version, args)
 
+    def cmakeIntoYAML(self):
+        self.log.info("Updating MakeMeHappy.yaml with CMake information")
+        fn = os.path.join('MakeMeHappy.yaml')
+        data = mmh.load(fn)
+        data['cmake'] = {}
+        data['cmake']['module-path'] = self.extensions.modulePath()
+        data['cmake']['toolchain-path'] = self.extensions.toolchainPath()
+        mmh.dump(fn, data)
+
     def populateRoot(self):
         self.root.populate()
 

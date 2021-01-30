@@ -258,6 +258,7 @@ elif (cmd == "generate-toplevel"):
     cut.loadSources()
     cut.changeToRoot()
     cut.loadDependencies()
+    cut.cmakeIntoYAML()
     cut.generateToplevel()
 
 elif (cmd == "reset-setup"):
@@ -284,6 +285,7 @@ elif (cmd == "run-instance"):
     cut.loadSources()
     cut.changeToRoot()
     cut.loadDependencies()
+    cut.cmakeIntoYAML()
     cut.build()
 
     cut.renderStatistics()
@@ -317,6 +319,7 @@ elif (cmd == "build"):
     cut.linkIntoRoot()
     cut.changeToRoot()
     cut.loadDependencies()
+    cut.cmakeIntoYAML()
     cut.generateToplevel()
     cut.build()
 
