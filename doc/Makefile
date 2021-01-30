@@ -12,7 +12,7 @@ TITLE = -V title="MakeMeHappy Manual"
 
 MAKEMYHAPPY_TEX_META = -V author="Frank Terbeck" $(TITLE)
 MAKEMYHAPPY_HTML_META = $(MAKEMYHAPPY_TEX_META) --metadata title="mmh" --highlight-style=monochrome
-MAKEMYHAPPY_MAN_META = -V title="mmh" -V section="1" -V date="May, 2019"
+MAKEMYHAPPY_MAN_META = -V title="mmh" -V section="1" -V date="Jan, 2021"
 
 all: man html pdf info
 man: $(MAN)
