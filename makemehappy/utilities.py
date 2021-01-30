@@ -96,6 +96,7 @@ def logOutput(log, pipe):
         log.info(line.decode().strip())
 
 def loggedProcess(cfg, log, cmd):
+    log.info("Running command: {}".format(cmd))
     if cfg.lookup('log-all'):
         proc = subprocess.Popen(
             cmd, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
