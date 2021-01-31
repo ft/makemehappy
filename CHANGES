@@ -1,6 +1,35 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.7 → v0.8 (released 2021-02-01):
+
+** New Features
+
+- Allow for ‘--force’/‘-F’ to override version data in MakeMeHappy.yaml.
+- Allow ‘run’ to re-run specified build instances (experimental).
+- Allow ‘architecture’ to be a list in ‘config.yaml’.
+- Add ’cortex-m3’ to default architectures for ‘gnu-arm-none-eabi’.
+- Add ‘download-source’ (aliases: ‘download’, ‘get’).
+
+** Bugfixes
+
+- Fix behaviour of ‘--architectures’ command line argument.
+- Don't re-run unconfigured, if version check for MakeMeHappy.yaml fails.
+- Typo and grammar fixes in documentation.
+
+** Diffstat:
+
+  LICENCE                  |   3 +-
+  data/config.yaml         |   4 +-
+  doc/Makefile             |   2 +-
+  doc/mmh.mdwn             |  24 +++++-----
+  makemehappy/build.py     | 100 ++++++++++++++++++++++++++++++++-------
+  makemehappy/cut.py       |   9 ++++
+  makemehappy/utilities.py |   2 +
+  mmh.in                   |  76 ++++++++++++++++++++++-------
+  8 files changed, 173 insertions(+), 47 deletions(-)
+
+
 * v0.6 → v0.7 (released 2020-11-17):
 
 ** New Features
