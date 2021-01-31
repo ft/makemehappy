@@ -98,6 +98,10 @@ ap.add_argument("-s", "--source",
                 action = "append",
                 help = "add a module source definition")
 
+ap.add_argument("-F", "--force",
+                action = "store_true",
+                help = "force using MakeMeHappy.yaml")
+
 ap.add_argument("-V", "--version", action = "store_true",
                 help = "show program version")
 
@@ -176,6 +180,9 @@ if (cmd != 'reset-setup' and cmdargs.directory != None and mmh.noParameters(cmda
     fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
     if (os.path.exists(fn)):
         data = mmh.load(fn)
+        if (cmdargs.force == True):
+            data['version'] = version
+            mmh.dump(fn, data)
         cmdargs.fromyaml = True
         if (mmh.matchingVersion(version, data)):
             if ('parameters' in data):
@@ -200,6 +207,13 @@ if (cmd != 'reset-setup' and cmdargs.directory != None and mmh.noParameters(cmda
                     cmdargs.modulePath = p['module-path']
                 if 'toolchain-path' in p:
                     cmdargs.toolchainPath = p['toolchain-path']
+        else:
+            fv = None
+            if (not data is None and 'version' in data):
+                fv = data['version']
+            log.error("{}: Version mismatch: {} != {}".format(fn, version, fv))
+            log.error("If suitable ‘--force’ to force using the file!")
+            exit(1)
 
 def adjustConfig(cfg, args):
     layer = {}
