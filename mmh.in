@@ -278,6 +278,12 @@ elif (cmd == "reset-setup"):
     mmh.dump(fn, data)
 
 elif (cmd == "run-instance"):
+    if (len(cmdargs.rest) > 1):
+        cfg.load()
+        for d in cmdargs.rest[1:]:
+            build.runInstance(cfg, log, cmdargs, d)
+        exit(0)
+
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)

@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 
@@ -98,14 +99,8 @@ def cmakeBuildtool(name):
 class UnknownToolchain(Exception):
     pass
 
-def findToolchain(ext, tc):
-    tcp = ext.toolchainPath()
-    extension = '.cmake'
-    for d in tcp:
-        candidate = os.path.join(d, tc + extension)
-        if (os.path.exists(candidate)):
-            return candidate
-    raise(UnknownToolchain(tcp, tc))
+def findToolchainByExtension(ext, tc):
+    return findToolchain(ext.toolchainPath(), tc)
 
 def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     cmakeArgs = None
@@ -117,7 +112,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     cmd = ['cmake',
            '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
            '-DCMAKE_TOOLCHAIN_FILE={}'.format(
-               findToolchain(ext, instance['toolchain'])),
+               findToolchainByExtension(ext, instance['toolchain'])),
            '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
            '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
            '-DINTERFACE_TARGET={}'.format(instance['interface'])
@@ -181,3 +176,56 @@ def allofthem(cfg, log, mod, ext):
     for instance in instances:
         log.info('Building instance: {}'.format(instanceName(instance)))
         build(cfg, log, mod.args, mod.stats, ext, olddir, instance)
+
+def findToolchain(tcp, tc):
+    extension = '.cmake'
+    for d in tcp:
+        candidate = os.path.join(d, tc + extension)
+        if (os.path.exists(candidate)):
+            return candidate
+    raise(UnknownToolchain(tcp, tc))
+
+def runInstance(cfg, log, args, directory):
+    dirs = os.path.split(directory)
+    m = re.match('([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)', dirs[-1])
+    if (m is None):
+        log.warning("Not a build-instance directory: {}".format(directory))
+        return
+    cleanInstance(log, directory)
+    olddir = os.getcwd()
+    root = os.path.join(olddir, args.directory)
+    (toolchain, architecture, interface, buildconfig, buildtool) = m.groups()
+    tc = findToolchain(args.toolchainPath, toolchain)
+    cmakeArgs = []
+    if (args.cmake is not None):
+        cmakeArgs = args.cmake
+    log.info("Moving to build-instance {}".format(directory))
+    os.chdir(directory)
+    cmd = ['cmake',
+           '-G{}'.format(cmakeBuildtool(buildtool)),
+           '-DCMAKE_TOOLCHAIN_FILE={}'.format(tc),
+           '-DCMAKE_BUILD_TYPE={}'.format(buildconfig),
+           '-DPROJECT_TARGET_CPU={}'.format(architecture),
+           '-DINTERFACE_TARGET={}'.format(interface)
+           ] + cmakeArgs + [root]
+    rc = mmh.loggedProcess(cfg, log, cmd)
+    if (rc != 0):
+        log.warning("CMake failed for {}".format(directory))
+        log.info("Moving back to {}".format(olddir))
+        os.chdir(olddir)
+        return
+    rc = mmh.loggedProcess(cfg, log, ['cmake', '--build', '.'])
+    if (rc != 0):
+        log.warning("Build-process failed for {}".format(directory))
+        log.info("Moving back to {}".format(olddir))
+        os.chdir(olddir)
+        return
+    txt = subprocess.check_output(['ctest', '--show-only'])
+    last = txt.splitlines()[-1]
+    num = int(last.decode().split(' ')[-1])
+    if (num > 0):
+        rc = mmh.loggedProcess(cfg, log, ['ctest', '--extra-verbose'])
+        if (rc != 0):
+            log.warning("Test-suite failed for {}".format(directory))
+    log.info("Moving back to {}".format(olddir))
+    os.chdir(olddir)
