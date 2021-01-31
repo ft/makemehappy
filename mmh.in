@@ -98,6 +98,10 @@ ap.add_argument("-s", "--source",
                 action = "append",
                 help = "add a module source definition")
 
+ap.add_argument("-F", "--force",
+                action = "store_true",
+                help = "force using MakeMeHappy.yaml")
+
 ap.add_argument("-V", "--version", action = "store_true",
                 help = "show program version")
 
@@ -176,23 +180,40 @@ if (cmd != 'reset-setup' and cmdargs.directory != None and mmh.noParameters(cmda
     fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
     if (os.path.exists(fn)):
         data = mmh.load(fn)
+        if (cmdargs.force == True):
+            data['version'] = version
+            mmh.dump(fn, data)
         cmdargs.fromyaml = True
-        if (mmh.matchingVersion(version, data)
-            and 'parameters' in data):
-            p = data['parameters']
-            log.info('Loading parameters from {}'.format(fn))
-            if 'architectures' in p:
-                cmdargs.architectures = p['architectures']
-            if 'buildconfigs' in p:
-                cmdargs.buildconfigs = p['buildconfigs']
-            if 'buildtools' in p:
-                cmdargs.buildtools = p['buildtools']
-            if 'interfaces' in p:
-                cmdargs.interfaces = p['interfaces']
-            if 'toolchains' in p:
-                cmdargs.toolchains = p['toolchains']
-            if 'cmake' in p:
-                cmdargs.cmake = p['cmake']
+        if (mmh.matchingVersion(version, data)):
+            if ('parameters' in data):
+                p = data['parameters']
+                log.info('Loading parameters from {}'.format(fn))
+                if 'architectures' in p:
+                    cmdargs.architectures = p['architectures']
+                if 'buildconfigs' in p:
+                    cmdargs.buildconfigs = p['buildconfigs']
+                if 'buildtools' in p:
+                    cmdargs.buildtools = p['buildtools']
+                if 'interfaces' in p:
+                    cmdargs.interfaces = p['interfaces']
+                if 'toolchains' in p:
+                    cmdargs.toolchains = p['toolchains']
+                if 'cmake' in p:
+                    cmdargs.cmake = p['cmake']
+            if ('cmake' in data):
+                p = data['cmake']
+                log.info('Loading cmake-information from {}'.format(fn))
+                if 'module-path' in p:
+                    cmdargs.modulePath = p['module-path']
+                if 'toolchain-path' in p:
+                    cmdargs.toolchainPath = p['toolchain-path']
+        else:
+            fv = None
+            if (not data is None and 'version' in data):
+                fv = data['version']
+            log.error("{}: Version mismatch: {} != {}".format(fn, version, fv))
+            log.error("If suitable ‘--force’ to force using the file!")
+            exit(1)
 
 def adjustConfig(cfg, args):
     layer = {}
@@ -258,6 +279,7 @@ elif (cmd == "generate-toplevel"):
     cut.loadSources()
     cut.changeToRoot()
     cut.loadDependencies()
+    cut.cmakeIntoYAML()
     cut.generateToplevel()
 
 elif (cmd == "reset-setup"):
@@ -270,6 +292,12 @@ elif (cmd == "reset-setup"):
     mmh.dump(fn, data)
 
 elif (cmd == "run-instance"):
+    if (len(cmdargs.rest) > 1):
+        cfg.load()
+        for d in cmdargs.rest[1:]:
+            build.runInstance(cfg, log, cmdargs, d)
+        exit(0)
+
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
@@ -284,6 +312,7 @@ elif (cmd == "run-instance"):
     cut.loadSources()
     cut.changeToRoot()
     cut.loadDependencies()
+    cut.cmakeIntoYAML()
     cut.build()
 
     cut.renderStatistics()
@@ -317,6 +346,7 @@ elif (cmd == "build"):
     cut.linkIntoRoot()
     cut.changeToRoot()
     cut.loadDependencies()
+    cut.cmakeIntoYAML()
     cut.generateToplevel()
     cut.build()
 
@@ -346,6 +376,20 @@ elif (cmd == "show-source"):
         data = src.lookup(name)
         print("{}: ".format(name), end='')
         print(data)
+
+elif (cmd == "download-source"):
+
+    if (len(cmdargs.rest) != 2):
+        log.error("Usage: download-source Module")
+        exit(1)
+
+    cfg.load()
+    src.load()
+
+    module = cmdargs.rest[1]
+    meta = src.lookup(module)
+    source = meta['repository']
+    mmh.loggedProcess(cfg, log, ['git', 'clone', source])
 
 elif (cmd == "download-sources"):
     if (len(cmdargs.rest) > 2):
