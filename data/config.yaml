@@ -12,6 +12,13 @@ toolchains:
     features:
       - 8bit-byte
     interface: posix
+  - name: clang-arm-none-eabi
+    architecture:
+      - cortex-m3
+      - cortex-m4-hardfp
+    features:
+      - 8bit-byte
+    interface: none
   - name: gnu-arm-none-eabi
     architecture:
       - cortex-m3
