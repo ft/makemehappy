@@ -53,7 +53,8 @@ def generateInstances(log, mod):
                                       'architecture': a,
                                       'interface'   : maybeInterface(tc),
                                       'buildcfg'    : cfg,
-                                      'buildtool'   : tool }))
+                                      'buildtool'   : tool,
+                                      'type'        : mod.moduleType }))
                 arch = maybeArch(tc)
                 if ('architectures' in mod.moduleData):
                     result = []
@@ -74,8 +75,48 @@ def generateInstances(log, mod):
 
     return instances
 
+def generateZephyrInstances(log, mod):
+    targets = mod.targets()
+    cfgs = mod.buildconfigs()
+    tools = mod.buildtools()
+
+    if (len(cfgs) == 0):
+        cfgs = [ 'debug' ]
+    if (len(tools) == 0):
+        tools = [ 'make' ]
+
+    instances = []
+    for target in targets:
+        for cfg in cfgs:
+            for tool in tools:
+                arch = target['board'].replace('_', '-')
+                mods = ''
+                kcfg = ''
+                opts = ''
+                if ('modules' in target):
+                    mods = ';'.join(target['modules'])
+                if ('kconfig' in target):
+                    kcfg = ';'.join(target['kconfig'])
+                if ('options' in target):
+                    opts = ';'.join(target['options'])
+                instances.append({'toolchain'   : target['toolchain'],
+                                  'board'       : target['board'],
+                                  'architecture': arch,
+                                  'modules'     : mods,
+                                  'kconfig'     : kcfg,
+                                  'options'     : opts,
+                                  'interface'   : 'none',
+                                  'buildcfg'    : cfg,
+                                  'buildtool'   : tool,
+                                  'type'        : mod.moduleType })
+
+    return instances
+
 def instanceName(instance):
-    return "{}_{}_{}_{}_{}".format(instance['toolchain'],
+    tc = instance['toolchain']
+    if (instance['type'] == 'zephyr'):
+        tc = 'zephyr-' + tc
+    return "{}_{}_{}_{}_{}".format(tc,
                                    instance['architecture'],
                                    instance['interface'],
                                    instance['buildcfg'],
@@ -99,6 +140,9 @@ def cmakeBuildtool(name):
 class UnknownToolchain(Exception):
     pass
 
+class UnknownModuleType(Exception):
+    pass
+
 def findToolchainByExtension(ext, tc):
     return findToolchain(ext.toolchainPath(), tc)
 
@@ -109,14 +153,29 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     else:
         cmakeArgs = args.cmake
 
-    cmd = ['cmake',
-           '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
-           '-DCMAKE_TOOLCHAIN_FILE={}'.format(
-               findToolchainByExtension(ext, instance['toolchain'])),
-           '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
-           '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
-           '-DINTERFACE_TARGET={}'.format(instance['interface'])
-           ] + cmakeArgs + [root]
+    if (instance['type'] == 'cmake'):
+        cmd = ['cmake',
+               '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
+               '-DCMAKE_TOOLCHAIN_FILE={}'.format(
+                   findToolchainByExtension(ext, instance['toolchain'])),
+               '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
+               '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
+               '-DINTERFACE_TARGET={}'.format(instance['interface'])
+               ] + cmakeArgs + [root]
+    elif (instance['type'] == 'zephyr'):
+        cmd = ['cmake',
+               '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
+               '-DZEPHYR_TOOLCHAIN_VARIANT={}'.format(instance['toolchain']),
+               '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
+               '-DMMH_TARGET_BOARD={}'.format(instance['board']),
+               '-DMMH_ZEPHYR_TOOLCHAIN={}'.format(instance['toolchain']),
+               '-DMMH_ZEPHYR_MODULES={}'.format(instance['modules']),
+               '-DMMH_ZEPHYR_KCONFIG={}'.format(instance['kconfig']),
+               '-DMMH_ZEPHYR_OPTIONS={}'.format(instance['options']),
+               '-DINTERFACE_TARGET={}'.format(instance['interface'])
+               ] + cmakeArgs + [root]
+    else:
+        raise(UnknownModuleType(instance['type']))
     rc = mmh.loggedProcess(cfg, log, cmd)
     stats.logConfigure(rc)
     return (rc == 0)
@@ -169,7 +228,10 @@ def build(cfg, log, args, stats, ext, root, instance):
 
 def allofthem(cfg, log, mod, ext):
     olddir = os.getcwd()
-    instances = generateInstances(log, mod)
+    if (mod.moduleType == 'zephyr'):
+        instances = generateZephyrInstances(log, mod)
+    else:
+        instances = generateInstances(log, mod)
     log.info('Using {} build-instances:'.format(len(instances)))
     for instance in instances:
         log.info('    {}'.format(instanceName(instance)))
