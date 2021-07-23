@@ -419,6 +419,7 @@ class CodeUnderTest:
         self.args = args
         self.module = module
         self.sources = sources
+        self.moduleType = 'cmake'
         self.deporder = None
         self.root = None
         self.moduleData = None
@@ -435,6 +436,8 @@ class CodeUnderTest:
     def loadModule(self):
         self.log.info("Loading module description: {}".format(self.module))
         self.moduleData = mmh.load(self.module)
+        if ('type' in self.moduleData):
+            self.moduleType = self.moduleData['type']
 
     def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools, interfaces):
         if toolchains is not None:
@@ -529,7 +532,9 @@ class CodeUnderTest:
     def generateToplevel(self):
         self.stats.checkpoint('generate-toplevel')
         self.toplevel = Toplevel(self.log,
+                                 self.moduleType,
                                  self.variables(),
+                                 self.targets(),
                                  self.defaults(),
                                  self.cmake3rdParty(),
                                  self.cmakeVariants(),
@@ -559,6 +564,11 @@ class CodeUnderTest:
     def variables(self):
         if (has('variables', self.moduleData, dict)):
             return self.moduleData['variables']
+        return {}
+
+    def targets(self):
+        if (has('targets', self.moduleData, list)):
+            return self.moduleData['targets']
         return {}
 
     def toolchains(self):

@@ -1,7 +1,7 @@
 import mako.template as mako
 import re
 
-defaultCMakeVersion = "3.1.0"
+defaultCMakeVersion = "3.12.0"
 defaultProjectName = "MakeMeHappy"
 defaultLanguages = "C CXX ASM"
 
@@ -28,22 +28,29 @@ def lookupVariant(table, name):
     return name
 
 class Toplevel:
-    def __init__(self, log, var, defaults, thirdParty, cmakeVariants,
-                 modulePath, trace, deporder):
+    def __init__(self, log, moduleType, var, targets, defaults, thirdParty,
+                 cmakeVariants, modulePath, trace, deporder):
         self.log = log
         self.thirdParty = thirdParty
         self.cmakeVariants = cmakeVariants
         self.trace = trace
         self.modulePath = modulePath
+        self.moduleType = moduleType
         self.deporder = deporder
         self.variables = var
+        self.targets = targets
         self.defaults = defaults
         self.filename = 'CMakeLists.txt'
 
     def generateHeader(self, fh):
+        langs = defaultLanguages
+        if (self.moduleType == 'zephyr'):
+            langs = 'NONE'
         for s in ["cmake_minimum_required(VERSION {})".format(defaultCMakeVersion),
-                "project({} {})".format(defaultProjectName, defaultLanguages)]:
+                "project({} {})".format(defaultProjectName, langs)]:
             print(s, file = fh)
+        if (self.moduleType == 'zephyr'):
+            print('set(MICROFRAMEWORK_ROOT "${CMAKE_SOURCE_DIR}/deps/ufw")', file = fh)
 
     def generateCMakeModulePath(self, fh, moddirs):
         for p in moddirs:
@@ -108,6 +115,31 @@ class Toplevel:
             file = fh)
         print("add_subdirectory(code-under-test)", file = fh)
 
+    def generateZephyr(self, fh):
+        print('''set(MMH_ZEPHYR_KERNEL      "${CMAKE_SOURCE_DIR}/deps/zephyr-kernel")
+set(APPLICATION_SOURCE_DIR "${CMAKE_SOURCE_DIR}/code-under-test")
+include(UFWTools)
+include(BuildInZephyrDir)
+ufw_setup_zephyr(
+  APPLICATION  code-under-test
+  BOARDS       "${MMH_TARGET_BOARD}"
+  TOOLCHAINS   "${MMH_ZEPHYR_TOOLCHAIN}"
+  BUILDCFGS    "${CMAKE_BUILD_TYPE}"
+  ROOT         "${CMAKE_SOURCE_DIR}/code-under-test"
+  KERNEL       "${MMH_ZEPHYR_KERNEL}"
+  KCONFIG      "${MMH_ZEPHYR_KCONFIG}"
+  OPTIONS      "${MMH_ZEPHYR_OPTIONS}"
+  MODULE_ROOT  "${CMAKE_SOURCE_DIR}/deps"
+  MODULES      "${MMH_ZEPHYR_MODULES}")
+set(APPLICATION_SOURCE_DIR ${APPLICATION_SOURCE_DIR} CACHE PATH "Application Source Directory")
+set(Zephyr_ROOT "${MMH_ZEPHYR_KERNEL}")
+set(ZEPHYR_BASE "${MMH_ZEPHYR_KERNEL}")
+find_package(Zephyr REQUIRED)
+enable_language(C)
+enable_language(CXX)
+enable_language(ASM)''',
+              file =  fh)
+
     def generateToplevel(self):
         with open(self.filename, 'w') as fh:
             self.generateHeader(fh)
@@ -135,5 +167,7 @@ class Toplevel:
                     var = { **var, **entry['defaults'] }
             var = { **var, **self.defaults }
             self.generateDefaults(fh, var)
+            if (self.moduleType == 'zephyr'):
+                self.generateZephyr(fh)
             self.generateDependencies(fh, self.deporder, tp, variants)
             self.generateFooter(fh)

@@ -69,3 +69,77 @@ modules:
       repository: https://github.com/STMicroelectronics/stm32wbxx_hal_driver.git
     ufw:
       repository: https://github.com/ft/ufw.git
+    # Zephyr Repositories
+    ## Kernel
+    zephyr-kernel:
+      repository: https://github.com/zephyrproject-rtos/zephyr.git
+    ## Hardware Abstraction
+    zephyr-arm-cmsis:
+      repository: https://github.com/zephyrproject-rtos/cmsis.git
+    zephyr-hal-altera:
+      repository: https://github.com/zephyrproject-rtos/hal_altera.git
+    zephyr-hal-atmel:
+      repository: https://github.com/zephyrproject-rtos/hal_atmel.git
+    zephyr-hal-cypress:
+      repository: https://github.com/zephyrproject-rtos/hal_cypress.git
+    zephyr-hal-espressif:
+      repository: https://github.com/zephyrproject-rtos/hal_espressif.git
+    zephyr-hal-infineon:
+      repository: https://github.com/zephyrproject-rtos/hal_infineon.git
+    zephyr-hal-microchip:
+      repository: https://github.com/zephyrproject-rtos/hal_microchip.git
+    zephyr-hal-nordic:
+      repository: https://github.com/zephyrproject-rtos/hal_nordic.git
+    zephyr-hal-nxp:
+      repository: https://github.com/zephyrproject-rtos/hal_nxp.git
+    zephyr-hal-nordic-hw-models:
+      repository: https://github.com/zephyrproject-rtos/nrf_hw_models.git
+    zephyr-hal-nuvoton:
+      repository: https://github.com/zephyrproject-rtos/hal_nuvoton.git
+    zephyr-hal-openisa:
+      repository: https://github.com/zephyrproject-rtos/hal_openisa.git
+    zephyr-hal-qmsi:
+      repository: https://github.com/zephyrproject-rtos/hal_qmsi.git
+    zephyr-hal-quicklogic:
+      repository: https://github.com/zephyrproject-rtos/hal_quicklogic.git
+    zephyr-hal-silabs:
+      repository: https://github.com/zephyrproject-rtos/hal_silabs.git
+    zephyr-hal-st: # Note that STM32 support is in zephyr-hal-stm32
+      repository: https://github.com/zephyrproject-rtos/hal_st.git
+    zephyr-hal-stm32:
+      repository: https://github.com/zephyrproject-rtos/hal_stm32.git
+    zephyr-hal-telink:
+      repository: https://github.com/zephyrproject-rtos/hal_telink.git
+    zephyr-hal-texas:
+      repository: https://github.com/zephyrproject-rtos/hal_ti.git
+    zephyr-hal-unisoc:
+      repository: https://github.com/zephyrproject-rtos/hal_unisoc.git
+    zephyr-hal-xtensa:
+      repository: https://github.com/zephyrproject-rtos/hal_xtensa.git
+    ## Development support
+    zephyr-segger:
+      repository: https://github.com/zephyrproject-rtos/segger.git
+    ## Bootloaders and System Upgrade
+    zephyr-mcuboot:
+      repository: https://github.com/zephyrproject-rtos/mcuboot.git
+    zephyr-mcumgr:
+      repository: https://github.com/zephyrproject-rtos/mcumgr.git
+    ## Miscellaneous Modules
+    zephyr-fatfs:
+      repository: https://github.com/zephyrproject-rtos/fatfs.git
+    zephyr-libmetal:
+      repository: https://github.com/zephyrproject-rtos/libmetal.git
+    zephyr-littlefs:
+      repository: https://github.com/zephyrproject-rtos/littlefs.git
+    zephyr-mbedtls:
+      repository: https://github.com/zephyrproject-rtos/mbedtls.git
+    zephyr-nanopb:
+      repository: https://github.com/zephyrproject-rtos/nanopb.git
+    zephyr-openamp:
+      repository: https://github.com/zephyrproject-rtos/open-amp.git
+    zephyr-openthread:
+      repository: https://github.com/zephyrproject-rtos/openthread.git
+    zephyr-tinycbor:
+      repository: https://github.com/zephyrproject-rtos/tinycbor.git
+    zephyr-tinycrypt:
+      repository: https://github.com/zephyrproject-rtos/tinycrypt.git

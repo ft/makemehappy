@@ -57,7 +57,9 @@ ap.add_argument("-m", "--module",
                      + " module description (defaults to module.yaml)")
 
 ap.add_argument("-p", "--preserve", action = "store_true",
-                help = "preserve build root instead of deleting it")
+                help = "preserve build root instead of deleting it."
+                     + " In combination with -d, delete build root"
+                     + " before termination.")
 
 ap.add_argument("-L", "--log-all", action = "store_true",
                 help = "send all output to logging facility")

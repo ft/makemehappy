@@ -1,6 +1,28 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.8 → v0.9 (released 2021-07-23):
+
+** New Features
+
+- Preliminary support for building applications based on Zephyr RTOS.
+- Add lots of zephyr modules to ‘sources.yaml’.
+- Allow module to call its ‘install’ target if desired.
+
+** Bugfixes
+
+- Improve ‘--help’ output for ‘--preserve’.
+
+** Diffstat:
+
+    data/sources.yaml       |  74 +++++++++++++++++++++++++++
+    makemehappy/build.py    | 111 ++++++++++++++++++++++++++++++++++++----
+    makemehappy/cut.py      |  10 ++++
+    makemehappy/toplevel.py |  42 +++++++++++++--
+    mmh.in                  |   4 +-
+    5 files changed, 225 insertions(+), 16 deletions(-)
+
+
 * v0.7 → v0.8 (released 2021-02-01):
 
 ** New Features
