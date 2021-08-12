@@ -103,6 +103,23 @@ class Stack:
     def push(self, entry):
         self.data = [entry] + self.data
 
+def getSource(dep, src):
+    if ('repository' in dep):
+        tmp = dep
+    else:
+        tmp = src.lookup(dep['name'])
+
+    if (tmp == False):
+        return False
+
+    if (not ('type' in tmp)):
+        tmp['type'] = 'git'
+
+    return tmp
+
+class InvalidRepositoryType(Exception):
+    pass
+
 def fetch(cfg, log, src, st, trace):
     if (st.empty() == True):
         return trace
@@ -110,26 +127,29 @@ def fetch(cfg, log, src, st, trace):
     for dep in st.data:
         log.info("Fetching revision {} of module {}"
                  .format(dep['revision'], dep['name']))
-        if ('source' in dep.keys()):
-            source = dep['source']
-        else:
-            source = src.lookup(dep['name'])['repository']
 
+        source = getSource(dep, src)
         if (source == False):
             log.error("Module {} has no source!".format(dep['name']))
             return False
 
+        url = source['repository']
         p = os.path.join('deps', dep['name'])
         newmod = os.path.join(p, 'module.yaml')
         if (os.path.exists(p)):
             log.info("Module directory exists. Skipping initialisation.")
-        else:
-            mmh.loggedProcess(cfg, log, ['git', 'clone', source, p])
+        elif (source['type'] == 'symlink'):
+            log.info("Symlinking dependency: {} to {}" .format(dep['name'], url))
+            os.symlink(url, p)
+        elif (source['type'] == 'git'):
+            mmh.loggedProcess(cfg, log, ['git', 'clone', url, p])
             # Check out the requested revision
             olddir = os.getcwd()
             os.chdir(p)
             mmh.loggedProcess(cfg, log, ['git', 'checkout', dep['revision']])
             os.chdir(olddir)
+        else:
+            raise(InvalidRepositoryType(source))
 
         newmodata = None
         if (os.path.isfile(newmod)):
