@@ -27,6 +27,13 @@ def lookupVariant(table, name):
             raise(InvalidVariant(name, key, table[key]))
     return name
 
+def getMergedDict(data, what, more):
+    d = {}
+    for entry in data:
+        if (what in entry):
+            d = { **d, **entry[what] }
+    return { **d, **more }
+
 class Toplevel:
     def __init__(self, log, moduleType, var, targets, defaults, thirdParty,
                  cmakeVariants, modulePath, trace, deporder):
@@ -145,29 +152,22 @@ enable_language(ASM)''',
             self.generateHeader(fh)
             self.generateCMakeModulePath(fh, self.modulePath)
             self.generateTestHeader(fh)
-            tp = {}
-            for entry in self.trace.data:
-                if ('cmake-extensions' in entry):
-                    tp = { **tp, **entry['cmake-extensions'] }
-            tp = { **tp, **self.thirdParty }
-            variants = {}
-            for entry in self.trace.data:
-                if ('cmake-extension-variants' in entry):
-                    variants = { **variants, **entry['cmake-extension-variants'] }
-            variants = { **variants, **self.cmakeVariants }
-            var = {}
-            for entry in self.trace.data:
-                if ('variables' in entry):
-                    var = { **var, **entry['variables'] }
-            var = { **var, **self.variables }
+
+            var = getMergedDict(self.trace.data, 'variables', self.variables)
             self.generateVariables(fh, var)
-            var = {}
-            for entry in self.trace.data:
-                if ('defaults' in entry):
-                    var = { **var, **entry['defaults'] }
-            var = { **var, **self.defaults }
-            self.generateDefaults(fh, var)
+
+            defaults = getMergedDict(self.trace.data, 'defaults', self.defaults)
+            self.generateDefaults(fh, defaults)
+
             if (self.moduleType == 'zephyr'):
                 self.generateZephyr(fh)
+
+            tp = getMergedDict(self.trace.data, 'cmake-extensions',
+                               self.thirdParty)
+
+            variants = getMergedDict(self.trace.data,
+                                     'cmake-extension-variants',
+                                     self.cmakeVariants)
+
             self.generateDependencies(fh, self.deporder, tp, variants)
             self.generateFooter(fh)
