@@ -71,6 +71,45 @@ class CMakeExtensions:
     def toolchainPath(self):
         return self.toolchainpath
 
+class ZephyrExtensions:
+    def __init__(self, moduleData, trace, order):
+        self.boardroot = []
+        self.dtsroot = []
+        self.socroot = []
+        zephyr = {}
+        bidx = 'zephyr-board-root'
+        didx = 'zephyr-dts-root'
+        sidx = 'zephyr-soc-root'
+        if (bidx in moduleData):
+            extendPath(moduleData['root'], self.boardroot, moduleData[bidx])
+        if (didx in moduleData):
+            extendPath(moduleData['root'], self.dtsroot, moduleData[didx])
+        if (sidx in moduleData):
+            extendPath(moduleData['root'], self.socroot, moduleData[sidx])
+        for entry in trace.data:
+            if 'root' not in entry:
+                continue
+            name = entry['name']
+            addExtension(zephyr, bidx, entry, name)
+            addExtension(zephyr, didx, entry, name)
+            addExtension(zephyr, sidx, entry, name)
+        for entry in order:
+            if (entry in zephyr) and (bidx in zephyr[entry]):
+                extendPath(zephyr[entry]['root'], self.boardroot, zephyr[entry][bidx])
+            if (entry in zephyr) and (didx in zephyr[entry]):
+                extendPath(zephyr[entry]['root'], self.dtsroot, zephyr[entry][didx])
+            if (entry in zephyr) and (sidx in zephyr[entry]):
+                extendPath(zephyr[entry]['root'], self.socroot, zephyr[entry][sidx])
+
+    def boardRoot(self):
+        return self.boardroot
+
+    def dtsRoot(self):
+        return self.dtsroot
+
+    def socRoot(self):
+        return self.socroot
+
 class Trace:
     def __init__(self):
         self.data = []
@@ -445,6 +484,7 @@ class CodeUnderTest:
         self.depstack = None
         self.depstack = None
         self.extensions = None
+        self.zephyr = None
         self.toplevel = None
 
     def name(self):
@@ -491,6 +531,10 @@ class CodeUnderTest:
         data['cmake'] = {}
         data['cmake']['module-path'] = self.extensions.modulePath()
         data['cmake']['toolchain-path'] = self.extensions.toolchainPath()
+        data['zephyr'] = {}
+        data['zephyr']['board-root'] = self.zephyr.boardRoot()
+        data['zephyr']['dts-root'] = self.zephyr.dtsRoot()
+        data['zephyr']['soc-root'] = self.zephyr.socRoot()
         mmh.dump(fn, data)
 
     def populateRoot(self):
@@ -542,6 +586,9 @@ class CodeUnderTest:
         self.extensions = CMakeExtensions(self.moduleData,
                                           self.deptrace,
                                           self.deporder)
+        self.zephyr = ZephyrExtensions(self.moduleData,
+                                       self.deptrace,
+                                       self.deporder)
 
     def cmakeModules(self):
         if (has('cmake-modules', self.moduleData, str)):
@@ -557,6 +604,9 @@ class CodeUnderTest:
                                  self.defaults(),
                                  self.cmake3rdParty(),
                                  self.cmakeVariants(),
+                                 self.zephyr.boardRoot(),
+                                 self.zephyr.dtsRoot(),
+                                 self.zephyr.socRoot(),
                                  self.extensions.modulePath(),
                                  self.deptrace,
                                  self.deporder)

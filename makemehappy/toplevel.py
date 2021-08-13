@@ -36,10 +36,14 @@ def getMergedDict(data, what, more):
 
 class Toplevel:
     def __init__(self, log, moduleType, var, targets, defaults, thirdParty,
-                 cmakeVariants, modulePath, trace, deporder):
+                 cmakeVariants, zephyrBoardRoot, zephyrDTSRoot, zephyrSOCRoot,
+                 modulePath, trace, deporder):
         self.log = log
         self.thirdParty = thirdParty
         self.cmakeVariants = cmakeVariants
+        self.zephyrBoardRoot = zephyrBoardRoot
+        self.zephyrDTSRoot = zephyrDTSRoot
+        self.zephyrSOCRoot = zephyrSOCRoot
         self.trace = trace
         self.modulePath = modulePath
         self.moduleType = moduleType
