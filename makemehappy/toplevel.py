@@ -131,7 +131,7 @@ class Toplevel:
             print('list(APPEND BOARD_ROOT "{}")'.format(entry), file = fh)
         for entry in dtsroot:
             print('list(APPEND DTS_ROOT "{}")'.format(entry), file = fh)
-        for entry in dtsroot:
+        for entry in socroot:
             print('list(APPEND SOC_ROOT "{}")'.format(entry), file = fh)
         print('''set(MMH_ZEPHYR_KERNEL      "${CMAKE_SOURCE_DIR}/deps/zephyr-kernel")
 set(APPLICATION_SOURCE_DIR "${CMAKE_SOURCE_DIR}/code-under-test")
