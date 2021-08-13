@@ -126,7 +126,13 @@ class Toplevel:
             file = fh)
         print("add_subdirectory(code-under-test)", file = fh)
 
-    def generateZephyr(self, fh):
+    def generateZephyr(self, fh, boardroot, dtsroot, socroot):
+        for entry in boardroot:
+            print('list(APPEND BOARD_ROOT "{}")'.format(entry), file = fh)
+        for entry in dtsroot:
+            print('list(APPEND DTS_ROOT "{}")'.format(entry), file = fh)
+        for entry in dtsroot:
+            print('list(APPEND SOC_ROOT "{}")'.format(entry), file = fh)
         print('''set(MMH_ZEPHYR_KERNEL      "${CMAKE_SOURCE_DIR}/deps/zephyr-kernel")
 set(APPLICATION_SOURCE_DIR "${CMAKE_SOURCE_DIR}/code-under-test")
 include(UFWTools)
@@ -149,7 +155,7 @@ find_package(Zephyr REQUIRED)
 enable_language(C)
 enable_language(CXX)
 enable_language(ASM)''',
-              file =  fh)
+              file = fh)
 
     def generateToplevel(self):
         with open(self.filename, 'w') as fh:
@@ -164,7 +170,10 @@ enable_language(ASM)''',
             self.generateDefaults(fh, defaults)
 
             if (self.moduleType == 'zephyr'):
-                self.generateZephyr(fh)
+                self.generateZephyr(fh,
+                                    self.zephyrBoardRoot,
+                                    self.zephyrDTSRoot,
+                                    self.zephyrSOCRoot)
 
             tp = getMergedDict(self.trace.data, 'cmake-extensions',
                                self.thirdParty)
