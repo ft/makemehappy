@@ -43,7 +43,6 @@ class CMakeExtensions:
         self.modulepath = []
         self.toolchainpath = []
         mods = {}
-        tools = {}
         midx = 'cmake-modules'
         tidx = 'cmake-toolchains'
         if (midx in moduleData):
