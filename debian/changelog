@@ -1,3 +1,9 @@
+makemehappy (0.10-1) unstable; urgency=medium
+
+  * [a1ebdafe] New upstream release
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Fri, 13 Aug 2021 23:17:15 +0200
+
 makemehappy (0.9-2) unstable; urgency=medium
 
   * [24447ac2] Bump debian Standards-Version to 4.5.1; no changes required.
