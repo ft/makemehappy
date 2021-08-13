@@ -209,6 +209,15 @@ if (cmd != 'reset-setup' and cmdargs.directory != None and mmh.noParameters(cmda
                     cmdargs.modulePath = p['module-path']
                 if 'toolchain-path' in p:
                     cmdargs.toolchainPath = p['toolchain-path']
+            if ('zephyr' in data):
+                p = data['zephyr']
+                log.info('Loading zephyr-information from {}'.format(fn))
+                if 'board-root' in p:
+                    cmdargs.boardRoot = p['board-root']
+                if 'dts-root' in p:
+                    cmdargs.dtsRoot = p['dts-root']
+                if 'soc-root' in p:
+                    cmdargs.socRoot = p['soc-root']
         else:
             fv = None
             if (not data is None and 'version' in data):

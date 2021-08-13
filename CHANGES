@@ -1,6 +1,21 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.9 → v0.10 (released 2021-08-13):
+
+** New Features
+
+- Add ‘symlink’ source type.
+- Add support for zephyr BOARD, DTS and SOC extensions in modules.
+
+** Diffstat:
+
+    makemehappy/cut.py      | 83 +++++++++++++++++++++++++++++++++++++----
+    makemehappy/toplevel.py | 63 ++++++++++++++++++-------------
+    mmh.in                  |  9 +++++
+    3 files changed, 123 insertions(+), 32 deletions(-)
+
+
 * v0.8 → v0.9 (released 2021-07-23):
 
 ** New Features
