@@ -46,6 +46,8 @@ except ValueError:
     cmakeParameters = None
 
 ap = argparse.ArgumentParser()
+subp = ap.add_subparsers(dest = 'sub_command',
+                         metavar = 'Sub Commands')
 
 ap.add_argument("-d", "--directory",
                 default = None,
@@ -110,12 +112,59 @@ ap.add_argument("-V", "--version", action = "store_true",
 ap.add_argument("-v", "--verbose", action = "store_true",
                 help = "produce verbose output")
 
-ap.add_argument("rest",
-                nargs = "*",
-                default = [ ],
-                help = "sub command to carry out")
+ap_build    = subp.add_parser('build',
+                              help = 'Build a module')
+
+ap_init     = subp.add_parser('build-tree-init',
+                              aliases = [ 'init' ],
+                              help = 'Build a module')
+ap_init.set_defaults(sub_command = 'build-tree-init')
+
+ap_download = subp.add_parser('download-source',
+                              aliases = [ 'download', 'get' ],
+                              help = 'Download sources for a module')
+ap_download.add_argument('modules', nargs = '+')
+ap_download.set_defaults(sub_command = 'download-source')
+
+ap_sources  = subp.add_parser('download-sources',
+                              help = 'Download sources for ALL module')
+ap_sources.add_argument('destination', nargs = '?', default = '.')
+
+ap_dump     = subp.add_parser('dump-description',
+                              aliases = [ 'dump' ],
+                              help = 'Show parsed instruction file data')
+ap_dump.set_defaults(sub_command = 'dump-description')
+
+ap_fetch    = subp.add_parser('fetch-dependencies',
+                              aliases = [ 'fetch', 'deps' ],
+                              help = 'Download dependencies of a module')
+ap_fetch.set_defaults(sub_command = 'fetch-dependencies')
+
+ap_top      = subp.add_parser('generate-toplevel',
+                              aliases = [ 'top' ],
+                              help = 'Generate toplevel of module build-tree')
+ap_top.set_defaults(sub_command = 'generate-toplevel')
+
+ap_reset    = subp.add_parser('reset-setup',
+                              aliases = [ 'reset' ],
+                              help = 'Reset build-tree meta-data')
+ap_reset.set_defaults(sub_command = 'reset-setup')
+
+ap_run      = subp.add_parser('run-instance',
+                              aliases = [ 'run' ],
+                              help = '(Re)run previously configured build-tree')
+ap_run.add_argument('instances', nargs = '*')
+ap_run.set_defaults(sub_command = 'run-instance')
+
+ap_show     = subp.add_parser('show-source',
+                              aliases = [ 'show' ],
+                              help = 'Show source location for module(s)')
+ap_show.add_argument('modules', nargs = '*')
+ap_show.set_defaults(sub_command = 'show-source')
 
 cmdargs = ap.parse_args()
+print(cmdargs)
+print(cmdargs.sub_command)
 
 if cmdargs.query is not None:
     cfg.load()
@@ -176,9 +225,8 @@ if cmdargs.interfaces is not None:
 
 cmdargs.cmake = cmakeParameters
 
-cmd = mmh.lookupCommand(cmdargs.rest)
 cmdargs.fromyaml = False
-if (cmd != 'reset-setup' and cmdargs.directory != None and mmh.noParameters(cmdargs)):
+if (cmdargs.sub_command != 'reset-setup' and cmdargs.directory != None and mmh.noParameters(cmdargs)):
     fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
     if (os.path.exists(fn)):
         data = mmh.load(fn)
@@ -238,19 +286,18 @@ def adjustConfig(cfg, args):
     if adjustments > 0:
         cfg.pushLayer(layer)
 
-if (len(cmdargs.rest) == 0):
-    cmd = 'build'
-    cmdargs.rest = [ cmd ]
-    log.info("Starting up using default command ({})".format(cmd))
-elif (cmd != False):
-    log.info("Starting up using '{}' command".format(cmd))
+if (cmdargs.sub_command == None):
+    cmdargs.sub_command = 'build'
+    log.info("Starting up using default command ({})".format(cmdargs.sub_command))
+elif (cmdargs.sub_command != False):
+    log.info("Starting up using '{}' command".format(cmdargs.sub_command))
 
 def requireModuleDefinition(args):
     if (os.path.isfile(args.module) == False):
         mmh.warn("Module definition does not exist: {}".format(args.module))
         exit(1)
 
-if (cmd == "build-tree-init"):
+if (cmdargs.sub_command == "build-tree-init"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
@@ -259,7 +306,7 @@ if (cmd == "build-tree-init"):
     cut.populateRoot()
     cut.linkIntoRoot()
 
-elif (cmd == "fetch-dependencies"):
+elif (cmdargs.sub_command == "fetch-dependencies"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
@@ -275,7 +322,7 @@ elif (cmd == "fetch-dependencies"):
     cut.changeToRoot()
     cut.loadDependencies()
 
-elif (cmd == "generate-toplevel"):
+elif (cmdargs.sub_command == "generate-toplevel"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
@@ -293,7 +340,7 @@ elif (cmd == "generate-toplevel"):
     cut.cmakeIntoYAML()
     cut.generateToplevel()
 
-elif (cmd == "reset-setup"):
+elif (cmdargs.sub_command == "reset-setup"):
     if (cmdargs.directory == None):
         print("reset-argument only works with -d!")
         exit(1)
@@ -302,10 +349,10 @@ elif (cmd == "reset-setup"):
     data = { 'version': version }
     mmh.dump(fn, data)
 
-elif (cmd == "run-instance"):
-    if (len(cmdargs.rest) > 1):
+elif (cmdargs.sub_command == "run-instance"):
+    if (len(cmdargs.instances) >= 1):
         cfg.load()
-        for d in cmdargs.rest[1:]:
+        for d in cmdargs.instances:
             build.runInstance(cfg, log, cmdargs, d)
         exit(0)
 
@@ -335,7 +382,7 @@ elif (cmd == "run-instance"):
                  .format(cut.countFailed(), cut.countBuilds()))
         exit(1)
 
-elif (cmd == "build"):
+elif (cmdargs.sub_command == "build"):
     requireModuleDefinition(cmdargs)
 
     cfg.load()
@@ -373,13 +420,13 @@ elif (cmd == "build"):
                  .format(cut.countFailed(), cut.countBuilds()))
         exit(1)
 
-elif (cmd == "dump-description"):
+elif (cmdargs.sub_command == "dump-description"):
     data = mmh.load(cmdargs.module)
     mmh.pp(data)
 
-elif (cmd == "show-source"):
+elif (cmdargs.sub_command == "show-source"):
     src.load()
-    names = cmdargs.rest[1:]
+    names = cmdargs.modules
     if (len(names) == 0):
         names = src.allSources();
 
@@ -388,29 +435,17 @@ elif (cmd == "show-source"):
         print("{}: ".format(name), end='')
         print(data)
 
-elif (cmd == "download-source"):
-
-    if (len(cmdargs.rest) != 2):
-        log.error("Usage: download-source Module")
-        exit(1)
-
+elif (cmdargs.sub_command == "download-source"):
     cfg.load()
     src.load()
 
-    module = cmdargs.rest[1]
-    meta = src.lookup(module)
-    source = meta['repository']
-    mmh.loggedProcess(cfg, log, ['git', 'clone', source])
+    for module in cmdargs.modules:
+        meta = src.lookup(module)
+        source = meta['repository']
+        mmh.loggedProcess(cfg, log, ['git', 'clone', source])
 
-elif (cmd == "download-sources"):
-    if (len(cmdargs.rest) > 2):
-        log.error("Usage: download-sources [DestinationDirectory]")
-        exit(1)
-
-    destination = '.'
-    if (len(cmdargs.rest) == 2):
-        destination = cmdargs.rest[1]
-
+elif (cmdargs.sub_command == "download-sources"):
+    destination = cmdargs.destination
     cfg.load()
     src.load()
     loaded = {}
@@ -450,11 +485,11 @@ elif (cmd == "download-sources"):
                       failed[fail]['repository'],
                       failed[fail]['source'])
 
-elif (isinstance(cmd, str)):
-    print("Not implemented yet: {}".format(cmd))
+elif (isinstance(cmdargs.sub_command, str)):
+    print("Not implemented yet: {}".format(cmdargs.sub_command))
 
 else:
-    mmh.warn("Unknown command: {}".format(cmdargs.rest[0]))
+    mmh.warn("This should not happen. {}".format(cmdargs))
     exit(1)
 
 exit(0)

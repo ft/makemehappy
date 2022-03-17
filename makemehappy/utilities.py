@@ -30,33 +30,6 @@ def setVerbosity(value):
     global verbosity
     verbosity = value;
 
-mmhCommands = {
-    'build': { 'aliases': [ ] },
-    'build-tree-init': { 'aliases': [ 'init' ] },
-    'download-source': { 'aliases': [ 'download', 'get' ] },
-    'download-sources': { 'aliases': [ ] },
-    'dump-description': { 'aliases': [ "dump" ] },
-    'fetch-dependencies': { 'aliases': [ 'fetch', 'deps' ] },
-    'generate-toplevel': { 'aliases': [ 'top' ] },
-    'reset-setup': { 'aliases': [ 'reset' ] },
-    'run-instance': { 'aliases': [ 'run' ] },
-    'show-source': { 'aliases': [ 'source' ] }
-}
-
-def lookupCommand(cmds):
-    if (len(cmds) < 1):
-        return False
-
-    cmd = cmds[0]
-    if cmd in mmhCommands:
-        return cmd
-
-    for item in mmhCommands:
-        if cmd in mmhCommands[item]['aliases']:
-            return item
-
-    return False
-
 def matchingVersion(version, data):
     if (data == None):
         return False
