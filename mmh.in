@@ -6,6 +6,7 @@ import sys
 
 import makemehappy.build as build
 import makemehappy.utilities as mmh
+import makemehappy.system as ms
 import makemehappy.toplevel as top
 
 from logbook import Logger
@@ -62,6 +63,10 @@ ap.add_argument("-p", "--preserve", action = "store_true",
                 help = "preserve build root instead of deleting it."
                      + " In combination with -d, delete build root"
                      + " before termination.")
+
+ap.add_argument("-q", "--quiet",
+                action = "store_true",
+                help = "Disable informational output")
 
 ap.add_argument("-L", "--log-all", action = "store_true",
                 help = "send all output to logging facility")
@@ -162,9 +167,20 @@ ap_show     = subp.add_parser('show-source',
 ap_show.add_argument('modules', nargs = '*')
 ap_show.set_defaults(sub_command = 'show-source')
 
+ap_system   = subp.add_parser('system',
+                              help = 'Handle building production systems')
+ap_system.set_defaults(sub_command = 'system')
+sub_system = ap_system.add_subparsers(dest = 'system',
+                                      metavar = 'System Commands')
+sys_list  = sub_system.add_parser('list',
+                                  help = 'List all specified build variants')
+sys_build = sub_system.add_parser('build',
+                                  help = 'Build all or specified build variants')
+sys_build.add_argument('variants', nargs = '*')
+
 cmdargs = ap.parse_args()
-print(cmdargs)
-print(cmdargs.sub_command)
+#print(cmdargs)
+#print(cmdargs.sub_command)
 
 if cmdargs.query is not None:
     cfg.load()
@@ -194,6 +210,9 @@ if (isinstance(cmdargs.directory, str)):
 
 if (cmdargs.verbose):
     mmh.setVerbosity(1)
+
+if (cmdargs.quiet):
+    log.disable()
 
 if (cmdargs.version):
     print("{} ({}) version {}".format(fullname, name, version))
@@ -484,6 +503,19 @@ elif (cmdargs.sub_command == "download-sources"):
                       fail,
                       failed[fail]['repository'],
                       failed[fail]['source'])
+
+elif (cmdargs.sub_command == "system"):
+    if (cmdargs.system == None):
+        cmdargs.system = 'build'
+
+    system = ms.System(log, cfg, cmdargs);
+    system.load()
+    #mmh.pp(system.data)
+
+    if (cmdargs.system == 'build'):
+        system.build(cmdargs.variants)
+    elif (cmdargs.system == 'list'):
+        system.listVariants()
 
 elif (isinstance(cmdargs.sub_command, str)):
     print("Not implemented yet: {}".format(cmdargs.sub_command))
