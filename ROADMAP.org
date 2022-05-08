@@ -12,7 +12,7 @@
 ** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
 ** TODO Implement version dependency judgements
 ** TODO Add more sub-commands
-*** TODO Run compilation instances from build-tree
+*** TODO run: Run compilation instances from module-tree
 - [X] All
 - [ ] One
 - [ ] Some
