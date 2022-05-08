@@ -76,9 +76,6 @@ Lets do this:
 
 That it's possible to run different variants of builds, if the module's build
 system allows or requires that.
-** TODO Allow handing a directory into "run" command
-That way we could rerun a specific instance without having to manually listing
-all characteristics of that instance.
 ** DONE Add a second value kind to variables: defaults
 This:
 
