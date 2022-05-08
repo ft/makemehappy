@@ -9,8 +9,6 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
-** TODO Implement version dependency judgements
 ** TODO Add more sub-commands
 *** TODO run: Run compilation instances from module-tree
 - [X] All
@@ -87,6 +85,7 @@ UFW's recursive CMake  calling scheme. The UFW library could  be updated accor-
 dingly, because  the CMake code  required for  this is not  particularly pretty
 either. This could be done for UFW 2.0.0,  at which point we could also break a
 couple of things that require inelegant code to implement.
+** TODO Implement version dependency judgements
 ** TODO Add options to override dependency versions
 It would be best to be able to put the option more than once and for it to use
 patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
@@ -94,10 +93,16 @@ patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
   mmh --dep-version "*=master" build
 
 …to build a module with all dependency versions set to ‘master’.
+** TODO Add a way to define dependencies for third-party modules
+** TODO Flesh out user manual
+** TODO Data read from YAML files should be verified
+If we don't, we need to check tons of conditions at the points the data is
+actually used. Checking data upfront allows us to write much more straight
+forward code.
+** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
 ** DONE Add YamlStack variant for configuration parsing
 ** DONE Add option to keep running when a build-instance fails
 CLOSED: [2022-05-08 Sun 12:55]
-** TODO Add a way to define dependencies for third-party modules
 ** DONE With non-temporary build-roots, invert --preserve
 ** DONE Generate mmh script
 Configure:
@@ -105,11 +110,6 @@ Configure:
 - Data directory (`/usr/share/MakeMeHappy`)
 - Config directory (`/etc/MakeMeHappy`)
 ** DONE Add Debian Packaging
-** TODO Flesh out user manual
-** TODO Data read from YAML files should be verified
-If we don't, we need to check tons of conditions at the points the data is
-actually used. Checking data upfront allows us to write much more straight
-forward code.
 ** DONE Allow the user to specify a subset of all defined build instances
 If the module.yaml file defines 40 or 50 possible combinations of toolchains,
 build configurations, tools and the like, it would be useful to pick from
@@ -231,7 +231,6 @@ develop modules side by side.
 
 Symlink type was implemented pre-v0.10.
 * Wishlist
-** DONE Forget "tools" — check all dependencies into "deps"
 ** TODO Zsh completion would be nice
 ** DEFERRED Gather statistics while running
 *** TODO How many dependency versions had a patch-level mismatch?
@@ -241,3 +240,4 @@ Symlink type was implemented pre-v0.10.
 *** DONE How many build-instances had their test runs succeed/fail?
 *** DONE How much time did individual steps take to execute?
 *** DONE Render statistics nicely at program termination
+** DONE Forget "tools" — check all dependencies into "deps"
