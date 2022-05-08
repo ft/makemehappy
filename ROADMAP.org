@@ -16,6 +16,29 @@
 - [X] All
 - [ ] One
 - [ ] Some
+*** TODO cmake: Invoke CMake to configure a build-tree
+Sometimes when working on the CMake-system  part of a software module, it might
+useful to be able to invoke CMake's configuration step for a certain build tree
+at will. This is possible to do manually, of course, but cumbersome, since much
+of the build's parameters need to be specified on CMake's command line. And mmh
+could figure out all of those for you.
+
+In mmh builds,  all important build specific information is  encoded in the di-
+rectory name that mmh generated. This should become the ‘cmake’ sub-command.
+
+#+BEGIN_EXAMPLE
+# From build directory (assumes top-level in ../..):
+% mmh cmake
+# From module source directory:
+% mmh cmake ci/build/gnu_native_posix_debug_make
+# Configure multiple build-trees:
+% mmh cmake ci/build/gnu_native_posix_debug_{make,ninja}
+#+END_EXAMPLE
+
+All important parameters are encoded in the build-directory name:
+
+- Zephyr: ~zephyr-gnuarmemb_nucleo-f767zi_none_debug_ninja~
+- Board: ~gnu_native_posix_debug_make~ (no ~zephyr-~ prefix)
 ** TODO Add options to override dependency versions
 It would be best to be able to put the option more than once and for it to use
 patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
