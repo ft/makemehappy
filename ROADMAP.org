@@ -47,7 +47,8 @@ patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
 
 …to build a module with all dependency versions set to ‘master’.
 ** DONE Add YamlStack variant for configuration parsing
-** TODO Add option to keep running when a build-instance fails
+** DONE Add option to keep running when a build-instance fails
+CLOSED: [2022-05-08 Sun 12:55]
 ** TODO Add a way to define dependencies for third-party modules
 ** DONE With non-temporary build-roots, invert --preserve
 ** DONE Generate mmh script
