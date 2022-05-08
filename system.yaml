@@ -1,0 +1,61 @@
+name: some-system-example
+
+# Ideas:
+#
+#     # Configure and build.
+#     mmh system build [VARIANTS...]
+#     # Build a single variant without a deep build tree.
+#     mmh system build -s VARIANT
+#     # Only rebuild, without reconfiguration.
+#     mmh system rebuild
+#     # Force a re-configuration.
+#     mmh system configure
+#     # List all specified build variants.
+#     mmh system list
+#     # Maybe spawn a Curses TUI for selecting build variants.
+#     mmh system select
+#
+# Maybe find something useful to do, if called without sub-command.
+
+common:
+  build-configs: [ release, debug ]
+  build-tool: ninja
+  # ‘zephyr-build-template’ and ‘board-build-template’ inherit from this. Macro
+  # variables that do not have a sensible value when a template is used, will
+  # expand to "unknown".
+  build-template: ${type}/${board}/${toolchain}-${interface}/${application}/${buildconfig}
+  board-build-template: ${board}/${toolchain}/${buildconfig}
+  zephyr-build-template: ${board}/${toolchain}/${application}/${buildconfig}
+  zephyr-kernel: zephyr/kernel
+  zephyr-module-path: [ zephyr/modules ]
+  # This can be used in case there is a pattern with ‘source’ definitions for
+  # zephyr applications.
+  zephyr-template: applications/${application}
+
+zephyr:
+  - application: foobar
+    # This is the same as if we left it out because of zephyr-template.
+    source: application/foobar
+    build:
+      - toolchains:
+          - name: gnuarmemb
+            path: /usr
+        boards:
+          - nucleo_f767zi
+          - stm32h747i_disco_m7
+        modules:
+          - arm-cmsis
+          - hal-stm32
+      # If an item in toolchains is a string, it will be converted in a
+      # dictionary { name: THATSTRING }.
+      - toolchains: [ host ]
+        boards: [ native_posix_64 ]
+
+boards:
+  - name: superboard
+    build-configs: [ release, debug, relwithdebinfo, minsizerel ]
+    build-tools: [ make ]
+    toolchains: [ ti-c2000 ]
+    buildsystem: cm/superboard.cmake
+    options:
+      - CGT_TOOLCHAINS=/opt/texas-instruments
