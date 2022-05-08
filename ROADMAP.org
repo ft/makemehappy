@@ -130,7 +130,8 @@ mymod:
   module: MyModSupport
 
 This will be more powerful with generation-waypoints in place. See below.
-** TODO Introduce waypoints that for extension generation
+** DONE Introduce waypoints that for extension generation
+CLOSED: [2022-05-08 Sun 12:49]
 With third party extensions you get a way of replacing add_subdirectory() calls
 with arbitrary cmake functions or macros. The generation of that looks like
 this:
@@ -155,6 +156,9 @@ be this:
 This is more complex of a problem, especially with module interdependencies to
 be considered. Some third-party modules, that border upon having circular
 dependencies can't really be used without something like this.
+
+The ‘basic’ and ‘init’ steps were added a while ago. This should be good enough
+for the time being.
 ** DONE Make it possible for an extension to be used by more than one module
 cmake-extensions:
   mymod:
