@@ -184,7 +184,7 @@ Symlink type was implemented pre-v0.10.
 * Wishlist
 ** DONE Forget "tools" — check all dependencies into "deps"
 ** TODO Zsh completion would be nice
-** ACTIVE Gather statistics while running
+** DEFERRED Gather statistics while running
 *** TODO How many dependency versions had a patch-level mismatch?
 *** TODO How many dependency versions had a minor mismatch?
 *** TODO How many dependency versions had a major mismatch?
