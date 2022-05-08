@@ -39,6 +39,54 @@ All important parameters are encoded in the build-directory name:
 
 - Zephyr: ~zephyr-gnuarmemb_nucleo-f767zi_none_debug_ninja~
 - Board: ~gnu_native_posix_debug_make~ (no ~zephyr-~ prefix)
+*** TODO system: Build many parameter combinations for a system-build
+In normal operation, mmh tries to build  a module's code with as many parameter
+combinations as possible (toolchain, build-cfg, build-tool etc). To do this, it
+resolves dependencies and  generates a CMake top-level setup to  build and test
+the whole affair.
+
+For production software, this level of automation may be undesirable. Maintain-
+ers may decide to rather implement this top-level system themselves and instan-
+tiate the dependencies on their own as well. Thus a build without these automa-
+tion steps is a system-build.  This kind of system-build  is supported by UFW's
+CMake extensions.
+
+One of the limitations of CMake is, that a single build can only use one single
+toolchain. In embedded development it is  not uncommon having to resort to ven-
+dor specific toolchains, thus for complete builds requiring the use of multiple
+toolchains to build all applications that belong to a system.
+
+It's actually possible to overcome this, by using CMake's ExternalProject modu-
+le and run CMake  in a recursive scheme, so that each  sub-call of cmake confi-
+gures a build for a single toolchain,  thus tying everything into a single mas-
+sive build. The CMake modules of the UFW library implement this scheme.
+
+This has several downsides: The CMakeLists.txt file becomes tough to follow be-
+cause the same  file gets parsed in multiple ways  by multiple CMake processes.
+The build tree becomes  complex and quite deep so the  top-level CMake call can
+keep track of what is happening. This is rather unergonomic for the user to de-
+cent into. And  finally, it becomes tough to perform  parallel build correctly.
+If you use  Ninja, for instance an  run your top-level ninja  in parallel mode,
+the recursive calls may also be parallel,  which — in complex builds — can mas-
+sively overload your system.
+
+UFW's API follows  a pretty declarative approach in  specifying desired builds.
+This declaration  can also be done  outside of CMake,  say in a YAML  file, and
+instead of  having CMake call CMake  for configuration and have  the build tool
+call the  build tool again  recursively for building,  have mmh call  cmake and
+then have mmh call the build system as desired.
+
+This has the one  downside, that a build like that  introduces a new dependency
+upon mmh.  But on the  plus side, it would  solve all the  previously mentioned
+problems. Since mmh would have perfect access to all build parameters, it would
+make it easy to implement a pleasant command line interface to build parts of a
+large system build as well.
+
+The ‘system’ command  should therefore implement the  functionality provided by
+UFW's recursive CMake  calling scheme. The UFW library could  be updated accor-
+dingly, because  the CMake code  required for  this is not  particularly pretty
+either. This could be done for UFW 2.0.0,  at which point we could also break a
+couple of things that require inelegant code to implement.
 ** TODO Add options to override dependency versions
 It would be best to be able to put the option more than once and for it to use
 patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
