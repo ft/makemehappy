@@ -176,7 +176,13 @@ sys_list  = sub_system.add_parser('list',
                                   help = 'List all specified build variants')
 sys_build = sub_system.add_parser('build',
                                   help = 'Build all or specified build variants')
-sys_build.add_argument('variants', nargs = '*')
+sys_build.add_argument('variants', default = [ ], nargs = '*')
+sys_rebuild = sub_system.add_parser('rebuild',
+                                  help = 'Rebuild all or specified build variants')
+sys_rebuild.add_argument('variants', default = [ ], nargs = '*')
+sys_clean = sub_system.add_parser('clean',
+                                  help = 'Clean all or specified build variants')
+sys_clean.add_argument('variants', default = [ ], nargs = '*')
 
 cmdargs = ap.parse_args()
 #print(cmdargs)
@@ -508,12 +514,24 @@ elif (cmdargs.sub_command == "system"):
     if (cmdargs.system == None):
         cmdargs.system = 'build'
 
+    if (cmdargs.directory == None):
+        cmdargs.directory = 'build'
+
+    if (not 'variants' in cmdargs):
+        cmdargs.variants = [ ]
+
+    cfg.load()
     system = ms.System(log, cfg, cmdargs);
     system.load()
     #mmh.pp(system.data)
+    #mmh.pp(cmdargs)
 
     if (cmdargs.system == 'build'):
         system.build(cmdargs.variants)
+    elif (cmdargs.system == 'rebuild'):
+        system.rebuild(cmdargs.variants)
+    elif (cmdargs.system == 'clean'):
+        system.clean(cmdargs.variants)
     elif (cmdargs.system == 'list'):
         system.listVariants()
 
