@@ -7,6 +7,8 @@ defaults = { 'build-configs'   : [ 'debug', 'release' ],
              'build-tool'      : 'ninja',
              'install-dir'     : 'artifacts',
              'ufw'             : '${system}/libraries/ufw',
+             'zephyr-kernel'   : '${system}/zephyr/kernel',
+             'zephyr-modules'  : [ '${system}/zephyr/modules' ],
              'zephyr-template' : 'applications/${application}' }
 
 def cmakeBuildtool(name):
@@ -80,10 +82,34 @@ def fillData(data):
         for b in data['boards']:
             fill(b, data['common'])
 
-def getSpec(data, name):
+def getSpec(data, key, name):
     for d in data:
-        if (name == d['name']):
+        if (name == d[key]):
             return d
+    return None
+
+def isZephyrModule(d):
+    return (os.path.isdir(d) and
+            os.path.isdir(os.path.join(d, 'zephyr')))
+
+def findZephyrModule(path, name):
+    for d in path:
+        candidate = os.path.join(d, name)
+        if (isZephyrModule(candidate)):
+            return candidate
+    return None
+
+def genZephyrModules(path, names):
+    realpath = [ expandFile(x) for x in path ]
+    modules = [ findZephyrModule(realpath, m) for m in names ]
+    return ';'.join([x for x in modules if x != None])
+
+def findZephyrBuild(builds, tc, board):
+    for build in builds:
+        if board in build['boards']:
+            for toolchain in build['toolchains']:
+                if tc == toolchain['name']:
+                    return build
     return None
 
 class System:
@@ -114,7 +140,7 @@ class System:
         self.log.info('Configuring system variant: {}'.format(variant))
         (prefix, board, tc, cfg) = variant.split('/')
         curdir = os.getcwd()
-        spec = getSpec(self.data['boards'], board)
+        spec = getSpec(self.data['boards'], 'name', board)
         install = os.path.join(curdir,
                                self.args.directory,
                                spec['install-dir'],
@@ -172,7 +198,92 @@ class System:
         return (rc == 0)
 
     def buildZephyrVariant(self, variant):
+        return (self.configureZephyrVariant(variant) and
+                self.justbuildZephyrVariant(variant) and
+                self.installZephyrVariant(variant)   and
+                self.testZephyrVariant(variant))
+
+    def rebuildZephyrVariant(self, variant):
+        return (self.justbuildZephyrVariant(variant) and
+                self.installZephyrVariant(variant)   and
+                self.testZephyrVariant(variant))
+
+    def configureZephyrVariant(self, variant):
+        self.log.info('Configuring system variant: {}'.format(variant))
         (prefix, board, app, tc, cfg) = variant.split('/')
+        curdir = os.getcwd()
+        spec = getSpec(self.data['zephyr'], 'application', app)
+        install = os.path.join(curdir,
+                               self.args.directory,
+                               spec['install-dir'],
+                               board, tc, app, cfg)
+        builddir = os.path.join(self.args.directory, variant)
+        buildtool = cmakeBuildtool(spec['build-tool'])
+        kernel = expandFile(spec['zephyr-kernel'])
+        build = findZephyrBuild(spec['build'], tc, board)
+        tcpath = None
+        for toolchain in build['toolchains']:
+            if tc == toolchain['name']:
+                if toolchain['path']:
+                    tcpath = toolchain['path']
+        modules = genZephyrModules(spec['zephyr-modules'],
+                                   build['modules'])
+
+        cmd = [ 'cmake',
+                '-G{}'.format(buildtool), '-S', '.', '-B', builddir,
+                '-DCMAKE_INSTALL_PREFIX={}'.format(install),
+                '-DCMAKE_BUILD_TYPE={}'.format(cfg),
+                '-DZEPHYR_TOOLCHAIN_VARIANT={}'.format(tc),
+                '-DBOARD={}'.format(board),
+                '-DUFW_ZEPHYR_KERNEL={}'.format(kernel),
+                '-DUFW_ZEPHYR_APPLICATION={}'.format(
+                    expandFile(spec['source'])),
+                '-DZEPHYR_MODULES={}'.format(modules),
+                '-DCMAKE_EXPORT_COMPILE_COMMANDS=on' ]
+
+        if (tcpath != None):
+            cmd.extend([ '-DGNUARMEMB_TOOLCHAIN_PATH={}'.format(tcpath) ])
+
+        if ('build-system' in spec):
+            cmd.extend([ '-DUFW_LOAD_BUILD_SYSTEM={}'.format(
+                expandFile(spec['build-system'])) ])
+
+        if (self.args.cmake != None):
+            cmd.extend(self.args.cmake)
+
+        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
+        return (rc == 0)
+
+    def justbuildZephyrVariant(self, variant):
+        self.log.info('Building system variant: {}'.format(variant))
+        builddir = os.path.join(self.args.directory, variant)
+        cmd = [ 'cmake', '--build', builddir ]
+        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
+        return (rc == 0)
+
+    def installZephyrVariant(self, variant):
+        self.log.info('Installing system variant: {}'.format(variant))
+        builddir = os.path.join(self.args.directory, variant)
+        olddir = os.getcwd()
+        os.chdir(builddir)
+        cmd = [ 'cmake', '--install', '.' ]
+        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
+        os.chdir(olddir)
+        return (rc == 0)
+
+    def testZephyrVariant(self, variant):
+        self.log.info('Testing system variant: {}'.format(variant))
+        builddir = os.path.join(self.args.directory, variant)
+        cmd = [ 'ctest', '--test-dir', builddir ]
+        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
+        return (rc == 0)
+
+    def cleanZephyrVariant(self, variant):
+        self.log.info('Cleaning system variant: {}'.format(variant))
+        builddir = os.path.join(self.args.directory, variant)
+        cmd = [ 'cmake', '--build', builddir, '--target', 'clean' ]
+        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
+        return (rc == 0)
 
     def buildVariants(self, variants):
         for v in variants:
