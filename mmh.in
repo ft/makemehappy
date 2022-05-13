@@ -312,7 +312,10 @@ def adjustConfig(cfg, args):
         cfg.pushLayer(layer)
 
 if (cmdargs.sub_command == None):
-    cmdargs.sub_command = 'build'
+    if (os.path.isfile('system.yaml')):
+        cmdargs.sub_command = 'system'
+    else:
+        cmdargs.sub_command = 'build'
     log.info("Starting up using default command ({})".format(cmdargs.sub_command))
 elif (cmdargs.sub_command != False):
     log.info("Starting up using '{}' command".format(cmdargs.sub_command))
@@ -511,7 +514,7 @@ elif (cmdargs.sub_command == "download-sources"):
                       failed[fail]['source'])
 
 elif (cmdargs.sub_command == "system"):
-    if (cmdargs.system == None):
+    if ((not 'system' in cmdargs) or (cmdargs.system == None)):
         cmdargs.system = 'build'
 
     if (cmdargs.directory == None):
