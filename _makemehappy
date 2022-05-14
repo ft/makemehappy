@@ -28,28 +28,28 @@ __makemehappy-comma-complete() {
 
 __makemehappy-architectures() {
     local -a archs
-    archs=$(mmh -Q architectures 2>/dev/null)
+    archs=$(command mmh -Q architectures 2>/dev/null)
     __makemehappy-comma-complete \
         makemehappy-architectures 'makemehappy architectures' archs
 }
 
 __makemehappy-buildconfigurations() {
     local -a cfgs
-    cfgs=( $(mmh -Q buildconfigs 2>/dev/null) )
+    cfgs=( $(command mmh -Q buildconfigs 2>/dev/null) )
     __makemehappy-comma-complete \
         makemehappy-build-configurations 'makemehappy build configurations' cfgs
 }
 
 __makemehappy-buildtools() {
     local -a tools
-    tools=( $(mmh -Q buildtools 2>/dev/null) )
+    tools=( $(command mmh -Q buildtools 2>/dev/null) )
     __makemehappy-comma-complete \
         makemehappy-build-tools 'makemehappy build tools' tools
 }
 
 __makemehappy-interfaces() {
     local -a ifcs
-    ifcs=( $(mmh -Q interfaces 2>/dev/null) )
+    ifcs=( $(command mmh -Q interfaces 2>/dev/null) )
     __makemehappy-comma-complete \
         makemehappy-interfaces 'makemehappy interfaces' ifcs
 }
@@ -61,7 +61,7 @@ __makemehappy-nothing-else() {
 __makemehappy-modules () {
     local expl
     local -a modules
-    modules=( ${${(f)"$(mmh -q show-source)"}%%:*} )
+    modules=( ${${(f)"$(command mmh -q show-source)"}%%:*} )
     _wanted makemehappy-modules expl 'makemehappy modules' \
             compadd "${modules[@]}"
 }
@@ -82,7 +82,7 @@ __makemehappy-queries () {
 
 __makemehappy-toolchains() {
     local -a tcs already
-    tcs=( $(mmh -Q toolchains 2>/dev/null) )
+    tcs=( $(command mmh -Q toolchains 2>/dev/null) )
     compset -P '*,'
     already=( ${(s<,>)IPREFIX} )
     _describe -t makemehappy-toolchains 'makemehappy toolchains' \
