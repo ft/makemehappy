@@ -58,6 +58,14 @@ __makemehappy-nothing-else() {
     _message -e "no further arguments"
 }
 
+__makemehappy-modules () {
+    local expl
+    local -a modules
+    modules=( ${${(f)"$(mmh -q show-source)"}%%:*} )
+    _wanted makemehappy-modules expl 'makemehappy modules' \
+            compadd "${modules[@]}"
+}
+
 __makemehappy-queries () {
     local -a makemehappy_query_keywords
     makemehappy_query_keywords=(
@@ -104,7 +112,7 @@ _makemehappy-download-source() {
         print "Download sources for specified sources"
         return
     fi
-    __makemehappy-nothing-else
+    __makemehappy-modules
 }
 
 _makemehappy-download-sources() {
@@ -161,7 +169,7 @@ _makemehappy-show-source() {
         print "Show source definition for modules"
         return
     fi
-    __makemehappy-nothing-else
+    __makemehappy-modules
 }
 
 _makemehappy-system() {
