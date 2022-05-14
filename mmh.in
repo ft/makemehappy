@@ -126,7 +126,7 @@ ap_init     = subp.add_parser('build-tree-init',
 ap_init.set_defaults(sub_command = 'build-tree-init')
 
 ap_download = subp.add_parser('download-source',
-                              aliases = [ 'download', 'get' ],
+                              aliases = [ 'get' ],
                               help = 'Download sources for a module')
 ap_download.add_argument('modules', nargs = '+')
 ap_download.set_defaults(sub_command = 'download-source')
@@ -141,7 +141,7 @@ ap_dump     = subp.add_parser('dump-description',
 ap_dump.set_defaults(sub_command = 'dump-description')
 
 ap_fetch    = subp.add_parser('fetch-dependencies',
-                              aliases = [ 'fetch', 'deps' ],
+                              aliases = [ 'deps' ],
                               help = 'Download dependencies of a module')
 ap_fetch.set_defaults(sub_command = 'fetch-dependencies')
 
