@@ -231,7 +231,8 @@ develop modules side by side.
 
 Symlink type was implemented pre-v0.10.
 * Wishlist
-** TODO Zsh completion would be nice
+** DONE Zsh completion would be nice
+CLOSED: [2022-05-14 Sat 16:54]
 ** DEFERRED Gather statistics while running
 *** TODO How many dependency versions had a patch-level mismatch?
 *** TODO How many dependency versions had a minor mismatch?
