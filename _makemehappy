@@ -19,7 +19,8 @@ _makemehappy_aliasmap=(
 # Utilities have to be named __makemehappy-*()
 
 __makemehappy-comma-complete() {
-    local tag=$1 desc=$2 lst=$3
+    local tag=$1 lst=$2
+    local desc=${tag//-/ }
     local -a already
     compset -P '*,'
     already=( ${(s<,>)IPREFIX} )
@@ -29,29 +30,25 @@ __makemehappy-comma-complete() {
 __makemehappy-architectures() {
     local -a archs
     archs=$(command mmh -Q architectures 2>/dev/null)
-    __makemehappy-comma-complete \
-        makemehappy-architectures 'makemehappy architectures' archs
+    __makemehappy-comma-complete makemehappy-architectures archs
 }
 
 __makemehappy-buildconfigurations() {
     local -a cfgs
     cfgs=( $(command mmh -Q buildconfigs 2>/dev/null) )
-    __makemehappy-comma-complete \
-        makemehappy-build-configurations 'makemehappy build configurations' cfgs
+    __makemehappy-comma-complete makemehappy-build-configurations cfgs
 }
 
 __makemehappy-buildtools() {
     local -a tools
     tools=( $(command mmh -Q buildtools 2>/dev/null) )
-    __makemehappy-comma-complete \
-        makemehappy-build-tools 'makemehappy build tools' tools
+    __makemehappy-comma-complete makemehappy-build-tools tools
 }
 
 __makemehappy-interfaces() {
     local -a ifcs
     ifcs=( $(command mmh -Q interfaces 2>/dev/null) )
-    __makemehappy-comma-complete \
-        makemehappy-interfaces 'makemehappy interfaces' ifcs
+    __makemehappy-comma-complete makemehappy-interfaces ifcs
 }
 
 __makemehappy-nothing-else() {
