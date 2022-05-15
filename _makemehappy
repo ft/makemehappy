@@ -77,6 +77,15 @@ __makemehappy-queries () {
               makemehappy_query_keywords
 }
 
+__makemehappy-system-variants () {
+    local expl
+    local -a variants ignored
+    ignored=(${line:#${words[CURRENT]}})
+    variants=( ${${(f)"$(command mmh -q system list 2>/dev/null)"}%%:*} )
+    _wanted system-variants expl 'system variants' \
+            compadd -F ignored "${variants[@]}"
+}
+
 __makemehappy-toolchains() {
     local -a tcs already
     tcs=( $(command mmh -Q toolchains 2>/dev/null) )
@@ -174,7 +183,43 @@ _makemehappy-system() {
         print "Commands for complete or partial system builds"
         return
     fi
-    __makemehappy-nothing-else
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '*::: :->args' \
+               {-h,--help}'[display help message]' \
+        && ret=0
+
+    if [[ -n $state ]]; then
+        if (( CURRENT == 1 )); then
+            local -a commands
+
+            commands=(
+                build:'perform config/build/install/test on system'
+                clean:'clean build trees'
+                list:'list specified variants'
+                rebuild:'like "build" but skip config step'
+            )
+
+            _describe -t commands command commands && ret=0
+        else
+            curcontext=${curcontext%:*}-$line[1]:
+            compset -n 1
+
+            case $line[1] in
+            (build|clean|rebuild)
+                _arguments -C -s -w : \
+                           {-h,--help}'[display help message]' \
+                           '*:: :__makemehappy-system-variants' \
+                    && ret=0
+                ;;
+            (*) __makemehappy-nothing-else ;;
+            esac
+        fi
+    fi
+
+    return ret
 }
 
 # Main completion entry point
