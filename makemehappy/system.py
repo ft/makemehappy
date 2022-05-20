@@ -2,6 +2,7 @@ import os
 
 import mako.template as mako
 import makemehappy.utilities as mmh
+import makemehappy.cut as cut
 
 defaults = { 'build-configs'      : [ 'debug', 'release' ],
              'build-system'       : None,
@@ -192,6 +193,8 @@ def findZephyrTransformer(ufw, cfg):
 
 class System:
     def __init__(self, log, cfg, args):
+        self.stats = cut.ExecutionStatistics(cfg, log)
+        self.stats.checkpoint('system-initialisation')
         self.log = log
         self.cfg = cfg
         self.args = args
@@ -204,6 +207,8 @@ class System:
         self.variants = makeVariants(self.data)
 
     def buildBoardVariant(self, variant):
+        (prefix, board, tc, cfg) = variant.split('/')
+        self.stats.systemBoard(tc, board, cfg, 'ninja')
         return (self.configureBoardVariant(variant) and
                 self.justbuildBoardVariant(variant) and
                 self.installBoardVariant(variant)   and
@@ -275,10 +280,14 @@ class System:
         return (rc == 0)
 
     def buildZephyrVariant(self, variant):
-        return (self.configureZephyrVariant(variant) and
-                self.justbuildZephyrVariant(variant) and
-                self.installZephyrVariant(variant)   and
-                self.testZephyrVariant(variant))
+        (prefix, board, app, tc, cfg) = variant.split('/')
+        self.stats.systemZephyr(app, tc, board, cfg, 'ninja')
+        print("DEBUG: ", variant)
+        #exit(0)
+        self.configureZephyrVariant(variant)
+        self.justbuildZephyrVariant(variant)
+        self.installZephyrVariant(variant)
+        self.testZephyrVariant(variant)
 
     def rebuildZephyrVariant(self, variant):
         return (self.justbuildZephyrVariant(variant) and
@@ -433,10 +442,19 @@ class System:
     def build(self, variants):
         if (len(variants) == 0):
             self.log.info("Building full system:")
-            return self.buildVariants(self.variants)
+            self.buildVariants(self.variants)
         else:
             self.log.info("Building selected variant(s):")
-            return self.buildVariants(variants)
+            self.buildVariants(variants)
+        self.stats.checkpoint('finish')
+        self.stats.renderStatistics()
+        if self.stats.wasSuccessful():
+            self.log.info('All {} builds succeeded.'.format(len(self.variants)))
+            exit(0)
+        else:
+            self.log.info('{} build(s) out of {} failed.'
+                          .format('some', len(self.variants)))
+            exit(1)
 
     def rebuild(self, variants):
         if (len(variants) == 0):

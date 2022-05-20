@@ -225,7 +225,7 @@ class InvalidTimeStampKind(Exception):
 
 def endoftime(datum):
     t = datum['type']
-    if t == 'build':
+    if (t == 'build' or t == 'system-board' or t == 'system-zephyr'):
         return datum['time-stamp']
     elif t == 'checkpoint':
         if 'testsuite-stamp' in datum:
@@ -278,6 +278,25 @@ class ExecutionStatistics:
                             'buildtool': buildtool,
                             'time-stamp': datetime.datetime.now() } )
 
+    def systemBoard(self, toolchain, board, buildcfg, buildtool):
+        self.data.append( { 'type':      'system-board',
+                            'toolchain': toolchain,
+                            'board':     board,
+                            'interface': 'generic',
+                            'buildcfg':  buildcfg,
+                            'buildtool': buildtool,
+                            'time-stamp': datetime.datetime.now() } )
+
+    def systemZephyr(self, app, toolchain, board, buildcfg, buildtool):
+        self.data.append( { 'type':      'system-zephyr',
+                            'application': app,
+                            'toolchain': toolchain,
+                            'board':     board,
+                            'interface': 'generic',
+                            'buildcfg':  buildcfg,
+                            'buildtool': buildtool,
+                            'time-stamp': datetime.datetime.now() } )
+
     def logConfigure(self, result):
         self.data[-1]['configure-stamp'] = datetime.datetime.now()
         self.data[-1]['configure-result'] = (result == 0)
@@ -285,6 +304,10 @@ class ExecutionStatistics:
     def logBuild(self, result):
         self.data[-1]['build-stamp'] = datetime.datetime.now()
         self.data[-1]['build-result'] = (result == 0)
+
+    def logInstall(self, result):
+        self.data[-1]['install-stamp'] = datetime.datetime.now()
+        self.data[-1]['install-result'] = (result == 0)
 
     def logTestsuite(self, num, result):
         self.data[-1]['testsuite-stamp'] = datetime.datetime.now()
@@ -365,23 +388,75 @@ class ExecutionStatistics:
         self.renderStepResult(datum, 'Testsuite', 'testsuite')
 
     def renderBuildResult(self, datum):
+        #mmh.pp(datum)
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
-        maybeInfo(self.cfg, self.log, ''.ljust(90, '-'))
+        maybeInfo(self.cfg, self.log, ''.ljust(92, '-'))
         maybeInfo(self.cfg, self.log,
-                  '{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}'
-                  .format(toolchain = 'Toolchain',
+                  '{pad:>4}{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}'
+                  .format(pad = '',
+                          toolchain = 'Toolchain',
                           cpu = 'Architecture',
                           interf = 'Interface',
                           config = 'Config',
                           tool = 'Buildtool'))
         maybeInfo(self.cfg, self.log,
-                  '{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}     {result}'
-                  .format('',
+                  '{pad:>4}{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}     {result}'
+                  .format(pad = '',
                           toolchain = datum['toolchain'],
                           cpu = datum['cpu'],
                           interf = datum['interface'],
+                          config = datum['buildcfg'],
+                          tool = datum['buildtool'],
+                          result = result))
+        self.renderConfigureStepResult(datum)
+        self.renderBuildStepResult(datum)
+        self.renderTestStepResult(datum)
+
+    def renderSystemBoardResult(self, datum):
+        #mmh.pp(datum)
+        result = 'Success'
+        if buildFailed(datum):
+            result = 'Failure   ---!!!---'
+        maybeInfo(self.cfg, self.log, ''.ljust(92, '-'))
+        maybeInfo(self.cfg, self.log,
+                  '{pad:>21}{toolchain:>20} {board:>20} {config:>16} {tool:>12}'
+                  .format(pad = '',
+                          toolchain = 'Toolchain',
+                          board = 'Board',
+                          config = 'Config',
+                          tool = 'Buildtool'))
+        maybeInfo(self.cfg, self.log,
+                  '{pad:>21}{toolchain:>20} {board:>20} {config:>16} {tool:>12}     {result}'
+                  .format(pad = '',
+                          toolchain = datum['toolchain'],
+                          board = datum['board'],
+                          config = datum['buildcfg'],
+                          tool = datum['buildtool'],
+                          result = result))
+        self.renderConfigureStepResult(datum)
+        self.renderBuildStepResult(datum)
+        self.renderTestStepResult(datum)
+
+    def renderSystemZephyrResult(self, datum):
+        #mmh.pp(datum)
+        result = 'Success'
+        if buildFailed(datum):
+            result = 'Failure   ---!!!---'
+        maybeInfo(self.cfg, self.log, ''.ljust(92, '-'))
+        maybeInfo(self.cfg, self.log,
+                  '{application:>20} {toolchain:>20} {board:>20} {config:>16} {tool:>12}'
+                  .format(application = 'Application',
+                          toolchain = 'Toolchain',
+                          board = 'Board',
+                          config = 'Config',
+                          tool = 'Buildtool'))
+        maybeInfo(self.cfg, self.log,
+                  '{application:>20} {toolchain:>20} {board:>20} {config:>16} {tool:>12}     {result}'
+                  .format(application = datum['application'],
+                          toolchain = datum['toolchain'],
+                          board = datum['board'],
                           config = datum['buildcfg'],
                           tool = datum['buildtool'],
                           result = result))
@@ -406,11 +481,16 @@ class ExecutionStatistics:
             t = entry['type']
             if t == 'build':
                 self.renderBuildResult(entry)
+            elif t == 'system-board':
+                self.renderSystemBoardResult(entry)
+            elif t == 'system-zephyr':
+                self.renderSystemZephyrResult(entry)
             elif t == 'checkpoint':
                 self.renderCheckpoint(entry)
             else:
                 self.log.warn('Statistics log entry has unknown type: {}'
                               .format(t))
+        #print("DEBUG: {}", self.data)
         maybeInfo(self.cfg, self.log, '')
         time = renderTimedelta(self.data[-1]['time-stamp'] -
                                self.data[0]['time-stamp'])
