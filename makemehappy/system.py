@@ -51,8 +51,8 @@ def zephyrToolchain(spec):
     return ztv
 
 
-def makeZephyrVariants(zephyr):
-    variants = []
+def makeZephyrInstances(zephyr):
+    instances = []
     name = zephyr['application']
     for cfg in zephyr['build-configs']:
         for build in zephyr['build']:
@@ -63,27 +63,27 @@ def makeZephyrVariants(zephyr):
                 else:
                     tcname = tc['name']
                 for board in build['boards']:
-                    variants.extend(['zephyr/{}/{}/{}/{}'.format(
+                    instances.extend(['zephyr/{}/{}/{}/{}'.format(
                         board, name, tcname, cfg)])
-    return variants
+    return instances
 
-def makeBoardVariants(board):
-    variants = []
+def makeBoardInstances(board):
+    instances = []
     for cfg in board['build-configs']:
         for tc in board['toolchains']:
-            variants.extend(['boards/{}/{}/{}'.format(
+            instances.extend(['boards/{}/{}/{}'.format(
                 board['name'], tc, cfg)])
-    return variants
+    return instances
 
-def makeVariants(data):
+def makeInstances(data):
     boards = []
     zephyr = []
     if ('zephyr' in data):
         for z in data['zephyr']:
-            boards += makeZephyrVariants(z)
+            boards += makeZephyrInstances(z)
     if ('boards' in data):
         for b in data['boards']:
-            boards += makeBoardVariants(b)
+            boards += makeBoardInstances(b)
     rv = boards + zephyr
     rv.sort()
     return rv
@@ -204,24 +204,24 @@ class System:
         self.log.info("Loading system specification: {}".format(self.spec))
         self.data = mmh.load(self.spec)
         fillData(self.data)
-        self.variants = makeVariants(self.data)
+        self.instances = makeInstances(self.data)
 
-    def buildBoardVariant(self, variant):
-        (prefix, board, tc, cfg) = variant.split('/')
+    def buildBoardInstance(self, instance):
+        (prefix, board, tc, cfg) = instance.split('/')
         self.stats.systemBoard(tc, board, cfg, 'ninja')
-        return (self.configureBoardVariant(variant) and
-                self.justbuildBoardVariant(variant) and
-                self.installBoardVariant(variant)   and
-                self.testBoardVariant(variant))
+        return (self.configureBoardInstance(instance) and
+                self.justbuildBoardInstance(instance) and
+                self.installBoardInstance(instance)   and
+                self.testBoardInstance(instance))
 
-    def rebuildBoardVariant(self, variant):
-        return (self.justbuildBoardVariant(variant) and
-                self.installBoardVariant(variant)   and
-                self.testBoardVariant(variant))
+    def rebuildBoardInstance(self, instance):
+        return (self.justbuildBoardInstance(instance) and
+                self.installBoardInstance(instance)   and
+                self.testBoardInstance(instance))
 
-    def configureBoardVariant(self, variant):
-        self.log.info('Configuring system variant: {}'.format(variant))
-        (prefix, board, tc, cfg) = variant.split('/')
+    def configureBoardInstance(self, instance):
+        self.log.info('Configuring system instance: {}'.format(instance))
+        (prefix, board, tc, cfg) = instance.split('/')
         curdir = os.getcwd()
         spec = getSpec(self.data['boards'], 'name', board)
         install = os.path.join(curdir,
@@ -231,7 +231,7 @@ class System:
         tcfile = os.path.join(expandFile(spec['ufw']),
                               'cmake', 'toolchains',
                               '{}.cmake'.format(tc))
-        builddir = os.path.join(self.args.directory, variant)
+        builddir = os.path.join(self.args.directory, instance)
 
         cmd = cmake([
             cmakeBuildtool(self.log, spec['build-tool']),
@@ -251,59 +251,59 @@ class System:
         rc = mmh.loggedProcess(self.cfg, self.log, cmd)
         return (rc == 0)
 
-    def justbuildBoardVariant(self, variant):
-        self.log.info('Building system variant: {}'.format(variant))
-        builddir = os.path.join(self.args.directory, variant)
+    def justbuildBoardInstance(self, instance):
+        self.log.info('Building system instance: {}'.format(instance))
+        builddir = os.path.join(self.args.directory, instance)
         cmd = [ 'cmake', '--build', builddir ]
         rc = mmh.loggedProcess(self.cfg, self.log, cmd)
         return (rc == 0)
 
-    def installBoardVariant(self, variant):
-        self.log.info('Installing system variant: {}'.format(variant))
-        builddir = os.path.join(self.args.directory, variant)
+    def installBoardInstance(self, instance):
+        self.log.info('Installing system instance: {}'.format(instance))
+        builddir = os.path.join(self.args.directory, instance)
         cmd = [ 'cmake', '--install', builddir ]
         rc = mmh.loggedProcess(self.cfg, self.log, cmd)
         return (rc == 0)
 
-    def testBoardVariant(self, variant):
-        self.log.info('Testing system variant: {}'.format(variant))
-        builddir = os.path.join(self.args.directory, variant)
+    def testBoardInstance(self, instance):
+        self.log.info('Testing system instance: {}'.format(instance))
+        builddir = os.path.join(self.args.directory, instance)
         cmd = [ 'ctest', '--test-dir', builddir ]
         rc = mmh.loggedProcess(self.cfg, self.log, cmd)
         return (rc == 0)
 
-    def cleanBoardVariant(self, variant):
-        self.log.info('Cleaning system variant: {}'.format(variant))
-        builddir = os.path.join(self.args.directory, variant)
+    def cleanBoardInstance(self, instance):
+        self.log.info('Cleaning system instance: {}'.format(instance))
+        builddir = os.path.join(self.args.directory, instance)
         cmd = [ 'cmake', '--build', builddir, '--target', 'clean' ]
         rc = mmh.loggedProcess(self.cfg, self.log, cmd)
         return (rc == 0)
 
-    def buildZephyrVariant(self, variant):
-        (prefix, board, app, tc, cfg) = variant.split('/')
+    def buildZephyrInstance(self, instance):
+        (prefix, board, app, tc, cfg) = instance.split('/')
         self.stats.systemZephyr(app, tc, board, cfg, 'ninja')
-        print("DEBUG: ", variant)
+        print("DEBUG: ", instance)
         #exit(0)
-        self.configureZephyrVariant(variant)
-        self.justbuildZephyrVariant(variant)
-        self.installZephyrVariant(variant)
-        self.testZephyrVariant(variant)
+        self.configureZephyrInstance(instance)
+        self.justbuildZephyrInstance(instance)
+        self.installZephyrInstance(instance)
+        self.testZephyrInstance(instance)
 
-    def rebuildZephyrVariant(self, variant):
-        return (self.justbuildZephyrVariant(variant) and
-                self.installZephyrVariant(variant)   and
-                self.testZephyrVariant(variant))
+    def rebuildZephyrInstance(self, instance):
+        return (self.justbuildZephyrInstance(instance) and
+                self.installZephyrInstance(instance)   and
+                self.testZephyrInstance(instance))
 
-    def configureZephyrVariant(self, variant):
-        self.log.info('Configuring system variant: {}'.format(variant))
-        (prefix, board, app, tc, cfg) = variant.split('/')
+    def configureZephyrInstance(self, instance):
+        self.log.info('Configuring system instance: {}'.format(instance))
+        (prefix, board, app, tc, cfg) = instance.split('/')
         curdir = os.getcwd()
         spec = getSpec(self.data['zephyr'], 'application', app)
         install = os.path.join(curdir,
                                self.args.directory,
                                spec['install-dir'],
                                board, tc, app, cfg)
-        builddir = os.path.join(self.args.directory, variant)
+        builddir = os.path.join(self.args.directory, instance)
         kernel = expandFile(spec['zephyr-kernel'])
         build = findZephyrBuild(spec['build'], tc, board)
         # TODO: build should inherit from spec, and we should use build
@@ -340,16 +340,16 @@ class System:
         rc = mmh.loggedProcess(self.cfg, self.log, cmd)
         return (rc == 0)
 
-    def justbuildZephyrVariant(self, variant):
-        self.log.info('Building system variant: {}'.format(variant))
-        builddir = os.path.join(self.args.directory, variant)
+    def justbuildZephyrInstance(self, instance):
+        self.log.info('Building system instance: {}'.format(instance))
+        builddir = os.path.join(self.args.directory, instance)
         cmd = [ 'cmake', '--build', builddir ]
         rc = mmh.loggedProcess(self.cfg, self.log, cmd)
         return (rc == 0)
 
-    def installZephyrVariant(self, variant):
-        self.log.info('Installing system variant: {}'.format(variant))
-        builddir = os.path.join(self.args.directory, variant)
+    def installZephyrInstance(self, instance):
+        self.log.info('Installing system instance: {}'.format(instance))
+        builddir = os.path.join(self.args.directory, instance)
         olddir = os.getcwd()
         os.chdir(builddir)
         cmd = [ 'cmake', '--install', '.' ]
@@ -357,122 +357,122 @@ class System:
         os.chdir(olddir)
         return (rc == 0)
 
-    def testZephyrVariant(self, variant):
-        self.log.info('Testing system variant: {}'.format(variant))
-        builddir = os.path.join(self.args.directory, variant)
+    def testZephyrInstance(self, instance):
+        self.log.info('Testing system instance: {}'.format(instance))
+        builddir = os.path.join(self.args.directory, instance)
         cmd = [ 'ctest', '--test-dir', builddir ]
         rc = mmh.loggedProcess(self.cfg, self.log, cmd)
         return (rc == 0)
 
-    def cleanZephyrVariant(self, variant):
-        self.log.info('Cleaning system variant: {}'.format(variant))
-        builddir = os.path.join(self.args.directory, variant)
+    def cleanZephyrInstance(self, instance):
+        self.log.info('Cleaning system instance: {}'.format(instance))
+        builddir = os.path.join(self.args.directory, instance)
         cmd = [ 'cmake', '--build', builddir, '--target', 'clean' ]
         rc = mmh.loggedProcess(self.cfg, self.log, cmd)
         return (rc == 0)
 
-    def buildVariants(self, variants):
-        for v in variants:
+    def buildInstances(self, instances):
+        for v in instances:
             self.log.info("  - {}".format(v))
-        for variant in variants:
-            if (variant in self.variants):
-                if (variant.startswith("zephyr/")):
-                    self.buildZephyrVariant(variant)
-                elif (variant.startswith("boards/")):
-                    self.buildBoardVariant(variant)
+        for instance in instances:
+            if (instance in self.instances):
+                if (instance.startswith("zephyr/")):
+                    self.buildZephyrInstance(instance)
+                elif (instance.startswith("boards/")):
+                    self.buildBoardInstance(instance)
                 else:
-                      self.log.error("Invalid variant: {}", variant)
+                      self.log.error("Invalid instance: {}", instance)
                       return False
             else:
-                self.log.error("Unknown variant: {}", variant)
+                self.log.error("Unknown instance: {}", instance)
                 return False
         return True
 
-    def rebuildVariants(self, variants):
-        for v in variants:
+    def rebuildInstances(self, instances):
+        for v in instances:
             self.log.info("  - {}".format(v))
-        for variant in variants:
-            if (variant in self.variants):
-                if (variant.startswith("zephyr/")):
-                    self.rebuildZephyrVariant(variant)
-                elif (variant.startswith("boards/")):
-                    self.rebuildBoardVariant(variant)
+        for instance in instances:
+            if (instance in self.instances):
+                if (instance.startswith("zephyr/")):
+                    self.rebuildZephyrInstance(instance)
+                elif (instance.startswith("boards/")):
+                    self.rebuildBoardInstance(instance)
                 else:
-                      self.log.error("Invalid variant: {}", variant)
+                      self.log.error("Invalid instance: {}", instance)
                       return False
             else:
-                self.log.error("Unknown variant: {}", variant)
+                self.log.error("Unknown instance: {}", instance)
                 return False
         return True
 
-    def cleanVariants(self, variants):
-        for v in variants:
+    def cleanInstances(self, instances):
+        for v in instances:
             self.log.info("  - {}".format(v))
-        for variant in variants:
-            if (variant in self.variants):
-                if (variant.startswith("zephyr/")):
-                    self.cleanZephyrVariant(variant)
-                elif (variant.startswith("boards/")):
-                    self.cleanBoardVariant(variant)
+        for instance in instances:
+            if (instance in self.instances):
+                if (instance.startswith("zephyr/")):
+                    self.cleanZephyrInstance(instance)
+                elif (instance.startswith("boards/")):
+                    self.cleanBoardInstance(instance)
                 else:
-                      self.log.error("Invalid variant: {}", variant)
+                      self.log.error("Invalid instance: {}", instance)
                       return False
             else:
-                self.log.error("Unknown variant: {}", variant)
+                self.log.error("Unknown instance: {}", instance)
                 return False
         return True
 
-    def cleanVariants(self, variants):
-        for v in variants:
+    def cleanInstances(self, instances):
+        for v in instances:
             self.log.info("  - {}".format(v))
-        for variant in variants:
-            if (variant in self.variants):
-                if (variant.startswith("zephyr/")):
-                    self.cleanZephyrVariant(variant)
-                elif (variant.startswith("boards/")):
-                    self.cleanBoardVariant(variant)
+        for instance in instances:
+            if (instance in self.instances):
+                if (instance.startswith("zephyr/")):
+                    self.cleanZephyrInstance(instance)
+                elif (instance.startswith("boards/")):
+                    self.cleanBoardInstance(instance)
                 else:
-                      self.log.error("Invalid variant: {}", variant)
+                      self.log.error("Invalid instance: {}", instance)
                       return False
             else:
-                self.log.error("Unknown variant: {}", variant)
+                self.log.error("Unknown instance: {}", instance)
                 return False
         return True
 
-    def build(self, variants):
-        if (len(variants) == 0):
+    def build(self, instances):
+        if (len(instances) == 0):
             self.log.info("Building full system:")
-            self.buildVariants(self.variants)
+            self.buildInstances(self.instances)
         else:
-            self.log.info("Building selected variant(s):")
-            self.buildVariants(variants)
+            self.log.info("Building selected instance(s):")
+            self.buildInstances(instances)
         self.stats.checkpoint('finish')
         self.stats.renderStatistics()
         if self.stats.wasSuccessful():
-            self.log.info('All {} builds succeeded.'.format(len(self.variants)))
+            self.log.info('All {} builds succeeded.'.format(len(self.instances)))
             exit(0)
         else:
             self.log.info('{} build(s) out of {} failed.'
-                          .format('some', len(self.variants)))
+                          .format('some', len(self.instances)))
             exit(1)
 
-    def rebuild(self, variants):
-        if (len(variants) == 0):
+    def rebuild(self, instances):
+        if (len(instances) == 0):
             self.log.info("Re-Building full system:")
-            return self.rebuildVariants(self.variants)
+            return self.rebuildInstances(self.instances)
         else:
-            self.log.info("Re-Building selected variant(s):")
-            return self.rebuildVariants(variants)
+            self.log.info("Re-Building selected instance(s):")
+            return self.rebuildInstances(instances)
 
-    def clean(self, variants):
-        if (len(variants) == 0):
+    def clean(self, instances):
+        if (len(instances) == 0):
             self.log.info("Cleaning up full system:")
-            return self.cleanVariants(self.variants)
+            return self.cleanInstances(self.instances)
         else:
-            self.log.info("Cleaning selected variant(s):")
-            return self.cleanVariants(variants)
+            self.log.info("Cleaning selected instance(s):")
+            return self.cleanInstances(instances)
 
-    def listVariants(self):
-        self.log.info("Generating list of all system build variants:")
-        for v in self.variants:
+    def listInstances(self):
+        self.log.info("Generating list of all system build instances:")
+        for v in self.instances:
             print(v)

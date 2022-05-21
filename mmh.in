@@ -173,16 +173,16 @@ ap_system.set_defaults(sub_command = 'system')
 sub_system = ap_system.add_subparsers(dest = 'system',
                                       metavar = 'System Commands')
 sys_list  = sub_system.add_parser('list',
-                                  help = 'List all specified build variants')
+                                  help = 'List all specified build instances')
 sys_build = sub_system.add_parser('build',
-                                  help = 'Build all or specified build variants')
-sys_build.add_argument('variants', default = [ ], nargs = '*')
+                                  help = 'Build all or specified build instances')
+sys_build.add_argument('instances', default = [ ], nargs = '*')
 sys_rebuild = sub_system.add_parser('rebuild',
-                                  help = 'Rebuild all or specified build variants')
-sys_rebuild.add_argument('variants', default = [ ], nargs = '*')
+                                  help = 'Rebuild all or specified build instances')
+sys_rebuild.add_argument('instances', default = [ ], nargs = '*')
 sys_clean = sub_system.add_parser('clean',
-                                  help = 'Clean all or specified build variants')
-sys_clean.add_argument('variants', default = [ ], nargs = '*')
+                                  help = 'Clean all or specified build instances')
+sys_clean.add_argument('instances', default = [ ], nargs = '*')
 
 cmdargs = ap.parse_args()
 #print(cmdargs)
@@ -520,8 +520,8 @@ elif (cmdargs.sub_command == "system"):
     if (cmdargs.directory == None):
         cmdargs.directory = 'build'
 
-    if (not 'variants' in cmdargs):
-        cmdargs.variants = [ ]
+    if (not 'instances' in cmdargs):
+        cmdargs.instances = [ ]
 
     cfg.load()
     system = ms.System(log, cfg, cmdargs);
@@ -530,13 +530,13 @@ elif (cmdargs.sub_command == "system"):
     #mmh.pp(cmdargs)
 
     if (cmdargs.system == 'build'):
-        system.build(cmdargs.variants)
+        system.build(cmdargs.instances)
     elif (cmdargs.system == 'rebuild'):
-        system.rebuild(cmdargs.variants)
+        system.rebuild(cmdargs.instances)
     elif (cmdargs.system == 'clean'):
-        system.clean(cmdargs.variants)
+        system.clean(cmdargs.instances)
     elif (cmdargs.system == 'list'):
-        system.listVariants()
+        system.listInstances()
 
 elif (isinstance(cmdargs.sub_command, str)):
     print("Not implemented yet: {}".format(cmdargs.sub_command))

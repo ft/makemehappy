@@ -77,13 +77,13 @@ __makemehappy-queries () {
               makemehappy_query_keywords
 }
 
-__makemehappy-system-variants () {
+__makemehappy-system-instances () {
     local expl
-    local -a variants ignored
+    local -a instances ignored
     ignored=(${line:#${words[CURRENT]}})
-    variants=( ${${(f)"$(command mmh -q system list 2>/dev/null)"}%%:*} )
-    _wanted system-variants expl 'system variants' \
-            compadd -F ignored "${variants[@]}"
+    instances=( ${${(f)"$(command mmh -q system list 2>/dev/null)"}%%:*} )
+    _wanted system-instances expl 'system instances' \
+            compadd -F ignored "${instances[@]}"
 }
 
 __makemehappy-toolchains() {
@@ -198,7 +198,7 @@ _makemehappy-system() {
             commands=(
                 build:'perform config/build/install/test on system'
                 clean:'clean build trees'
-                list:'list specified variants'
+                list:'list specified instances'
                 rebuild:'like "build" but skip config step'
             )
 
@@ -211,7 +211,7 @@ _makemehappy-system() {
             (build|clean|rebuild)
                 _arguments -C -s -w : \
                            {-h,--help}'[display help message]' \
-                           '*:: :__makemehappy-system-variants' \
+                           '*:: :__makemehappy-system-instances' \
                     && ret=0
                 ;;
             (*) __makemehappy-nothing-else ;;
