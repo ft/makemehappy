@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 import mako.template as mako
 import makemehappy.utilities as mmh
@@ -202,6 +203,7 @@ class SystemInstanceBoard:
         self.tcfile = os.path.join(expandFile(self.spec['ufw']),
                                    'cmake', 'toolchains',
                                    '{}.cmake'.format(tc))
+        self.sys.stats.systemBoard(tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
         cmd = cmake([
@@ -220,6 +222,7 @@ class SystemInstanceBoard:
             cmd.extend(self.sys.args.cmake)
 
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
 class SystemInstanceZephyr:
@@ -237,6 +240,7 @@ class SystemInstanceZephyr:
                                        self.board, self.tc, self.app, self.cfg)
         self.builddir = os.path.join(self.sys.args.directory, 'zephyr',
                                      self.board, self.tc, self.app, self.cfg)
+        self.sys.stats.systemZephyr(app, tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
         kernel = expandFile(self.spec['zephyr-kernel'])
@@ -273,6 +277,7 @@ class SystemInstanceZephyr:
             cmd.extend(self.sys.args.cmake)
 
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
 class SystemInstance:
@@ -317,13 +322,21 @@ class SystemInstance:
         self.sys.log.info('Compiling system instance: {}'.format(self.desc))
         cmd = cmake(['--build', self.instance.builddir ])
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        self.sys.stats.logBuild(rc)
         return (rc == 0)
 
     def test(self):
-        self.sys.log.info('Testing system instance: {}'.format(self.desc))
-        cmd = [ 'ctest', '--test-dir', self.instance.builddir ]
-        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
-        return (rc == 0)
+        txt = subprocess.check_output([
+            'ctest', '--show-only', '--test-dir', self.instance.builddir])
+        last = txt.splitlines()[-1]
+        num = int(last.decode().split(' ')[-1])
+        if (num > 0):
+            self.sys.log.info('Testing system instance: {}'.format(self.desc))
+            cmd = [ 'ctest', '--test-dir', self.instance.builddir ]
+            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+            self.sys.stats.logTestsuite(num, rc)
+            return (rc == 0)
+        return True
 
     def install(self):
         self.sys.log.info('Installing system instance: {}'.format(self.desc))
@@ -332,6 +345,7 @@ class SystemInstance:
         os.chdir(self.instance.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
         os.chdir(olddir)
+        self.sys.stats.logInstall(rc)
         return (rc == 0)
 
     def clean(self):
@@ -368,6 +382,19 @@ class System:
 
     def newInstance(self, desc):
         return SystemInstance(self, desc)
+
+    def showStats(self):
+        self.stats.checkpoint('finish')
+        self.stats.renderStatistics()
+        if self.stats.wasSuccessful():
+            self.log.info('All {} builds succeeded.'.format(
+                self.stats.countBuilds()))
+            exit(0)
+        else:
+            self.log.info('{} build(s) out of {} failed.'
+                          .format(self.stats.countFailed(),
+                                  self.stats.countBuilds()))
+            exit(1)
 
     def buildInstances(self, instances):
         for i in instances:
@@ -412,23 +439,18 @@ class System:
         else:
             self.log.info("Building selected instance(s):")
             self.buildInstances(instances)
-        self.stats.checkpoint('finish')
-        self.stats.renderStatistics()
-        if self.stats.wasSuccessful():
-            self.log.info('All {} builds succeeded.'.format(len(self.instances)))
-            exit(0)
-        else:
-            self.log.info('{} build(s) out of {} failed.'
-                          .format('some', len(self.instances)))
-            exit(1)
+        self.showStats()
 
     def rebuild(self, instances):
         if (len(instances) == 0):
             self.log.info("Re-Building full system:")
-            return self.rebuildInstances(self.instances)
+            self.rebuildInstances(self.instances)
         else:
             self.log.info("Re-Building selected instance(s):")
-            return self.rebuildInstances(instances)
+            self.rebuildInstances(instances)
+        # The stats code doesn't work if the parts to a build don't match what
+        # it expects. So we'll need to fix that.
+        #self.showStats()
 
     def clean(self, instances):
         if (len(instances) == 0):

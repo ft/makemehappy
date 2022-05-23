@@ -316,7 +316,7 @@ class ExecutionStatistics:
 
     def wasSuccessful(self):
         for entry in self.data:
-            if entry['type'] != 'build':
+            if entry['type'] == 'checkpoint':
                 continue
             if buildFailed(entry):
                 return False
@@ -325,7 +325,7 @@ class ExecutionStatistics:
     def countFailed(self):
         n = 0
         for entry in self.data:
-            if entry['type'] != 'build':
+            if entry['type'] == 'checkpoint':
                 continue
             if buildFailed(entry):
                 n = n + 1
@@ -334,7 +334,7 @@ class ExecutionStatistics:
     def countBuilds(self):
         n = 0
         for entry in self.data:
-            if entry['type'] == 'build':
+            if entry['type'] != 'checkpoint':
                 n = n + 1
         return n
 
