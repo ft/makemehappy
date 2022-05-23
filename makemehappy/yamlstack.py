@@ -84,7 +84,7 @@ def queryToolchain(data, item):
     for layer in data:
         if 'toolchains' in layer:
             rv.extend(list(x[item] for x in layer['toolchains'] if item in x))
-    rv = list(set(rv))
+    rv = list(set(mmh.flatten(rv)))
     rv.sort()
     return rv
 

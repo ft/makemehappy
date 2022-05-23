@@ -126,17 +126,8 @@ def cmakeParam(name, value, allowEmpty = False):
 
     return '-D{}={}'.format(name, exp)
 
-def flatten(lst):
-    if (isinstance(lst, list)):
-        if (len(lst) == 0):
-            return []
-        (first, rest) = lst[0], lst[1:]
-        return flatten(first) + flatten(rest)
-    else:
-        return [lst]
-
 def cmake(lst):
-    return [ 'cmake' ] + [ x for x in flatten(lst) if x != None ]
+    return [ 'cmake' ] + [ x for x in mmh.flatten(lst) if x != None ]
 
 def getSpec(data, key, name):
     for d in data:
