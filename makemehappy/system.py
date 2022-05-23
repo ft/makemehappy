@@ -191,6 +191,175 @@ def findZephyrTransformer(ufw, cfg):
         return transformer
     return None
 
+class InvalidSystemInstance(Exception):
+    pass
+
+class SystemInstanceBoard:
+    def __init__(self, sys, board, tc, cfg):
+        self.sys = sys
+        self.board = board
+        self.tc = tc
+        self.cfg = cfg
+        self.spec = getSpec(self.sys.data['boards'], 'name', self.board)
+        self.systemdir = os.getcwd()
+        self.builddir = os.path.join(self.sys.args.directory,
+                                     self.board, self.tc, self.cfg)
+        self.installdir = os.path.join(self.systemdir,
+                                       self.sys.args.directory,
+                                       self.spec['install-dir'],
+                                       self.board, self.tc, self.cfg)
+        self.tcfile = os.path.join(expandFile(self.spec['ufw']),
+                                   'cmake', 'toolchains',
+                                   '{}.cmake'.format(tc))
+
+    def configure(self):
+        cmd = cmake([
+            cmakeBuildtool(self.sys.log, self.spec['build-tool']),
+            cmakeSourceDir('.'),
+            cmakeBinaryDir(self.builddir),
+            cmakeParam('CMAKE_BUILD_TYPE', self.cfg),
+            cmakeParam('CMAKE_INSTALL_PREFIX', self.installdir),
+            cmakeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on'),
+            cmakeParam('CMAKE_TOOLCHAIN_FILE', self.tcfile),
+            cmakeParam('TARGET_BOARD', self.board),
+            cmakeParam('UFW_LOAD_BUILD_SYSTEM',
+                       expandFile(self.spec['build-system']))])
+
+        if (self.sys.args.cmake != None):
+            cmd.extend(self.sys.args.cmake)
+
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        return (rc == 0)
+
+class SystemInstanceZephyr:
+    def __init__(self, sys, board, app, tc, cfg):
+        self.sys = sys
+        self.board = board
+        self.app = app
+        self.tc = tc
+        self.cfg = cfg
+        self.spec = getSpec(self.sys.data['zephyr'], 'application', self.app)
+        self.systemdir = os.getcwd()
+        self.installdir = os.path.join(self.systemdir,
+                                       self.sys.args.directory,
+                                       self.spec['install-dir'],
+                                       self.board, self.tc, self.app, self.cfg)
+        self.builddir = os.path.join(self.sys.args.directory,
+                                     self.board, self.tc, self.app, self.cfg)
+
+    def configure(self):
+        kernel = expandFile(self.spec['zephyr-kernel'])
+        build = findZephyrBuild(self.spec['build'], self.tc, self.board)
+        # TODO: build should inherit from spec, and we should use build
+        #       everywhere after that.
+        if (not 'modules' in build):
+            build['modules'] = [ ]
+        tcSpec = findZephyrToolchain(build, self.tc)
+        #mmh.pp(spec)
+        #mmh.pp(build)
+
+        cmd = cmake([
+            cmakeBuildtool(self.sys.log, self.spec['build-tool']),
+            cmakeSourceDir('.'),
+            cmakeBinaryDir(self.builddir),
+            cmakeParam('CMAKE_BUILD_TYPE', self.cfg),
+            cmakeParam('CMAKE_INSTALL_PREFIX', self.installdir),
+            cmakeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on'),
+            cmakeParam('BOARD', self.board),
+            zephyrToolchain(tcSpec),
+            cmakeParam('ZEPHYR_MODULES',
+                       genZephyrModules(self.spec['zephyr-module-path'],
+                                        build['modules'])),
+            cmakeParam('OVERLAY_CONFIG',
+                       [ findZephyrTransformer(self.spec['ufw'], self.cfg) ]
+                       + self.spec['kconfig']),
+            cmakeParam('UFW_ZEPHYR_KERNEL', kernel),
+            cmakeParam('UFW_ZEPHYR_APPLICATION', expandFile(self.spec['source'])),
+            cmakeParam('UFW_LOAD_BUILD_SYSTEM',
+                       expandFile(self.spec['build-system']))])
+
+        if (self.sys.args.cmake != None):
+            cmd.extend(self.sys.args.cmake)
+
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        return (rc == 0)
+
+class SystemInstance:
+    def __init__(self, sys, description):
+        self.sys = sys
+        self.desc = description
+        if (description.startswith("zephyr/")):
+            try:
+                (self.kind,
+                 self.board,
+                 self.app,
+                 self.tc,
+                 self.cfg) = description.split('/')
+            except Exception:
+                raise(InvalidSystemInstance(description))
+
+            self.instance = SystemInstanceZephyr(
+                self.sys, self.board, self.app, self.tc, self.cfg)
+        elif (description.startswith("boards/")):
+            self.app = None
+            try:
+                (self.kind,
+                 self.board,
+                 self.tc,
+                 self.cfg) = description.split('/')
+            except Exception:
+                raise(InvalidSystemInstance(description))
+
+            self.instance = SystemInstanceBoard(
+                self.sys, self.board, self.tc, self.cfg)
+        else:
+            raise(InvalidSystemInstance(description))
+
+    def kind(self):
+        return self.kind
+
+    def configure(self):
+        self.sys.log.info('Configuring system instance: {}'.format(self.desc))
+        return self.instance.configure()
+
+    def compile(self):
+        self.sys.log.info('Compiling system instance: {}'.format(self.desc))
+        cmd = cmake(['--build', self.instance.builddir ])
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        return (rc == 0)
+
+    def test(self):
+        self.sys.log.info('Testing system instance: {}'.format(self.desc))
+        cmd = [ 'ctest', '--test-dir', self.instance.builddir ]
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        return (rc == 0)
+
+    def install(self):
+        self.sys.log.info('Installing system instance: {}'.format(self.desc))
+        cmd = cmake([ '--install', '.' ])
+        olddir = os.getcwd()
+        os.chdir(self.instance.builddir)
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        os.chdir(olddir)
+        return (rc == 0)
+
+    def clean(self):
+        self.sys.log.info('Cleaning system instance: {}'.format(self.desc))
+        cmd = cmake([ '--build', self.instance.builddir, '--target', 'clean' ])
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        return (rc == 0)
+
+    def build(self):
+        return (self.configure() and
+                self.compile()   and
+                self.test()      and
+                self.install())
+
+    def rebuild(self):
+        return (self.compile()   and
+                self.test()      and
+                self.install())
+
 class System:
     def __init__(self, log, cfg, args):
         self.stats = cut.ExecutionStatistics(cfg, log)
@@ -206,200 +375,28 @@ class System:
         fillData(self.data)
         self.instances = makeInstances(self.data)
 
-    def buildBoardInstance(self, instance):
-        (prefix, board, tc, cfg) = instance.split('/')
-        self.stats.systemBoard(tc, board, cfg, 'ninja')
-        return (self.configureBoardInstance(instance) and
-                self.justbuildBoardInstance(instance) and
-                self.installBoardInstance(instance)   and
-                self.testBoardInstance(instance))
-
-    def rebuildBoardInstance(self, instance):
-        return (self.justbuildBoardInstance(instance) and
-                self.installBoardInstance(instance)   and
-                self.testBoardInstance(instance))
-
-    def configureBoardInstance(self, instance):
-        self.log.info('Configuring system instance: {}'.format(instance))
-        (prefix, board, tc, cfg) = instance.split('/')
-        curdir = os.getcwd()
-        spec = getSpec(self.data['boards'], 'name', board)
-        install = os.path.join(curdir,
-                               self.args.directory,
-                               spec['install-dir'],
-                               board, tc, cfg)
-        tcfile = os.path.join(expandFile(spec['ufw']),
-                              'cmake', 'toolchains',
-                              '{}.cmake'.format(tc))
-        builddir = os.path.join(self.args.directory, instance)
-
-        cmd = cmake([
-            cmakeBuildtool(self.log, spec['build-tool']),
-            cmakeSourceDir('.'),
-            cmakeBinaryDir(builddir),
-            cmakeParam('CMAKE_BUILD_TYPE', cfg),
-            cmakeParam('CMAKE_INSTALL_PREFIX', install),
-            cmakeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on'),
-            cmakeParam('CMAKE_TOOLCHAIN_FILE', tcfile),
-            cmakeParam('TARGET_BOARD', board),
-            cmakeParam('UFW_LOAD_BUILD_SYSTEM',
-                       expandFile(spec['build-system']))])
-
-        if (self.args.cmake != None):
-            cmd.extend(self.args.cmake)
-
-        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-        return (rc == 0)
-
-    def justbuildBoardInstance(self, instance):
-        self.log.info('Building system instance: {}'.format(instance))
-        builddir = os.path.join(self.args.directory, instance)
-        cmd = [ 'cmake', '--build', builddir ]
-        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-        return (rc == 0)
-
-    def installBoardInstance(self, instance):
-        self.log.info('Installing system instance: {}'.format(instance))
-        builddir = os.path.join(self.args.directory, instance)
-        cmd = [ 'cmake', '--install', builddir ]
-        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-        return (rc == 0)
-
-    def testBoardInstance(self, instance):
-        self.log.info('Testing system instance: {}'.format(instance))
-        builddir = os.path.join(self.args.directory, instance)
-        cmd = [ 'ctest', '--test-dir', builddir ]
-        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-        return (rc == 0)
-
-    def cleanBoardInstance(self, instance):
-        self.log.info('Cleaning system instance: {}'.format(instance))
-        builddir = os.path.join(self.args.directory, instance)
-        cmd = [ 'cmake', '--build', builddir, '--target', 'clean' ]
-        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-        return (rc == 0)
-
-    def buildZephyrInstance(self, instance):
-        (prefix, board, app, tc, cfg) = instance.split('/')
-        self.stats.systemZephyr(app, tc, board, cfg, 'ninja')
-        print("DEBUG: ", instance)
-        #exit(0)
-        self.configureZephyrInstance(instance)
-        self.justbuildZephyrInstance(instance)
-        self.installZephyrInstance(instance)
-        self.testZephyrInstance(instance)
-
-    def rebuildZephyrInstance(self, instance):
-        return (self.justbuildZephyrInstance(instance) and
-                self.installZephyrInstance(instance)   and
-                self.testZephyrInstance(instance))
-
-    def configureZephyrInstance(self, instance):
-        self.log.info('Configuring system instance: {}'.format(instance))
-        (prefix, board, app, tc, cfg) = instance.split('/')
-        curdir = os.getcwd()
-        spec = getSpec(self.data['zephyr'], 'application', app)
-        install = os.path.join(curdir,
-                               self.args.directory,
-                               spec['install-dir'],
-                               board, tc, app, cfg)
-        builddir = os.path.join(self.args.directory, instance)
-        kernel = expandFile(spec['zephyr-kernel'])
-        build = findZephyrBuild(spec['build'], tc, board)
-        # TODO: build should inherit from spec, and we should use build
-        #       everywhere after that.
-        if (not 'modules' in build):
-            build['modules'] = [ ]
-        tcSpec = findZephyrToolchain(build, tc)
-        #mmh.pp(spec)
-        #mmh.pp(build)
-
-        cmd = cmake([
-            cmakeBuildtool(self.log, spec['build-tool']),
-            cmakeSourceDir('.'),
-            cmakeBinaryDir(builddir),
-            cmakeParam('CMAKE_BUILD_TYPE', cfg),
-            cmakeParam('CMAKE_INSTALL_PREFIX', install),
-            cmakeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on'),
-            cmakeParam('BOARD', board),
-            zephyrToolchain(tcSpec),
-            cmakeParam('ZEPHYR_MODULES',
-                       genZephyrModules(spec['zephyr-module-path'],
-                                        build['modules'])),
-            cmakeParam('OVERLAY_CONFIG',
-                       [ findZephyrTransformer(spec['ufw'], cfg) ]
-                       + spec['kconfig']),
-            cmakeParam('UFW_ZEPHYR_KERNEL', kernel),
-            cmakeParam('UFW_ZEPHYR_APPLICATION', expandFile(spec['source'])),
-            cmakeParam('UFW_LOAD_BUILD_SYSTEM',
-                       expandFile(spec['build-system']))])
-
-        if (self.args.cmake != None):
-            cmd.extend(self.args.cmake)
-
-        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-        return (rc == 0)
-
-    def justbuildZephyrInstance(self, instance):
-        self.log.info('Building system instance: {}'.format(instance))
-        builddir = os.path.join(self.args.directory, instance)
-        cmd = [ 'cmake', '--build', builddir ]
-        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-        return (rc == 0)
-
-    def installZephyrInstance(self, instance):
-        self.log.info('Installing system instance: {}'.format(instance))
-        builddir = os.path.join(self.args.directory, instance)
-        olddir = os.getcwd()
-        os.chdir(builddir)
-        cmd = [ 'cmake', '--install', '.' ]
-        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-        os.chdir(olddir)
-        return (rc == 0)
-
-    def testZephyrInstance(self, instance):
-        self.log.info('Testing system instance: {}'.format(instance))
-        builddir = os.path.join(self.args.directory, instance)
-        cmd = [ 'ctest', '--test-dir', builddir ]
-        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-        return (rc == 0)
-
-    def cleanZephyrInstance(self, instance):
-        self.log.info('Cleaning system instance: {}'.format(instance))
-        builddir = os.path.join(self.args.directory, instance)
-        cmd = [ 'cmake', '--build', builddir, '--target', 'clean' ]
-        rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-        return (rc == 0)
+    def newInstance(self, desc):
+        return SystemInstance(self, desc)
 
     def buildInstances(self, instances):
-        for v in instances:
-            self.log.info("  - {}".format(v))
+        for i in instances:
+            self.log.info("  - {}".format(i))
         for instance in instances:
             if (instance in self.instances):
-                if (instance.startswith("zephyr/")):
-                    self.buildZephyrInstance(instance)
-                elif (instance.startswith("boards/")):
-                    self.buildBoardInstance(instance)
-                else:
-                      self.log.error("Invalid instance: {}", instance)
-                      return False
+                sys = self.newInstance(instance)
+                sys.build()
             else:
                 self.log.error("Unknown instance: {}", instance)
                 return False
         return True
 
     def rebuildInstances(self, instances):
-        for v in instances:
-            self.log.info("  - {}".format(v))
+        for i in instances:
+            self.log.info("  - {}".format(i))
         for instance in instances:
             if (instance in self.instances):
-                if (instance.startswith("zephyr/")):
-                    self.rebuildZephyrInstance(instance)
-                elif (instance.startswith("boards/")):
-                    self.rebuildBoardInstance(instance)
-                else:
-                      self.log.error("Invalid instance: {}", instance)
-                      return False
+                sys = self.newInstance(instance)
+                sys.rebuild()
             else:
                 self.log.error("Unknown instance: {}", instance)
                 return False
@@ -410,30 +407,8 @@ class System:
             self.log.info("  - {}".format(v))
         for instance in instances:
             if (instance in self.instances):
-                if (instance.startswith("zephyr/")):
-                    self.cleanZephyrInstance(instance)
-                elif (instance.startswith("boards/")):
-                    self.cleanBoardInstance(instance)
-                else:
-                      self.log.error("Invalid instance: {}", instance)
-                      return False
-            else:
-                self.log.error("Unknown instance: {}", instance)
-                return False
-        return True
-
-    def cleanInstances(self, instances):
-        for v in instances:
-            self.log.info("  - {}".format(v))
-        for instance in instances:
-            if (instance in self.instances):
-                if (instance.startswith("zephyr/")):
-                    self.cleanZephyrInstance(instance)
-                elif (instance.startswith("boards/")):
-                    self.cleanBoardInstance(instance)
-                else:
-                      self.log.error("Invalid instance: {}", instance)
-                      return False
+                sys = self.newInstance(instance)
+                sys.clean()
             else:
                 self.log.error("Unknown instance: {}", instance)
                 return False
