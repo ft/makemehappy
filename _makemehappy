@@ -29,7 +29,7 @@ __makemehappy-comma-complete() {
 
 __makemehappy-architectures() {
     local -a archs
-    archs=$(command mmh -Q architectures 2>/dev/null)
+    archs=( $(command mmh -Q architectures 2>/dev/null) )
     __makemehappy-comma-complete makemehappy-architectures archs
 }
 
