@@ -202,7 +202,7 @@ class SystemInstanceBoard:
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['boards'], 'name', self.board)
         self.systemdir = os.getcwd()
-        self.builddir = os.path.join(self.sys.args.directory,
+        self.builddir = os.path.join(self.sys.args.directory, 'boards',
                                      self.board, self.tc, self.cfg)
         self.installdir = os.path.join(self.systemdir,
                                        self.sys.args.directory,
@@ -244,7 +244,7 @@ class SystemInstanceZephyr:
                                        self.sys.args.directory,
                                        self.spec['install-dir'],
                                        self.board, self.tc, self.app, self.cfg)
-        self.builddir = os.path.join(self.sys.args.directory,
+        self.builddir = os.path.join(self.sys.args.directory, 'zephyr',
                                      self.board, self.tc, self.app, self.cfg)
 
     def configure(self):
