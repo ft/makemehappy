@@ -262,6 +262,15 @@ if cmdargs.interfaces is not None:
 
 cmdargs.cmake = cmakeParameters
 
+if (cmdargs.sub_command == None):
+    if (os.path.isfile('system.yaml')):
+        cmdargs.sub_command = 'system'
+    else:
+        cmdargs.sub_command = 'build'
+    log.info("Starting up using default command ({})".format(cmdargs.sub_command))
+elif (cmdargs.sub_command != False):
+    log.info("Starting up using '{}' command".format(cmdargs.sub_command))
+
 cmdargs.fromyaml = False
 if (cmdargs.sub_command != 'reset-setup' and
     cmdargs.sub_command != 'system'      and
@@ -325,15 +334,6 @@ def adjustConfig(cfg, args):
         adjustments = adjustments + 1
     if adjustments > 0:
         cfg.pushLayer(layer)
-
-if (cmdargs.sub_command == None):
-    if (os.path.isfile('system.yaml')):
-        cmdargs.sub_command = 'system'
-    else:
-        cmdargs.sub_command = 'build'
-    log.info("Starting up using default command ({})".format(cmdargs.sub_command))
-elif (cmdargs.sub_command != False):
-    log.info("Starting up using '{}' command".format(cmdargs.sub_command))
 
 def requireModuleDefinition(args):
     if (os.path.isfile(args.module) == False):
