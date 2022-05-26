@@ -378,14 +378,24 @@ class SystemInstance:
                 self.install())
 
 class System:
-    def __init__(self, log, cfg, args):
+    def __init__(self, log, version, cfg, args):
         self.stats = cut.ExecutionStatistics(cfg, log)
         self.stats.checkpoint('system-initialisation')
+        self.version = version
         self.log = log
         self.cfg = cfg
         self.args = args
         self.spec = 'system.yaml'
+        self.singleInstance = None
         if (args.single_instance):
+            n = len(args.instances)
+            if (n == 1):
+                self.singleInstance = args.instances[0]
+            elif ((n > 1) or (n == 0 and not os.path.exists(args.directory))):
+                log.error(
+                    'system: --single-instance requires exactly one instance. {} specified.'
+                    .format(n))
+                exit(1)
             self.mode = 'system-single'
         else:
             self.mode = 'system-multi'
@@ -405,12 +415,25 @@ class System:
                 else:
                     self.log.info('Build tree matching current mode: {}. Good!'
                                   .format(self.mode))
+                if (self.mode == 'system-single'):
+                    if (self.singleInstance == None):
+                        self.singleInstance = data['single-instance']
+                    elif (data['single-instance'] != self.singleInstance):
+                        self.log.error(
+                            'Single-instance build tree {} set up for {}. Specified {}.'
+                            .format(self.args.directory,
+                                    data['single-instance'],
+                                    self.singleInstance))
+                        exit(1)
             else:
                 self.log.error('Failed to load build state from {}'.format(state))
                 exit(1)
         else:
             os.mkdir(d)
-            data = { 'mode' : self.mode }
+            data = { 'mode'    : self.mode,
+                     'version' : self.version }
+            if (self.singleInstance != None):
+                data['single-instance'] = self.singleInstance
             state = os.path.join(d, 'MakeMeHappy.yaml')
             mmh.dump(state, data)
 
@@ -472,36 +495,48 @@ class System:
                 return False
         return True
 
-    def build(self, instances):
+    def build(self):
         self.setupDirectory()
-        if (len(instances) == 0):
+        if (self.singleInstance != None):
+            self.log.info("Building single system instance: {}"
+                          .format(self.singleInstance))
+            self.buildInstances([ self.singleInstance ])
+        elif (len(self.args.instances) == 0):
             self.log.info("Building full system:")
             self.buildInstances(self.instances)
         else:
             self.log.info("Building selected instance(s):")
-            self.buildInstances(instances)
+            self.buildInstances(self.args.instances)
         self.showStats()
 
-    def rebuild(self, instances):
+    def rebuild(self):
         self.setupDirectory()
-        if (len(instances) == 0):
+        if (self.singleInstance != None):
+            self.log.info("Re-Building single system instance: {}"
+                          .format(self.singleInstance))
+            self.rebuildInstances([ self.singleInstance ])
+        elif (len(self.args.instances) == 0):
             self.log.info("Re-Building full system:")
             self.rebuildInstances(self.instances)
         else:
             self.log.info("Re-Building selected instance(s):")
-            self.rebuildInstances(instances)
+            self.rebuildInstances(self.args.instances)
         # The stats code doesn't work if the parts to a build don't match what
         # it expects. So we'll need to fix that.
         #self.showStats()
 
-    def clean(self, instances):
+    def clean(self):
         self.setupDirectory()
-        if (len(instances) == 0):
+        if (self.singleInstance != None):
+            self.log.info("Cleaning single system instance: {}"
+                          .format(self.singleInstance))
+            self.cleanInstances([ self.singleInstance ])
+        elif (len(self.args.instances) == 0):
             self.log.info("Cleaning up full system:")
-            return self.cleanInstances(self.instances)
+            self.cleanInstances(self.instances)
         else:
             self.log.info("Cleaning selected instance(s):")
-            return self.cleanInstances(instances)
+            self.cleanInstances(self.args.instances)
 
     def listInstances(self):
         self.log.info("Generating list of all system build instances:")

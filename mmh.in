@@ -533,22 +533,17 @@ elif (cmdargs.sub_command == "system"):
         cmdargs.instances = [ ]
 
     cfg.load()
-    system = ms.System(log, cfg, cmdargs);
+    system = ms.System(log, version, cfg, cmdargs);
     system.load()
     #mmh.pp(system.data)
     #mmh.pp(cmdargs)
 
     if (cmdargs.system == 'build'):
-        n = len(cmdargs.instances)
-        if (cmdargs.single_instance and n != 1):
-            log.error('system: --single-instance requires exactly one instance. {} specified.'
-                      .format(n))
-            exit(1)
-        system.build(cmdargs.instances)
+        system.build()
     elif (cmdargs.system == 'rebuild'):
-        system.rebuild(cmdargs.instances)
+        system.rebuild()
     elif (cmdargs.system == 'clean'):
-        system.clean(cmdargs.instances)
+        system.clean()
     elif (cmdargs.system == 'list'):
         system.listInstances()
 
