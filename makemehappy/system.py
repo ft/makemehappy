@@ -409,6 +409,16 @@ class System:
             state = os.path.join(d, 'MakeMeHappy.yaml')
             if (os.path.exists(state)):
                 data = mmh.load(state)
+                if (self.args.force == True):
+                    data['version'] = self.version
+                    mmh.dump(state, data)
+                if (mmh.matchingVersion(self.version, data) == False):
+                    fv = None
+                    if (not data is None and 'version' in data):
+                        fv = data['version']
+                    self.log.error("{}: Version mismatch: {} != {}".format(state, self.version, fv))
+                    self.log.error("If suitable ‘--force’ to force using the file!")
+                    exit(1)
                 if (self.mode == None):
                     self.mode = data['mode']
                     self.log.info('Using mode from state: {}'.format(self.mode))
