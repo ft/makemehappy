@@ -461,6 +461,14 @@ class System:
         self.data = mmh.load(self.spec)
         fillData(self.data)
         self.instances = makeInstances(self.data)
+        if (len(self.args.instances) > 0):
+            error = False
+            for instance in self.args.instances:
+                if (not instance in self.instances):
+                    self.log.error("Unknown instance: {}", instance)
+                    error = True
+            if (error):
+                exit(1)
 
     def newInstance(self, desc):
         return SystemInstance(self, desc)
@@ -482,36 +490,24 @@ class System:
         for i in instances:
             self.log.info("  - {}".format(i))
         for instance in instances:
-            if (instance in self.instances):
-                sys = self.newInstance(instance)
-                sys.build()
-            else:
-                self.log.error("Unknown instance: {}", instance)
-                return False
+            sys = self.newInstance(instance)
+            sys.build()
         return True
 
     def rebuildInstances(self, instances):
         for i in instances:
             self.log.info("  - {}".format(i))
         for instance in instances:
-            if (instance in self.instances):
-                sys = self.newInstance(instance)
-                sys.rebuild()
-            else:
-                self.log.error("Unknown instance: {}", instance)
-                return False
+            sys = self.newInstance(instance)
+            sys.rebuild()
         return True
 
     def cleanInstances(self, instances):
         for v in instances:
             self.log.info("  - {}".format(v))
         for instance in instances:
-            if (instance in self.instances):
-                sys = self.newInstance(instance)
-                sys.clean()
-            else:
-                self.log.error("Unknown instance: {}", instance)
-                return False
+            sys = self.newInstance(instance)
+            sys.clean()
         return True
 
     def build(self):
