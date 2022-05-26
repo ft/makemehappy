@@ -445,6 +445,8 @@ class System:
                 exit(1)
         else:
             os.mkdir(d)
+            if (self.mode == None):
+                self.mode = 'system-multi'
             data = { 'mode'    : self.mode,
                      'version' : self.version }
             if (self.singleInstance != None):
