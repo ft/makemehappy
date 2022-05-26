@@ -22,17 +22,20 @@ name = "mmh"
 log = Logger(fullname)
 log.handlers.append(MMHLogHandler())
 
+etcdir = '@@ETCDIR@@'
+datadir = '@@DATADIR@@'
+
 cfg = ConfigStack(log, 'Configuration',
                   mmh.dotFile('config.yaml'),
                   mmh.xdgFile('config.yaml'),
-                  '@@ETCDIR@@/config.yaml',
-                  '@@DATADIR@@/config.yaml')
+                  os.path.join(etcdir,  'config.yaml'),
+                  os.path.join(datadir, 'config.yaml'))
 
 src = SourceStack(log, 'Source Definition',
                   mmh.dotFile('sources.yaml'),
                   mmh.xdgFile('sources.yaml'),
-                  '@@ETCDIR@@/sources.yaml',
-                  '@@DATADIR@@/sources.yaml')
+                  os.path.join(etcdir,  'sources.yaml'),
+                  os.path.join(datadir, 'sources.yaml'))
 
 cmakeParameters = None
 cmakeSeparator = None
@@ -222,6 +225,10 @@ if (cmdargs.quiet):
 
 if (cmdargs.version):
     print("{} ({}) version {}".format(fullname, name, version))
+    print()
+    print('  datadir = {}'.format(datadir))
+    print('  etcdir  = {}'.format(etcdir))
+    print()
     exit(0)
 
 for item in cmdargs.source:
