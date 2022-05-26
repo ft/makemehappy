@@ -503,8 +503,7 @@ class System:
     def build(self):
         self.setupDirectory()
         if (self.singleInstance != None):
-            self.log.info("Building single system instance: {}"
-                          .format(self.singleInstance))
+            self.log.info("Building single system instance:")
             self.buildInstances([ self.singleInstance ])
         elif (len(self.args.instances) == 0):
             self.log.info("Building full system:")
@@ -517,8 +516,7 @@ class System:
     def rebuild(self):
         self.setupDirectory()
         if (self.singleInstance != None):
-            self.log.info("Re-Building single system instance: {}"
-                          .format(self.singleInstance))
+            self.log.info("Re-Building single system instance:")
             self.rebuildInstances([ self.singleInstance ])
         elif (len(self.args.instances) == 0):
             self.log.info("Re-Building full system:")
@@ -533,8 +531,7 @@ class System:
     def clean(self):
         self.setupDirectory()
         if (self.singleInstance != None):
-            self.log.info("Cleaning single system instance: {}"
-                          .format(self.singleInstance))
+            self.log.info("Cleaning single system instance:")
             self.cleanInstances([ self.singleInstance ])
         elif (len(self.args.instances) == 0):
             self.log.info("Cleaning up full system:")
