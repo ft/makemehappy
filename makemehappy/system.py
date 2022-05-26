@@ -194,12 +194,18 @@ class SystemInstanceBoard:
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['boards'], 'name', self.board)
         self.systemdir = os.getcwd()
-        self.builddir = os.path.join(self.sys.args.directory, 'boards',
-                                     self.board, self.tc, self.cfg)
-        self.installdir = os.path.join(self.systemdir,
-                                       self.sys.args.directory,
-                                       self.spec['install-dir'],
-                                       self.board, self.tc, self.cfg)
+        if (sys.mode == 'system-single'):
+            self.builddir = self.sys.args.directory
+            self.installdir = os.path.join(self.systemdir,
+                                           self.sys.args.directory,
+                                           self.spec['install-dir'])
+        else:
+            self.builddir = os.path.join(self.sys.args.directory, 'boards',
+                                        self.board, self.tc, self.cfg)
+            self.installdir = os.path.join(self.systemdir,
+                                           self.sys.args.directory,
+                                           self.spec['install-dir'],
+                                           self.board, self.tc, self.cfg)
         self.tcfile = os.path.join(expandFile(self.spec['ufw']),
                                    'cmake', 'toolchains',
                                    '{}.cmake'.format(tc))
@@ -234,12 +240,18 @@ class SystemInstanceZephyr:
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['zephyr'], 'application', self.app)
         self.systemdir = os.getcwd()
-        self.installdir = os.path.join(self.systemdir,
-                                       self.sys.args.directory,
-                                       self.spec['install-dir'],
-                                       self.board, self.tc, self.app, self.cfg)
-        self.builddir = os.path.join(self.sys.args.directory, 'zephyr',
-                                     self.board, self.tc, self.app, self.cfg)
+        if (sys.mode == 'system-single'):
+            self.builddir = self.sys.args.directory
+            self.installdir = os.path.join(self.systemdir,
+                                           self.sys.args.directory,
+                                           self.spec['install-dir'])
+        else:
+            self.builddir = os.path.join(self.sys.args.directory, 'zephyr',
+                                        self.board, self.tc, self.app, self.cfg)
+            self.installdir = os.path.join(self.systemdir,
+                                        self.sys.args.directory,
+                                        self.spec['install-dir'],
+                                        self.board, self.tc, self.app, self.cfg)
         self.sys.stats.systemZephyr(app, tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
