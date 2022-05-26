@@ -1,3 +1,4 @@
+import copy
 import os
 import subprocess
 
@@ -255,18 +256,19 @@ class SystemInstanceZephyr:
         self.sys.stats.systemZephyr(app, tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
-        kernel = expandFile(self.spec['zephyr-kernel'])
         build = findZephyrBuild(self.spec['build'], self.tc, self.board)
-        # TODO: build should inherit from spec, and we should use build
-        #       everywhere after that.
         if (not 'modules' in build):
             build['modules'] = [ ]
         tcSpec = findZephyrToolchain(build, self.tc)
-        #mmh.pp(spec)
-        #mmh.pp(build)
+        tmp = copy.deepcopy(self.spec)
+        tmp.pop('build')
+        build = { **build, **tmp }
+        if ('base-modules' in build):
+            build['modules'] = build['modules'] + build['base-modules']
+        kernel = expandFile(build['zephyr-kernel'])
 
         cmd = cmake([
-            cmakeBuildtool(self.sys.log, self.spec['build-tool']),
+            cmakeBuildtool(self.sys.log, build['build-tool']),
             cmakeSourceDir('.'),
             cmakeBinaryDir(self.builddir),
             cmakeParam('CMAKE_BUILD_TYPE', self.cfg),
@@ -275,15 +277,15 @@ class SystemInstanceZephyr:
             cmakeParam('BOARD', self.board),
             zephyrToolchain(tcSpec),
             cmakeParam('ZEPHYR_MODULES',
-                       genZephyrModules(self.spec['zephyr-module-path'],
+                       genZephyrModules(build['zephyr-module-path'],
                                         build['modules'])),
             cmakeParam('OVERLAY_CONFIG',
-                       [ findZephyrTransformer(self.spec['ufw'], self.cfg) ]
-                       + self.spec['kconfig']),
+                       [ findZephyrTransformer(build['ufw'], self.cfg) ]
+                       + build['kconfig']),
             cmakeParam('UFW_ZEPHYR_KERNEL', kernel),
-            cmakeParam('UFW_ZEPHYR_APPLICATION', expandFile(self.spec['source'])),
+            cmakeParam('UFW_ZEPHYR_APPLICATION', expandFile(build['source'])),
             cmakeParam('UFW_LOAD_BUILD_SYSTEM',
-                       expandFile(self.spec['build-system']))])
+                       expandFile(build['build-system']))])
 
         if (self.sys.args.cmake != None):
             cmd.extend(self.sys.args.cmake)
