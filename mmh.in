@@ -172,6 +172,8 @@ ap_show.set_defaults(sub_command = 'show-source')
 
 ap_system   = subp.add_parser('system',
                               help = 'Handle building production systems')
+ap_system.add_argument("-s", "--single-instance", action = "store_true",
+                       help = "Build a single instance in the build directory root")
 ap_system.set_defaults(sub_command = 'system')
 sub_system = ap_system.add_subparsers(dest = 'system',
                                       metavar = 'System Commands')
@@ -537,6 +539,11 @@ elif (cmdargs.sub_command == "system"):
     #mmh.pp(cmdargs)
 
     if (cmdargs.system == 'build'):
+        n = len(cmdargs.instances)
+        if (cmdargs.single_instance and n != 1):
+            log.error('system: --single-instance requires exactly one instance. {} specified.'
+                      .format(n))
+            exit(1)
         system.build(cmdargs.instances)
     elif (cmdargs.system == 'rebuild'):
         system.rebuild(cmdargs.instances)

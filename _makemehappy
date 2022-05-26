@@ -189,6 +189,7 @@ _makemehappy-system() {
     _arguments -C -s -w : \
                '*::: :->args' \
                '(-h --help)'{-h,--help}'[display help message]' \
+               '(-s --single-instance)'{-s,--single-instance}'[Build a single instance in the build directory root]' \
         && ret=0
 
     if [[ -n $state ]]; then

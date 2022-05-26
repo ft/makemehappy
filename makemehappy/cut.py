@@ -511,6 +511,7 @@ def outputMMHYAML(version, fn, data, args):
     data.pop('definition', None)
     data.pop('root', None)
     data['version'] = version
+    data['mode'] = 'module'
     data['parameters'] = {}
     if (args.architectures != None):
         data['parameters']['architectures'] = args.architectures

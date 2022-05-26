@@ -373,6 +373,34 @@ class System:
         self.cfg = cfg
         self.args = args
         self.spec = 'system.yaml'
+        if (args.single_instance):
+            self.mode = 'system-single'
+        else:
+            self.mode = 'system-multi'
+
+    def setupDirectory(self):
+        d = self.args.directory
+        if (os.path.exists(d)):
+            self.log.info('Build directory {} exists: Examining...'.format(d))
+            state = os.path.join(d, 'MakeMeHappy.yaml')
+            if (os.path.exists(state)):
+                data = mmh.load(state)
+                if (data['mode'] != self.mode):
+                    self.log.error(
+                        'Build directory {} uses {} mode; Current mode: {}'
+                        .format(d, data['mode'], self.mode))
+                    exit(1)
+                else:
+                    self.log.info('Build tree matching current mode: {}. Good!'
+                                  .format(self.mode))
+            else:
+                self.log.error('Failed to load build state from {}'.format(state))
+                exit(1)
+        else:
+            os.mkdir(d)
+            data = { 'mode' : self.mode }
+            state = os.path.join(d, 'MakeMeHappy.yaml')
+            mmh.dump(state, data)
 
     def load(self):
         self.log.info("Loading system specification: {}".format(self.spec))
@@ -433,6 +461,7 @@ class System:
         return True
 
     def build(self, instances):
+        self.setupDirectory()
         if (len(instances) == 0):
             self.log.info("Building full system:")
             self.buildInstances(self.instances)
@@ -442,6 +471,7 @@ class System:
         self.showStats()
 
     def rebuild(self, instances):
+        self.setupDirectory()
         if (len(instances) == 0):
             self.log.info("Re-Building full system:")
             self.rebuildInstances(self.instances)
@@ -453,6 +483,7 @@ class System:
         #self.showStats()
 
     def clean(self, instances):
+        self.setupDirectory()
         if (len(instances) == 0):
             self.log.info("Cleaning up full system:")
             return self.cleanInstances(self.instances)
