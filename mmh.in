@@ -225,6 +225,9 @@ if (cmdargs.verbose):
 if (cmdargs.quiet):
     log.disable()
 
+if ('single_instance' not in cmdargs):
+    cmdargs.single_instance = None
+
 if (cmdargs.version):
     print("{} ({}) version {}".format(fullname, name, version))
     print()

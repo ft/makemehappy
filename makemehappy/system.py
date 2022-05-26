@@ -387,7 +387,9 @@ class System:
         self.args = args
         self.spec = 'system.yaml'
         self.singleInstance = None
-        if (args.single_instance):
+        if (args.single_instance == None):
+            self.mode = None
+        elif (args.single_instance):
             n = len(args.instances)
             if (n == 1):
                 self.singleInstance = args.instances[0]
@@ -407,7 +409,10 @@ class System:
             state = os.path.join(d, 'MakeMeHappy.yaml')
             if (os.path.exists(state)):
                 data = mmh.load(state)
-                if (data['mode'] != self.mode):
+                if (self.mode == None):
+                    self.mode = data['mode']
+                    self.log.info('Using mode from state: {}'.format(self.mode))
+                elif (data['mode'] != self.mode):
                     self.log.error(
                         'Build directory {} uses {} mode; Current mode: {}'
                         .format(d, data['mode'], self.mode))
