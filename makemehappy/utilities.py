@@ -55,8 +55,11 @@ def load(file):
         data['definition'] = fn
         return data
 
-def dump(fn, data):
-    with open(fn, 'w') as fh:
+def dump(file, data):
+    (root,fn) = os.path.split(os.path.realpath(file))
+    data['definition'] = fn
+    data['root'] = root
+    with open(file, 'w') as fh:
         yaml.dump(data, fh)
 
 xppx = pprint.PrettyPrinter(indent = 4)
