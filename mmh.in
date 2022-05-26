@@ -263,7 +263,10 @@ if cmdargs.interfaces is not None:
 cmdargs.cmake = cmakeParameters
 
 cmdargs.fromyaml = False
-if (cmdargs.sub_command != 'reset-setup' and cmdargs.directory != None and mmh.noParameters(cmdargs)):
+if (cmdargs.sub_command != 'reset-setup' and
+    cmdargs.sub_command != 'system'      and
+    cmdargs.directory != None            and
+    mmh.noParameters(cmdargs)):
     fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
     if (os.path.exists(fn)):
         data = mmh.load(fn)
