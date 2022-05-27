@@ -2,9 +2,10 @@ import copy
 import os
 import subprocess
 
-import mako.template as mako
 import makemehappy.utilities as mmh
 import makemehappy.cut as cut
+import makemehappy.cmake as c
+import makemehappy.zephyr as z
 
 defaults = { 'build-configs'      : [ 'debug', 'release' ],
              'build-system'       : None,
@@ -15,43 +16,6 @@ defaults = { 'build-configs'      : [ 'debug', 'release' ],
              'zephyr-kernel'      : '${system}/zephyr/kernel',
              'zephyr-module-path' : [ '${system}/zephyr/modules' ],
              'zephyr-template'    : 'applications/${application}' }
-
-def cmakeBuildtool(log, name):
-    std = 'Ninja'
-    tool = ''
-    if (name == 'make'):
-        tool = 'Unix Makefiles'
-    elif (name == 'ninja'):
-        tool = 'Ninja'
-    else:
-        log.warn('Unknown build-tool {} defaulting to {}'.format(name, std))
-        tool = std
-    return '-G{}'.format(tool)
-
-def cmakeSourceDir(d):
-    return [ '-S' , d ]
-
-def cmakeBinaryDir(d):
-    return [ '-B' , d ]
-
-def expandFile(tmpl):
-    if (tmpl == None):
-        return None
-    curdir = os.getcwd()
-    exp = mako.Template(tmpl).render(system = curdir)
-    return exp
-
-def zephyrToolchain(spec):
-    real = None
-    if (isinstance(spec, str)):
-        real = { 'name' : spec, 'path' : None }
-    elif (isinstance(spec, dict)):
-        real = spec
-    ztv = [ cmakeParam('ZEPHYR_TOOLCHAIN_VARIANT', real['name']) ]
-    if (real['name'] == 'gnuarmemb'):
-        ztv.extend([ cmakeParam('GNUARMEMB_TOOLCHAIN_PATH', real['path']) ])
-    return ztv
-
 
 def makeZephyrInstances(zephyr):
     instances = []
@@ -111,77 +75,10 @@ def fillData(data):
         for b in data['boards']:
             fill(b, data['common'])
 
-def makeCMakeList(lst):
-    return ';'.join([x for x in lst if x != None])
-
-def cmakeParam(name, value, allowEmpty = False):
-    exp = ''
-    if (isinstance(value, str)):
-        exp = value
-    elif (isinstance(value, list)):
-        exp = makeCMakeList(value)
-    else:
-        return None
-
-    if (allowEmpty == False and exp == ''):
-        return None
-
-    return '-D{}={}'.format(name, exp)
-
-def cmake(lst):
-    return [ 'cmake' ] + [ x for x in mmh.flatten(lst) if x != None ]
-
 def getSpec(data, key, name):
     for d in data:
         if (name == d[key]):
             return d
-    return None
-
-def isZephyrModule(d):
-    return (os.path.isdir(d) and
-            os.path.isdir(os.path.join(d, 'zephyr')))
-
-def findZephyrModule(path, name):
-    for d in path:
-        candidate = os.path.join(d, name)
-        if (isZephyrModule(candidate)):
-            return candidate
-    return None
-
-def genZephyrModules(path, names):
-    realpath = [ expandFile(x) for x in path ]
-    modules = [ findZephyrModule(realpath, m) for m in names ]
-    return modules
-
-def zephyrToolchainMatch(tc, name):
-    if (isinstance(tc, str)):
-        if (tc == name):
-            return True
-    elif (tc['name'] == name):
-        return True
-    return False
-
-def findZephyrBuild(builds, tc, board):
-    for build in builds:
-        if board in build['boards']:
-            for toolchain in build['toolchains']:
-                if (zephyrToolchainMatch(toolchain, tc)):
-                    return build
-    return None
-
-def findZephyrToolchain(build, tc):
-    for toolchain in build['toolchains']:
-        if (zephyrToolchainMatch(toolchain, tc)):
-            return toolchain
-    return None
-
-def findZephyrTransformer(ufw, cfg):
-    name = cfg.lower()
-    transformer = os.path.join(expandFile(ufw),
-                               'cmake', 'kconfig',
-                               cfg + '.conf')
-    if (os.path.exists(transformer)):
-        return transformer
     return None
 
 class InvalidSystemInstance(Exception):
@@ -207,23 +104,23 @@ class SystemInstanceBoard:
                                            self.sys.args.directory,
                                            self.spec['install-dir'],
                                            self.board, self.tc, self.cfg)
-        self.tcfile = os.path.join(expandFile(self.spec['ufw']),
+        self.tcfile = os.path.join(mmh.expandFile(self.spec['ufw']),
                                    'cmake', 'toolchains',
                                    '{}.cmake'.format(tc))
         self.sys.stats.systemBoard(tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
-        cmd = cmake([
-            cmakeBuildtool(self.sys.log, self.spec['build-tool']),
-            cmakeSourceDir('.'),
-            cmakeBinaryDir(self.builddir),
-            cmakeParam('CMAKE_BUILD_TYPE', self.cfg),
-            cmakeParam('CMAKE_INSTALL_PREFIX', self.installdir),
-            cmakeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on'),
-            cmakeParam('CMAKE_TOOLCHAIN_FILE', self.tcfile),
-            cmakeParam('TARGET_BOARD', self.board),
-            cmakeParam('UFW_LOAD_BUILD_SYSTEM',
-                       expandFile(self.spec['build-system']))])
+        cmd = c.cmake([
+            c.buildtool(self.sys.log, self.spec['build-tool']),
+            c.sourceDir('.'),
+            c.binaryDir(self.builddir),
+            c.makeParam('CMAKE_BUILD_TYPE', self.cfg),
+            c.makeParam('CMAKE_INSTALL_PREFIX', self.installdir),
+            c.makeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on'),
+            c.makeParam('CMAKE_TOOLCHAIN_FILE', self.tcfile),
+            c.makeParam('TARGET_BOARD', self.board),
+            c.makeParam('UFW_LOAD_BUILD_SYSTEM',
+                        mmh.expandFile(self.spec['build-system']))])
 
         if (self.sys.args.cmake != None):
             cmd.extend(self.sys.args.cmake)
@@ -256,36 +153,37 @@ class SystemInstanceZephyr:
         self.sys.stats.systemZephyr(app, tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
-        build = findZephyrBuild(self.spec['build'], self.tc, self.board)
+        build = z.findBuild(self.spec['build'], self.tc, self.board)
         if (not 'modules' in build):
             build['modules'] = [ ]
-        tcSpec = findZephyrToolchain(build, self.tc)
+        tcSpec = z.findToolchain(build, self.tc)
         tmp = copy.deepcopy(self.spec)
         tmp.pop('build')
         build = { **build, **tmp }
         if ('base-modules' in build):
             build['modules'] = build['modules'] + build['base-modules']
-        kernel = expandFile(build['zephyr-kernel'])
+        kernel = mmh.expandFile(build['zephyr-kernel'])
 
-        cmd = cmake([
-            cmakeBuildtool(self.sys.log, build['build-tool']),
-            cmakeSourceDir('.'),
-            cmakeBinaryDir(self.builddir),
-            cmakeParam('CMAKE_BUILD_TYPE', self.cfg),
-            cmakeParam('CMAKE_INSTALL_PREFIX', self.installdir),
-            cmakeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on'),
-            cmakeParam('BOARD', self.board),
-            zephyrToolchain(tcSpec),
-            cmakeParam('ZEPHYR_MODULES',
-                       genZephyrModules(build['zephyr-module-path'],
-                                        build['modules'])),
-            cmakeParam('OVERLAY_CONFIG',
-                       [ findZephyrTransformer(build['ufw'], self.cfg) ]
-                       + build['kconfig']),
-            cmakeParam('UFW_ZEPHYR_KERNEL', kernel),
-            cmakeParam('UFW_ZEPHYR_APPLICATION', expandFile(build['source'])),
-            cmakeParam('UFW_LOAD_BUILD_SYSTEM',
-                       expandFile(build['build-system']))])
+        # TODO: Make a utility from this so this and the zephyr module build
+        # can use it!
+        cmd = c.cmake([c.buildtool(self.sys.log, build['build-tool']),
+            c.sourceDir('.'),
+            c.binaryDir(self.builddir),
+            c.makeParam('CMAKE_BUILD_TYPE', self.cfg),
+            c.makeParam('CMAKE_INSTALL_PREFIX', self.installdir),
+            c.makeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on'),
+            c.makeParam('BOARD', self.board),
+            c.zephyrToolchain(tcSpec),
+            c.makeParam('ZEPHYR_MODULES',
+                        z.generateModules(build['zephyr-module-path'],
+                                          build['modules'])),
+            c.makeParam('OVERLAY_CONFIG',
+                        [ z.findTransformer(build['ufw'], self.cfg) ]
+                        + build['kconfig']),
+            c.makeParam('UFW_ZEPHYR_KERNEL', kernel),
+            c.makeParam('UFW_ZEPHYR_APPLICATION', mmh.expandFile(build['source'])),
+            c.makeParam('UFW_LOAD_BUILD_SYSTEM',
+                        mmh.expandFile(build['build-system']))])
 
         if (self.sys.args.cmake != None):
             cmd.extend(self.sys.args.cmake)
@@ -334,7 +232,7 @@ class SystemInstance:
 
     def compile(self):
         self.sys.log.info('Compiling system instance: {}'.format(self.desc))
-        cmd = cmake(['--build', self.instance.builddir ])
+        cmd = c.cmake(['--build', self.instance.builddir ])
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
         self.sys.stats.logBuild(rc)
         return (rc == 0)
@@ -354,7 +252,7 @@ class SystemInstance:
 
     def install(self):
         self.sys.log.info('Installing system instance: {}'.format(self.desc))
-        cmd = cmake([ '--install', '.' ])
+        cmd = c.cmake([ '--install', '.' ])
         olddir = os.getcwd()
         os.chdir(self.instance.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
@@ -364,7 +262,7 @@ class SystemInstance:
 
     def clean(self):
         self.sys.log.info('Cleaning system instance: {}'.format(self.desc))
-        cmd = cmake([ '--build', self.instance.builddir, '--target', 'clean' ])
+        cmd = c.cmake([ '--build', self.instance.builddir, '--target', 'clean' ])
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
         return (rc == 0)
 

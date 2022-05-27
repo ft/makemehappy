@@ -7,6 +7,8 @@ import subprocess
 import sys
 import yaml
 
+import mako.template as mako
+
 def dotFile(fn):
     return os.path.join(os.environ['HOME'], '.makemehappy', fn)
 
@@ -104,3 +106,10 @@ def flatten(lst):
         return flatten(first) + flatten(rest)
     else:
         return [lst]
+
+def expandFile(tmpl):
+    if (tmpl == None):
+        return None
+    curdir = os.getcwd()
+    exp = mako.Template(tmpl).render(system = curdir)
+    return exp
