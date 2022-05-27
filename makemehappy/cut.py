@@ -387,6 +387,11 @@ class ExecutionStatistics:
     def renderTestStepResult(self, datum):
         self.renderStepResult(datum, 'Testsuite', 'testsuite')
 
+    def renderToolchain(self, tc):
+        if (isinstance(tc, dict)):
+            return tc['name']
+        return tc
+
     def renderBuildResult(self, datum):
         #mmh.pp(datum)
         result = 'Success'
@@ -404,7 +409,7 @@ class ExecutionStatistics:
         maybeInfo(self.cfg, self.log,
                   '{pad:>4}{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}     {result}'
                   .format(pad = '',
-                          toolchain = datum['toolchain'],
+                          toolchain = self.renderToolchain(datum['toolchain']),
                           cpu = datum['cpu'],
                           interf = datum['interface'],
                           config = datum['buildcfg'],
@@ -455,7 +460,7 @@ class ExecutionStatistics:
         maybeInfo(self.cfg, self.log,
                   '{application:>20} {toolchain:>20} {board:>20} {config:>16} {tool:>12}     {result}'
                   .format(application = datum['application'],
-                          toolchain = datum['toolchain'],
+                          toolchain = self.renderToolchain(datum['toolchain']),
                           board = datum['board'],
                           config = datum['buildcfg'],
                           tool = datum['buildtool'],

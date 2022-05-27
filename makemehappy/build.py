@@ -100,32 +100,34 @@ def generateZephyrInstances(log, mod):
     for target in targets:
         for cfg in cfgs:
             for tool in tools:
-                arch = target['board'].replace('_', '-')
-                mods = ''
-                kcfg = ''
-                opts = ''
-                if ('modules' in target):
-                    mods = ';'.join(target['modules'])
-                if ('kconfig' in target):
-                    kcfg = ';'.join(target['kconfig'])
-                if ('options' in target):
-                    opts = ';'.join(target['options'])
-                instances.append({'toolchain'   : target['toolchain'],
-                                  'board'       : target['board'],
-                                  'architecture': arch,
-                                  'modules'     : mods,
-                                  'kconfig'     : kcfg,
-                                  'options'     : opts,
-                                  'interface'   : 'none',
-                                  'buildcfg'    : cfg,
-                                  'buildtool'   : tool,
-                                  'install'     : install,
-                                  'type'        : mod.moduleType })
+                for board in target['boards']:
+                    arch = board.replace('_', '-')
+                    for tc in target['toolchains']:
+                        if ('kconfig' not in target):
+                            target['kconfig'] = []
+                        if ('options' not in target):
+                            target['options'] = []
+                        if ('modules' not in target):
+                            target['modules'] = []
+                        instances.append(
+                            { 'toolchain'   : tc,
+                              'board'       : board,
+                              'architecture': arch,
+                              'modules'     : target['modules'],
+                              'kconfig'     : target['kconfig'],
+                              'options'     : target['options'],
+                              'interface'   : 'none',
+                              'buildcfg'    : cfg,
+                              'buildtool'   : tool,
+                              'install'     : install,
+                              'type'        : mod.moduleType })
 
     return instances
 
 def instanceName(instance):
     tc = instance['toolchain']
+    if (isinstance(tc, dict)):
+        tc = tc['name']
     if (instance['type'] == 'zephyr'):
         tc = 'zephyr-' + tc
     return "{}_{}_{}_{}_{}".format(tc,
@@ -176,17 +178,23 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             sourcedir    = root,
             builddir     = '.')
     elif (instance['type'] == 'zephyr'):
-        cmd = ['cmake',
-               '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
-               '-DZEPHYR_TOOLCHAIN_VARIANT={}'.format(instance['toolchain']),
-               '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
-               '-DMMH_TARGET_BOARD={}'.format(instance['board']),
-               '-DMMH_ZEPHYR_TOOLCHAIN={}'.format(instance['toolchain']),
-               '-DMMH_ZEPHYR_MODULES={}'.format(instance['modules']),
-               '-DMMH_ZEPHYR_KCONFIG={}'.format(instance['kconfig']),
-               '-DMMH_ZEPHYR_OPTIONS={}'.format(instance['options']),
-               '-DINTERFACE_TARGET={}'.format(instance['interface'])
-               ] + cmakeArgs + [root]
+        cmd = c.configureZephyr(
+            log         = log,
+            args        = cmakeArgs,
+            ufw         = os.path.join(root, 'deps', 'ufw'),
+            board       = instance['board'],
+            buildconfig = instance['buildcfg'],
+            toolchain   = instance['toolchain'],
+            sourcedir   = root,
+            builddir    = '.',
+            installdir  = './artifacts',
+            buildtool   = instance['buildtool'],
+            buildsystem = '',
+            appsource   = os.path.join(root, 'code-under-test'),
+            kernel      = os.path.join(root, 'deps', 'zephyr-kernel'),
+            kconfig     = instance['kconfig'],
+            modulepath  = [ os.path.join(root, 'deps') ],
+            modules     = instance['modules'])
     else:
         raise(UnknownModuleType(instance['type']))
     rc = mmh.loggedProcess(cfg, log, cmd)

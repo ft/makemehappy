@@ -60,12 +60,13 @@ class Toplevel:
         for s in ["cmake_minimum_required(VERSION {})".format(defaultCMakeVersion),
                 "project({} {})".format(defaultProjectName, langs)]:
             print(s, file = fh)
-        if (self.moduleType == 'zephyr'):
-            print('set(MICROFRAMEWORK_ROOT "${CMAKE_SOURCE_DIR}/deps/ufw")', file = fh)
 
     def generateCMakeModulePath(self, fh, moddirs):
         for p in moddirs:
             print("list(APPEND CMAKE_MODULE_PATH \"{}\")".format(p), file = fh)
+        if (self.moduleType == 'zephyr'):
+            print('include(SetupUFW)', file = fh)
+            print('ufw_toplevel(ROOT ${CMAKE_SOURCE_DIR}/deps/ufw)', file = fh)
 
     def generateTestHeader(self, fh):
         print("include(CTest)", file = fh)
@@ -133,25 +134,7 @@ class Toplevel:
             print('list(APPEND DTS_ROOT "{}")'.format(entry), file = fh)
         for entry in socroot:
             print('list(APPEND SOC_ROOT "{}")'.format(entry), file = fh)
-        print('''set(MMH_ZEPHYR_KERNEL      "${CMAKE_SOURCE_DIR}/deps/zephyr-kernel")
-set(APPLICATION_SOURCE_DIR "${CMAKE_SOURCE_DIR}/code-under-test")
-include(UFWTools)
-include(BuildInZephyrDir)
-ufw_setup_zephyr(
-  APPLICATION  code-under-test
-  BOARDS       "${MMH_TARGET_BOARD}"
-  TOOLCHAINS   "${MMH_ZEPHYR_TOOLCHAIN}"
-  BUILDCFGS    "${CMAKE_BUILD_TYPE}"
-  ROOT         "${CMAKE_SOURCE_DIR}/code-under-test"
-  KERNEL       "${MMH_ZEPHYR_KERNEL}"
-  KCONFIG      "${MMH_ZEPHYR_KCONFIG}"
-  OPTIONS      "${MMH_ZEPHYR_OPTIONS}"
-  MODULE_ROOT  "${CMAKE_SOURCE_DIR}/deps"
-  MODULES      "${MMH_ZEPHYR_MODULES}")
-set(APPLICATION_SOURCE_DIR ${APPLICATION_SOURCE_DIR} CACHE PATH "Application Source Directory")
-set(Zephyr_ROOT "${MMH_ZEPHYR_KERNEL}")
-set(ZEPHYR_BASE "${MMH_ZEPHYR_KERNEL}")
-find_package(Zephyr REQUIRED)
+        print('''
 enable_language(C)
 enable_language(CXX)
 enable_language(ASM)''',
