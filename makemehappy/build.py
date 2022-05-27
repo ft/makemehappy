@@ -3,6 +3,7 @@ import re
 import shutil
 import subprocess
 
+import makemehappy.cmake as c
 import makemehappy.utilities as mmh
 
 def maybeToolchain(tc):
@@ -165,14 +166,15 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
         cmakeArgs = args.cmake
 
     if (instance['type'] == 'cmake'):
-        cmd = ['cmake',
-               '-G{}'.format(cmakeBuildtool(instance['buildtool'])),
-               '-DCMAKE_TOOLCHAIN_FILE={}'.format(
-                   findToolchainByExtension(ext, instance['toolchain'])),
-               '-DCMAKE_BUILD_TYPE={}'.format(instance['buildcfg']),
-               '-DPROJECT_TARGET_CPU={}'.format(instance['architecture']),
-               '-DINTERFACE_TARGET={}'.format(instance['interface'])
-               ] + cmakeArgs + [root]
+        cmd = c.configureLibrary(
+            log          = log,
+            args         = cmakeArgs,
+            architecture = instance['architecture'],
+            buildtool    = instance['buildtool'],
+            buildconfig  = instance['buildcfg'],
+            toolchain    = findToolchainByExtension(ext, instance['toolchain']),
+            sourcedir    = root,
+            builddir     = '.')
     elif (instance['type'] == 'zephyr'):
         cmd = ['cmake',
                '-G{}'.format(cmakeBuildtool(instance['buildtool'])),

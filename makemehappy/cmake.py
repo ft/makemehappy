@@ -89,6 +89,11 @@ def configureBoard(log, args, ufw,
                    board, buildtool, buildconfig, buildsystem,
                    toolchain, sourcedir, builddir, installdir):
 
+    # TODO: We probably want a UFW class so we can access modules and
+    #       extensions to cmake in a uniform manner in order to unify
+    #       this way of determining the toolchain file and the more
+    #       general way that is used in the build module to call the
+    #       configureLibrary() function.
     tcfile = os.path.join(mmh.expandFile(ufw), 'cmake', 'toolchains',
                           '{}.cmake'.format(toolchain))
 
@@ -102,6 +107,23 @@ def configureBoard(log, args, ufw,
           makeParam('TARGET_BOARD',          board),
           makeParam('CMAKE_TOOLCHAIN_FILE',  tcfile),
           makeParam('UFW_LOAD_BUILD_SYSTEM', mmh.expandFile(buildsystem)) ])
+
+    if (args != None):
+        cmd.extend(args)
+
+    return cmd
+
+def configureLibrary(log, args,
+                     buildtool, buildconfig, architecture,
+                     toolchain, sourcedir, builddir):
+    cmd = cmake(
+        [ usetool(log, buildtool),
+          sourceDir(sourcedir),
+          binaryDir(builddir),
+          compileCommands(),
+          makeParam('CMAKE_BUILD_TYPE',      buildconfig),
+          makeParam('PROJECT_TARGET_CPU',    architecture),
+          makeParam('CMAKE_TOOLCHAIN_FILE',  toolchain) ])
 
     if (args != None):
         cmd.extend(args)
