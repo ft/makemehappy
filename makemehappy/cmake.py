@@ -1,6 +1,7 @@
 import makemehappy.utilities as mmh
+import makemehappy.zephyr as z
 
-def buildtool(log, name):
+def usetool(log, name):
     std = 'Ninja'
     tool = ''
     if (name == 'make'):
@@ -19,7 +20,7 @@ def binaryDir(d):
     return [ '-B' , d ]
 
 def compileCommands():
-    return makeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on'),
+    return makeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on')
 
 def makeList(lst):
     return ';'.join([x for x in lst if x != None])
@@ -52,29 +53,30 @@ def zephyrToolchain(spec):
 def cmake(lst):
     return [ 'cmake' ] + [ x for x in mmh.flatten(lst) if x != None ]
 
-def configureZephyr(log, args,
-                    board, buildtool, buildconfig, buildsys,
-                    tc, sourcedir, builddir, installdir,
-                    kconfig, modulepath, modules, ufw):
-    modules = genZephyrModules(modulepath, modules)
-    overlay = [ findZephyrTransformer(ufw, buildconfig) ] + kconfig
+def configureZephyr(log, args, ufw,
+                    board, buildtool, buildconfig, buildsystem,
+                    toolchain, sourcedir, builddir, installdir,
+                    appsource, kernel, kconfig, modulepath, modules):
+    modules = z.generateModules(modulepath, modules)
+    overlay = [ z.findTransformer(ufw, buildconfig) ]
 
     if (kconfig != None):
         overlay.extend(kconfig)
 
-    cmd = [ buildtool(log, buildtool),
-            sourceDir(sourcedir),
-            binaryDir(builddir),
-            compileCommands(),
-            zephyrToolchain(tc),
-            makeParam('CMAKE_BUILD_TYPE',       buildconfig),
-            makeParam('CMAKE_INSTALL_PREFIX',   installdir),
-            makeParam('BOARD',                  board),
-            makeParam('ZEPHYR_MODULES',         modules),
-            makeParam('OVERLAY_CONFIG',         overlay),
-            makeParam('UFW_ZEPHYR_KERNEL',      kernel),
-            makeParam('UFW_ZEPHYR_APPLICATION', sourcedir),
-            makeParam('UFW_LOAD_BUILD_SYSTEM',  buildsys) ]
+    cmd = cmake(
+        [ usetool(log, buildtool),
+          sourceDir(sourcedir),
+          binaryDir(builddir),
+          compileCommands(),
+          zephyrToolchain(toolchain),
+          makeParam('CMAKE_BUILD_TYPE',       buildconfig),
+          makeParam('CMAKE_INSTALL_PREFIX',   installdir),
+          makeParam('BOARD',                  board),
+          makeParam('ZEPHYR_MODULES',         modules),
+          makeParam('OVERLAY_CONFIG',         overlay),
+          makeParam('UFW_ZEPHYR_KERNEL',      mmh.expandFile(kernel)),
+          makeParam('UFW_ZEPHYR_APPLICATION', mmh.expandFile(appsource)),
+          makeParam('UFW_LOAD_BUILD_SYSTEM',  mmh.expandFile(buildsystem)) ])
 
     if (args != None):
         cmd.extend(args)
