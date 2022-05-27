@@ -104,26 +104,21 @@ class SystemInstanceBoard:
                                            self.sys.args.directory,
                                            self.spec['install-dir'],
                                            self.board, self.tc, self.cfg)
-        self.tcfile = os.path.join(mmh.expandFile(self.spec['ufw']),
-                                   'cmake', 'toolchains',
-                                   '{}.cmake'.format(tc))
         self.sys.stats.systemBoard(tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
-        cmd = c.cmake([
-            c.usetool(self.sys.log, self.spec['build-tool']),
-            c.sourceDir('.'),
-            c.binaryDir(self.builddir),
-            c.makeParam('CMAKE_BUILD_TYPE', self.cfg),
-            c.makeParam('CMAKE_INSTALL_PREFIX', self.installdir),
-            c.makeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on'),
-            c.makeParam('CMAKE_TOOLCHAIN_FILE', self.tcfile),
-            c.makeParam('TARGET_BOARD', self.board),
-            c.makeParam('UFW_LOAD_BUILD_SYSTEM',
-                        mmh.expandFile(self.spec['build-system']))])
-
-        if (self.sys.args.cmake != None):
-            cmd.extend(self.sys.args.cmake)
+        cmd = c.configureBoard(
+            log         = self.sys.log,
+            args        = self.sys.args.cmake,
+            ufw         = self.spec['ufw'],
+            board       = self.board,
+            buildconfig = self.cfg,
+            toolchain   = self.tc,
+            sourcedir   = '.',
+            builddir    = self.builddir,
+            installdir  = self.installdir,
+            buildtool   = self.spec['build-tool'],
+            buildsystem = self.spec['build-system'])
 
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
         self.sys.stats.logConfigure(rc)

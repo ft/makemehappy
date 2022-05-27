@@ -1,3 +1,5 @@
+import os
+
 import makemehappy.utilities as mmh
 import makemehappy.zephyr as z
 
@@ -77,6 +79,29 @@ def configureZephyr(log, args, ufw,
           makeParam('UFW_ZEPHYR_KERNEL',      mmh.expandFile(kernel)),
           makeParam('UFW_ZEPHYR_APPLICATION', mmh.expandFile(appsource)),
           makeParam('UFW_LOAD_BUILD_SYSTEM',  mmh.expandFile(buildsystem)) ])
+
+    if (args != None):
+        cmd.extend(args)
+
+    return cmd
+
+def configureBoard(log, args, ufw,
+                   board, buildtool, buildconfig, buildsystem,
+                   toolchain, sourcedir, builddir, installdir):
+
+    tcfile = os.path.join(mmh.expandFile(ufw), 'cmake', 'toolchains',
+                          '{}.cmake'.format(toolchain))
+
+    cmd = cmake(
+        [ usetool(log, buildtool),
+          sourceDir(sourcedir),
+          binaryDir(builddir),
+          compileCommands(),
+          makeParam('CMAKE_BUILD_TYPE',      buildconfig),
+          makeParam('CMAKE_INSTALL_PREFIX',  installdir),
+          makeParam('TARGET_BOARD',          board),
+          makeParam('CMAKE_TOOLCHAIN_FILE',  tcfile),
+          makeParam('UFW_LOAD_BUILD_SYSTEM', mmh.expandFile(buildsystem)) ])
 
     if (args != None):
         cmd.extend(args)
