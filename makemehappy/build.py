@@ -276,13 +276,14 @@ def findToolchain(tcp, tc):
 
 def runInstance(cfg, log, args, directory):
     dirs = os.path.split(directory)
-    m = re.match('([^_]+)_([^_]+)_([^_]+)_([^_]+)_([^_]+)', dirs[-1])
+    m = re.match('([^/]+)/([^/]+)/([^/]+)/([^/]+)', directory)
     if (m is None):
         log.warning("Not a build-instance directory: {}".format(directory))
         return
-    cleanInstance(log, directory)
     olddir = os.getcwd()
     root = os.path.join(olddir, args.directory)
+    directory = os.path.join(root, 'build', directory)
+    cleanInstance(log, directory)
     (toolchain, architecture, buildconfig, buildtool) = m.groups()
     tc = findToolchain(args.toolchainPath, toolchain)
     cmakeArgs = []
