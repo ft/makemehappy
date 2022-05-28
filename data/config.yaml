@@ -6,19 +6,16 @@ toolchains:
     architecture: native
     features:
       - 8bit-byte
-    interface: posix
   - name: clang
     architecture: native
     features:
       - 8bit-byte
-    interface: posix
   - name: gnu-arm-none-eabi
     architecture:
       - cortex-m3
       - cortex-m4-hardfp
     features:
       - 8bit-byte
-    interface: none
   - name: ti-arm
     architecture: cortex-m3
     features:
@@ -27,7 +24,6 @@ toolchains:
     architecture: c28x-float
     features:
       - 16bit-byte
-    interface: none
 
 buildtools:
   - make

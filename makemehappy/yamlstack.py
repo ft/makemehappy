@@ -119,9 +119,6 @@ class ConfigStack(YamlStack):
     def allToolchains(self):
         return queryToolchain(self.data, 'name')
 
-    def allInterfaces(self):
-        return queryToolchain(self.data, 'interface')
-
     def allArchitectures(self):
         return queryToolchain(self.data, 'architecture')
 

@@ -101,10 +101,6 @@ ap.add_argument("-Q", "--query",
                 default = None,
                 help = "query aspects about the program")
 
-ap.add_argument("-I", "--interfaces",
-                default = None,
-                help = "select interfaces to include in build")
-
 ap.add_argument("-s", "--source",
                 default = [ ],
                 action = "append",
@@ -202,8 +198,6 @@ if cmdargs.query is not None:
     result = []
     if (q == 'toolchains'):
         result = cut.allToolchains()
-    elif (q == 'interfaces'):
-        result = cut.allInterfaces()
     elif (q == 'architectures'):
         result = cut.allArchitectures()
     elif (q == 'buildtools'):
@@ -257,8 +251,6 @@ if cmdargs.buildconfigs is not None:
     cmdargs.buildconfigs = cmdargs.buildconfigs.split(',')
 if cmdargs.architectures is not None:
     cmdargs.architectures = cmdargs.architectures.split(',')
-if cmdargs.interfaces is not None:
-    cmdargs.interfaces = cmdargs.interfaces.split(',')
 
 cmdargs.cmake = cmakeParameters
 
@@ -293,8 +285,6 @@ if (cmdargs.sub_command != 'reset-setup' and
                     cmdargs.buildconfigs = p['buildconfigs']
                 if 'buildtools' in p:
                     cmdargs.buildtools = p['buildtools']
-                if 'interfaces' in p:
-                    cmdargs.interfaces = p['interfaces']
                 if 'toolchains' in p:
                     cmdargs.toolchains = p['toolchains']
                 if 'cmake' in p:
@@ -359,8 +349,7 @@ elif (cmdargs.sub_command == "fetch-dependencies"):
     cut.cliAdjust(toolchains    = cmdargs.toolchains,
                   architectures = cmdargs.architectures,
                   buildconfigs  = cmdargs.buildconfigs,
-                  buildtools    = cmdargs.buildtools,
-                  interfaces    = cmdargs.interfaces)
+                  buildtools    = cmdargs.buildtools)
     cut.loadSources()
     cut.changeToRoot()
     cut.loadDependencies()
@@ -375,8 +364,7 @@ elif (cmdargs.sub_command == "generate-toplevel"):
     cut.cliAdjust(toolchains    = cmdargs.toolchains,
                   architectures = cmdargs.architectures,
                   buildconfigs  = cmdargs.buildconfigs,
-                  buildtools    = cmdargs.buildtools,
-                  interfaces    = cmdargs.interfaces)
+                  buildtools    = cmdargs.buildtools)
     cut.loadSources()
     cut.changeToRoot()
     cut.loadDependencies()
@@ -408,8 +396,7 @@ elif (cmdargs.sub_command == "run-instance"):
     cut.cliAdjust(toolchains    = cmdargs.toolchains,
                   architectures = cmdargs.architectures,
                   buildconfigs  = cmdargs.buildconfigs,
-                  buildtools    = cmdargs.buildtools,
-                  interfaces    = cmdargs.interfaces)
+                  buildtools    = cmdargs.buildtools)
     cut.loadSources()
     cut.changeToRoot()
     cut.loadDependencies()
@@ -435,8 +422,7 @@ elif (cmdargs.sub_command == "build"):
     cut.cliAdjust(toolchains    = cmdargs.toolchains,
                   architectures = cmdargs.architectures,
                   buildconfigs  = cmdargs.buildconfigs,
-                  buildtools    = cmdargs.buildtools,
-                  interfaces    = cmdargs.interfaces)
+                  buildtools    = cmdargs.buildtools)
     cut.loadSources()
     cut.initRoot(version, cmdargs)
     if cmdargs.log_to_file is True and cmdargs.log_file is None:

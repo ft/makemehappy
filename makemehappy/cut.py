@@ -269,11 +269,10 @@ class ExecutionStatistics:
                             'description': description,
                             'time-stamp': datetime.datetime.now() } )
 
-    def build(self, toolchain, cpu, interface, buildcfg, buildtool):
+    def build(self, toolchain, cpu, buildcfg, buildtool):
         self.data.append( { 'type':      'build',
                             'toolchain': toolchain,
                             'cpu':       cpu,
-                            'interface': interface,
                             'buildcfg':  buildcfg,
                             'buildtool': buildtool,
                             'time-stamp': datetime.datetime.now() } )
@@ -282,7 +281,6 @@ class ExecutionStatistics:
         self.data.append( { 'type':      'system-board',
                             'toolchain': toolchain,
                             'board':     board,
-                            'interface': 'generic',
                             'buildcfg':  buildcfg,
                             'buildtool': buildtool,
                             'time-stamp': datetime.datetime.now() } )
@@ -292,7 +290,6 @@ class ExecutionStatistics:
                             'application': app,
                             'toolchain': toolchain,
                             'board':     board,
-                            'interface': 'generic',
                             'buildcfg':  buildcfg,
                             'buildtool': buildtool,
                             'time-stamp': datetime.datetime.now() } )
@@ -397,21 +394,19 @@ class ExecutionStatistics:
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
-        maybeInfo(self.cfg, self.log, ''.ljust(92, '-'))
+        maybeInfo(self.cfg, self.log, ''.ljust(75, '-'))
         maybeInfo(self.cfg, self.log,
-                  '{pad:>4}{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}'
+                  '{pad:>4}{toolchain:>20} {cpu:>20} {config:>16} {tool:>12}'
                   .format(pad = '',
                           toolchain = 'Toolchain',
                           cpu = 'Architecture',
-                          interf = 'Interface',
                           config = 'Config',
                           tool = 'Buildtool'))
         maybeInfo(self.cfg, self.log,
-                  '{pad:>4}{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}     {result}'
+                  '{pad:>4}{toolchain:>20} {cpu:>20} {config:>16} {tool:>12}     {result}'
                   .format(pad = '',
                           toolchain = self.renderToolchain(datum['toolchain']),
                           cpu = datum['cpu'],
-                          interf = datum['interface'],
                           config = datum['buildcfg'],
                           tool = datum['buildtool'],
                           result = result))
@@ -524,8 +519,6 @@ def outputMMHYAML(version, fn, data, args):
         data['parameters']['buildconfigs'] = args.buildconfigs
     if (args.buildtools != None):
         data['parameters']['buildtools'] = args.buildtools
-    if (args.interfaces != None):
-        data['parameters']['interfaces'] = args.interfaces
     if (args.toolchains != None):
         data['parameters']['toolchains'] = args.toolchains
     if (args.cmake != None):
@@ -584,7 +577,7 @@ class CodeUnderTest:
         if ('type' in self.moduleData):
             self.moduleType = self.moduleData['type']
 
-    def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools, interfaces):
+    def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools):
         if toolchains is not None:
             self.moduleData['toolchains'] = []
             for tc in toolchains:
@@ -595,8 +588,6 @@ class CodeUnderTest:
             self.moduleData['buildconfigs'] = buildconfigs
         if buildtools is not None:
             self.moduleData['buildtools'] = buildtools
-        if interfaces is not None:
-            self.moduleData['interfaces'] = interfaces
 
     def loadSources(self):
         self.log.info("Loading source definitions...")
@@ -768,9 +759,6 @@ class CodeUnderTest:
 
     def allToolchains(self):
         return self.queryToolchain(self.cfg.allToolchains(), 'name')
-
-    def allInterfaces(self):
-        return self.queryToolchain(self.cfg.allInterfaces(), 'interface')
 
     def allArchitectures(self):
         return self.queryToolchain(self.cfg.allArchitectures(), 'architecture')

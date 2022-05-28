@@ -99,10 +99,7 @@ patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
 If we don't, we need to check tons of conditions at the points the data is
 actually used. Checking data upfront allows us to write much more straight
 forward code.
-** TODO Remove Interface Definition
-This is not really being used. If the need should really arise, it can be set
-for variable definitions inside of module.yaml files. As it stands, this just
-clutters things up.
+** DONE Remove Interface Definition
 ** TODO Use slash (/) as a delimiter in module build instances
 Doing this works well in system builds, as there is no need to transform
 certain characters in some parts (like _ → - in zephyr board names). So in

@@ -123,8 +123,6 @@ class Toplevel:
             self.insertTemplate(fh, item, thirdParty, variants, 'init')
 
     def generateFooter(self, fh):
-        print("message(STATUS \"Configured interface: ${INTERFACE_TARGET}\")",
-            file = fh)
         print("add_subdirectory(code-under-test)", file = fh)
 
     def generateZephyr(self, fh, boardroot, dtsroot, socroot):

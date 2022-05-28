@@ -43,7 +43,6 @@ def noParameters(args):
     return (args.architectures == None and
             args.buildconfigs  == None and
             args.buildtools    == None and
-            args.interfaces    == None and
             args.toolchains    == None and
             args.cmake         == None)
 

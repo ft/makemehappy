@@ -16,11 +16,6 @@ def maybeArch(tc):
         return tc['architecture']
     return 'native'
 
-def maybeInterface(tc):
-    if ('interface' in tc):
-        return tc['interface']
-    return 'none'
-
 def toolchainViable(md, tc):
     if not('requires' in md):
         return True
@@ -36,8 +31,8 @@ def generateInstances(log, mod):
     cfgs = mod.buildconfigs()
     tools = mod.buildtools()
     # Return a list of dicts, with dict keys: toolchain, architecture,
-    # interface, buildcfg, buildtool; all of these must be set, if they are
-    # missing, fill in defaults.
+    # buildcfg, buildtool; all of these must be set, if they are missing,
+    # fill in defaults.
     if (len(cfgs) == 0):
         cfgs = [ 'debug' ]
     if (len(tools) == 0):
@@ -57,7 +52,6 @@ def generateInstances(log, mod):
                 add = (lambda a:
                     instances.append({'toolchain'   : maybeToolchain(tc),
                                       'architecture': a,
-                                      'interface'   : maybeInterface(tc),
                                       'buildcfg'    : cfg,
                                       'buildtool'   : tool,
                                       'install'     : install,
@@ -116,7 +110,6 @@ def generateZephyrInstances(log, mod):
                               'modules'     : target['modules'],
                               'kconfig'     : target['kconfig'],
                               'options'     : target['options'],
-                              'interface'   : 'none',
                               'buildcfg'    : cfg,
                               'buildtool'   : tool,
                               'install'     : install,
@@ -130,16 +123,14 @@ def instanceName(instance):
         tc = tc['name']
     if (instance['type'] == 'zephyr'):
         tc = 'zephyr-' + tc
-    return "{}_{}_{}_{}_{}".format(tc,
-                                   instance['architecture'],
-                                   instance['interface'],
-                                   instance['buildcfg'],
-                                   instance['buildtool'])
+    return "{}_{}_{}_{}".format(tc,
+                                instance['architecture'],
+                                instance['buildcfg'],
+                                instance['buildtool'])
 
 def instanceDirectory(stats, instance):
     stats.build(instance['toolchain'],
                 instance['architecture'],
-                instance['interface'],
                 instance['buildcfg'],
                 instance['buildtool'])
     return instanceName(instance)
@@ -293,7 +284,7 @@ def runInstance(cfg, log, args, directory):
     cleanInstance(log, directory)
     olddir = os.getcwd()
     root = os.path.join(olddir, args.directory)
-    (toolchain, architecture, interface, buildconfig, buildtool) = m.groups()
+    (toolchain, architecture, buildconfig, buildtool) = m.groups()
     tc = findToolchain(args.toolchainPath, toolchain)
     cmakeArgs = []
     if (args.cmake is not None):
@@ -304,8 +295,7 @@ def runInstance(cfg, log, args, directory):
            '-G{}'.format(cmakeBuildtool(buildtool)),
            '-DCMAKE_TOOLCHAIN_FILE={}'.format(tc),
            '-DCMAKE_BUILD_TYPE={}'.format(buildconfig),
-           '-DPROJECT_TARGET_CPU={}'.format(architecture),
-           '-DINTERFACE_TARGET={}'.format(interface)
+           '-DPROJECT_TARGET_CPU={}'.format(architecture)
            ] + cmakeArgs + [root]
     rc = mmh.loggedProcess(cfg, log, cmd)
     if (rc != 0):
