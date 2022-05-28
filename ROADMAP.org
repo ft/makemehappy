@@ -100,11 +100,7 @@ If we don't, we need to check tons of conditions at the points the data is
 actually used. Checking data upfront allows us to write much more straight
 forward code.
 ** DONE Remove Interface Definition
-** TODO Use slash (/) as a delimiter in module build instances
-Doing this works well in system builds, as there is no need to transform
-certain characters in some parts (like _ → - in zephyr board names). So in
-order to increase consistency the module build facility will use a scheme
-similar to the one used by the system builds.
+** DONE Use slash (/) as a delimiter in module build instances
 ** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
 ** DONE Add YamlStack variant for configuration parsing
 ** DONE Add option to keep running when a build-instance fails

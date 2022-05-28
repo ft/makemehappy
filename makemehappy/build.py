@@ -95,7 +95,6 @@ def generateZephyrInstances(log, mod):
         for cfg in cfgs:
             for tool in tools:
                 for board in target['boards']:
-                    arch = board.replace('_', '-')
                     for tc in target['toolchains']:
                         if ('kconfig' not in target):
                             target['kconfig'] = []
@@ -106,7 +105,7 @@ def generateZephyrInstances(log, mod):
                         instances.append(
                             { 'toolchain'   : tc,
                               'board'       : board,
-                              'architecture': arch,
+                              'architecture': board,
                               'modules'     : target['modules'],
                               'kconfig'     : target['kconfig'],
                               'options'     : target['options'],
@@ -123,7 +122,7 @@ def instanceName(instance):
         tc = tc['name']
     if (instance['type'] == 'zephyr'):
         tc = 'zephyr-' + tc
-    return "{}_{}_{}_{}".format(tc,
+    return "{}/{}/{}/{}".format(tc,
                                 instance['architecture'],
                                 instance['buildcfg'],
                                 instance['buildtool'])
@@ -244,7 +243,7 @@ def build(cfg, log, args, stats, ext, root, instance):
         log.info("Instance directory exists: {}".format(dnamefull))
         cleanInstance(log, dnamefull)
     else:
-        os.mkdir(dnamefull)
+        os.makedirs(dnamefull)
     os.chdir(dnamefull)
     rc = cmakeConfigure(cfg, log, args, stats, ext, root, instance)
     if rc:
