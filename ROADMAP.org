@@ -37,7 +37,7 @@ All important parameters are encoded in the build-directory name:
 
 - Zephyr: ~zephyr-gnuarmemb_nucleo-f767zi_none_debug_ninja~
 - Board: ~gnu_native_posix_debug_make~ (no ~zephyr-~ prefix)
-*** TODO system: Build many parameter combinations for a system-build
+*** ACTIVE system: Build many parameter combinations for a system-build
 In normal operation, mmh tries to build  a module's code with as many parameter
 combinations as possible (toolchain, build-cfg, build-tool etc). To do this, it
 resolves dependencies and  generates a CMake top-level setup to  build and test
@@ -99,6 +99,15 @@ patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
 If we don't, we need to check tons of conditions at the points the data is
 actually used. Checking data upfront allows us to write much more straight
 forward code.
+** TODO Remove Interface Definition
+This is not really being used. If the need should really arise, it can be set
+for variable definitions inside of module.yaml files. As it stands, this just
+clutters things up.
+** TODO Use slash (/) as a delimiter in module build instances
+Doing this works well in system builds, as there is no need to transform
+certain characters in some parts (like _ → - in zephyr board names). So in
+order to increase consistency the module build facility will use a scheme
+similar to the one used by the system builds.
 ** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
 ** DONE Add YamlStack variant for configuration parsing
 ** DONE Add option to keep running when a build-instance fails
