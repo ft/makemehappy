@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 import makemehappy.utilities as mmh
 import makemehappy.zephyr as z
@@ -52,8 +53,27 @@ def zephyrToolchain(spec):
         ztv.extend([ makeParam('GNUARMEMB_TOOLCHAIN_PATH', real['path']) ])
     return ztv
 
+def commandWithArguments(cmd, lst):
+    return [ cmd ] + [ x for x in mmh.flatten(lst) if x != None ]
+
 def cmake(lst):
-    return [ 'cmake' ] + [ x for x in mmh.flatten(lst) if x != None ]
+    return commandWithArguments('cmake', lst)
+
+def maybeExtend(lst, scalar, default = '.'):
+    if (scalar != None):
+        lst.extend([scalar])
+    else:
+        lst.extend([default])
+    return lst
+
+def runTarget(target, directory = None):
+    cmd = c.cmake([ '--build' ])
+    maybeExtend(cmd, directory)
+    cmd.extend(['--target', target ])
+    return cmd
+
+def ctest(lst):
+    return commandWithArguments('ctest', lst)
 
 def configureZephyr(log, args, ufw,
                     board, buildtool, buildconfig, buildsystem,
@@ -129,3 +149,28 @@ def configureLibrary(log, args,
         cmd.extend(args)
 
     return cmd
+
+def compile(directory = None):
+    cmd = cmake([ '--build' ])
+    maybeExtend(cmd, directory)
+    return cmd
+
+def countTests(directory = None):
+    cmd = ctest([ '--show-only', '--test-dir' ])
+    maybeExtend(cmd, directory)
+    txt = subprocess.check_output(cmd)
+    last = txt.splitlines()[-1]
+    return int(last.decode().split(' ')[-1])
+
+def test(directory = None):
+    cmd = ctest([ '--extra-verbose', '--test-dir' ])
+    maybeExtend(cmd, directory)
+    return cmd
+
+def install(directory = None):
+    cmd = cmake([ '--install' ])
+    maybeExtend(cmd, directory)
+    return cmd
+
+def clean(directory = None):
+    return runTarget('clean', directory)
