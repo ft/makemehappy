@@ -1,6 +1,5 @@
 import copy
 import os
-import subprocess
 
 import makemehappy.utilities as mmh
 import makemehappy.cut as cut
@@ -226,13 +225,10 @@ class SystemInstance:
         return (rc == 0)
 
     def test(self):
-        txt = subprocess.check_output([
-            'ctest', '--show-only', '--test-dir', self.instance.builddir])
-        last = txt.splitlines()[-1]
-        num = int(last.decode().split(' ')[-1])
+        num = c.countTests(self.instance.builddir)
         if (num > 0):
             self.sys.log.info('Testing system instance: {}'.format(self.desc))
-            cmd = [ 'ctest', '--test-dir', self.instance.builddir ]
+            cmd = c.test(self.instance.builddir)
             rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
             self.sys.stats.logTestsuite(num, rc)
             return (rc == 0)
@@ -240,7 +236,7 @@ class SystemInstance:
 
     def install(self):
         self.sys.log.info('Installing system instance: {}'.format(self.desc))
-        cmd = c.cmake([ '--install', '.' ])
+        cmd = c.install()
         olddir = os.getcwd()
         os.chdir(self.instance.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
@@ -250,7 +246,7 @@ class SystemInstance:
 
     def clean(self):
         self.sys.log.info('Cleaning system instance: {}'.format(self.desc))
-        cmd = c.cmake([ '--build', self.instance.builddir, '--target', 'clean' ])
+        cmd = c.clean(self.instance.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
         return (rc == 0)
 
