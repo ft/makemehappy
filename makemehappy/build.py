@@ -192,7 +192,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     return (rc == 0)
 
 def cmakeBuild(cfg, log, stats, instance):
-    rc = mmh.loggedProcess(cfg, log, ['cmake', '--build', '.'])
+    rc = mmh.loggedProcess(cfg, log, c.compile())
     stats.logBuild(rc)
     return (rc == 0)
 
@@ -200,11 +200,9 @@ def cmakeTest(cfg, log, stats, instance):
     # The last line of this command reads  like this: "Total Tests: N" …where N
     # is the number of registered tests. Fetch this integer from stdout and on-
     # ly run ctest for real, if tests were registered using add_test().
-    txt = subprocess.check_output(['ctest', '--show-only'])
-    last = txt.splitlines()[-1]
-    num = int(last.decode().split(' ')[-1])
+    num = c.countTests()
     if (num > 0):
-        rc = mmh.loggedProcess(cfg, log, ['ctest', '--extra-verbose'])
+        rc = mmh.loggedProcess(cfg, log, c.test())
         stats.logTestsuite(num, rc)
         return (rc == 0)
     return True
@@ -291,6 +289,10 @@ def runInstance(cfg, log, args, directory):
         cmakeArgs = args.cmake
     log.info("Moving to build-instance {}".format(directory))
     os.chdir(directory)
+    # TODO: Leaving this for now. This whole procedure is a little weird, since
+    #       is reimplements a lot of the normal operation of mmh's module build
+    #       facility. Except that zephyr based builds won't work. Soooo, this
+    #       should probably use the normal code paths too.
     cmd = ['cmake',
            '-G{}'.format(cmakeBuildtool(buildtool)),
            '-DCMAKE_TOOLCHAIN_FILE={}'.format(tc),
@@ -303,17 +305,15 @@ def runInstance(cfg, log, args, directory):
         log.info("Moving back to {}".format(olddir))
         os.chdir(olddir)
         return
-    rc = mmh.loggedProcess(cfg, log, ['cmake', '--build', '.'])
+    rc = mmh.loggedProcess(cfg, log, c.compile())
     if (rc != 0):
         log.warning("Build-process failed for {}".format(directory))
         log.info("Moving back to {}".format(olddir))
         os.chdir(olddir)
         return
-    txt = subprocess.check_output(['ctest', '--show-only'])
-    last = txt.splitlines()[-1]
-    num = int(last.decode().split(' ')[-1])
+    num = c.countTests()
     if (num > 0):
-        rc = mmh.loggedProcess(cfg, log, ['ctest', '--extra-verbose'])
+        rc = mmh.loggedProcess(cfg, log, c.test())
         if (rc != 0):
             log.warning("Test-suite failed for {}".format(directory))
     log.info("Moving back to {}".format(olddir))
