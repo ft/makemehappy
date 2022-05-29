@@ -358,7 +358,7 @@ class System:
             if (self.singleInstance != None):
                 data['single-instance'] = self.singleInstance
             state = os.path.join(d, 'MakeMeHappy.yaml')
-            self.log.data('Creating build directory state file')
+            self.log.info('Creating build directory state file')
             mmh.dump(state, data)
 
     def load(self):
