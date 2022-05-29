@@ -324,6 +324,21 @@ class System:
                                     data['single-instance'],
                                     self.singleInstance))
                         exit(1)
+                elif (self.mode == 'system-multi'):
+                    if ('instances' in data):
+                        if (len(self.args.instances) == 0):
+                            self.log.info('Using system instances from state file.')
+                            self.args.instances = data['instances']
+                        elif (self.args.instances != data['instances']):
+                            self.log.info('Updating system instances from command line.')
+                            data['instances'] = self.args.instances
+                            mmh.dump(state, data)
+                        else:
+                            self.log.info('Command line instances match state file.')
+                    elif (len(self.args.instances) > 0):
+                        self.log.info('Adding system instances from command line.')
+                        data['instances'] = self.args.instances
+                        mmh.dump(state, data)
             else:
                 self.log.error('Failed to load build state from {}'.format(state))
                 exit(1)
@@ -333,9 +348,12 @@ class System:
                 self.mode = 'system-multi'
             data = { 'mode'    : self.mode,
                      'version' : self.version }
+            if (self.mode == 'system-multi' and len(self.args.instances) > 0):
+                data['instances'] = self.args.instances
             if (self.singleInstance != None):
                 data['single-instance'] = self.singleInstance
             state = os.path.join(d, 'MakeMeHappy.yaml')
+            self.log.data('Creating build directory state file')
             mmh.dump(state, data)
 
     def load(self):
