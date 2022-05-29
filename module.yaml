@@ -29,7 +29,6 @@ toolchains:
 buildtools:
   - make
   - ninja
-  - jollet
 
 buildconfigs:
   - debug
