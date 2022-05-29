@@ -440,12 +440,27 @@ class System:
             print(v)
 
     def makeDBLink(self):
-        if (len(self.args.instances) != 1):
+        d = self.args.directory
+        if (os.path.exists(d)):
+            self.setupDirectory()
+
+        n = len(self.args.instances)
+        if (n != 1 and not (n == 0 and self.singleInstance != None)):
             self.log.error('The db sub-command requires exactly one argument')
-        instance = self.args.instances[0]
+            exit(1)
+
         name = 'compile_commands.json'
-        target = os.path.join(self.args.directory, instance, name)
+
+        if (self.singleInstance != None):
+            instance = self.singleInstance
+            target = os.path.join(d, name)
+        else:
+            instance = self.args.instances[0]
+            target = os.path.join(d, instance, name)
+
         self.log.info('Creating symbolic link to {} for {}', name, instance)
+
         if (os.path.exists(name)):
             os.remove(name)
+
         os.symlink(target, name)
