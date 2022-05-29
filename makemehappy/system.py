@@ -150,7 +150,7 @@ class SystemInstanceZephyr:
         build = z.findBuild(self.spec['build'], self.tc, self.board)
 
         tmp = copy.deepcopy(self.spec)
-        tmp.pop('build')
+        tmp.pop('build', None)
         build = { **build, **tmp }
         if ('base-modules' in build):
             build['modules'].extend(build['base-modules'])
@@ -326,7 +326,12 @@ class System:
                         exit(1)
                 elif (self.mode == 'system-multi'):
                     if ('instances' in data):
-                        if (len(self.args.instances) == 0):
+                        if (self.args.all_instances):
+                            self.log.info('Force selection of all instances.')
+                            data.pop('instances', None)
+                            self.args.instances = []
+                            mmh.dump(state, data)
+                        elif (len(self.args.instances) == 0):
                             self.log.info('Using system instances from state file.')
                             self.args.instances = data['instances']
                         elif (self.args.instances != data['instances']):

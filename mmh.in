@@ -170,6 +170,9 @@ ap_system   = subp.add_parser('system',
                               help = 'Handle building production systems')
 ap_system.add_argument("-s", "--single-instance", action = "store_true",
                        help = "Build a single instance in the build directory root")
+ap_system.add_argument(
+    "-a", "--all-instances", action = "store_true",
+    help = "Force building all system instances")
 ap_system.set_defaults(sub_command = 'system')
 sub_system = ap_system.add_subparsers(dest = 'system',
                                       metavar = 'System Commands')
@@ -224,6 +227,9 @@ if (cmdargs.quiet):
 
 if ('single_instance' not in cmdargs):
     cmdargs.single_instance = None
+
+if ('all_instances' not in cmdargs):
+    cmdargs.all_instances = False
 
 if (cmdargs.version):
     print("{} ({}) version {}".format(fullname, name, version))
