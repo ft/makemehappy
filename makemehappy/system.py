@@ -343,6 +343,8 @@ class System:
         self.data = mmh.load(self.spec)
         fillData(self.data)
         self.instances = makeInstances(self.data)
+        self.args.instances = mmh.patternsToList(self.instances,
+                                                 self.args.instances)
         if (len(self.args.instances) > 0):
             error = False
             for instance in self.args.instances:

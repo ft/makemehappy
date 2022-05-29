@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import fnmatch
 import os
 import pprint
 import re
@@ -112,3 +113,13 @@ def expandFile(tmpl):
     curdir = os.getcwd()
     exp = mako.Template(tmpl).render(system = curdir)
     return exp
+
+def maybeMatch(lst, pat):
+    m = fnmatch.filter(lst, pat)
+    if (len(m) == 0):
+        return [ pat ]
+    else:
+        return m
+
+def patternsToList(lst, pats):
+    return flatten([ maybeMatch(lst, x) for x in pats ])
