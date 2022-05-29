@@ -139,7 +139,7 @@ class SystemInstanceZephyr:
                                            self.spec['install-dir'])
         else:
             self.builddir = os.path.join(self.sys.args.directory, 'zephyr',
-                                        self.board, self.tc, self.app, self.cfg)
+                                        self.board, self.app, self.tc, self.cfg)
             self.installdir = os.path.join(self.systemdir,
                                         self.sys.args.directory,
                                         self.spec['install-dir'],
@@ -438,3 +438,14 @@ class System:
         self.log.info("Generating list of all system build instances:")
         for v in self.instances:
             print(v)
+
+    def makeDBLink(self):
+        if (len(self.args.instances) != 1):
+            self.log.error('The db sub-command requires exactly one argument')
+        instance = self.args.instances[0]
+        name = 'compile_commands.json'
+        target = os.path.join(self.args.directory, instance, name)
+        self.log.info('Creating symbolic link to {} for {}', name, instance)
+        if (os.path.exists(name)):
+            os.remove(name)
+        os.symlink(target, name)

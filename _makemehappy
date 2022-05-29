@@ -192,6 +192,7 @@ _makemehappy-system() {
             commands=(
                 build:'perform config/build/install/test on system'
                 clean:'clean build trees'
+                db:'link compile command db to system root'
                 list:'list specified instances'
                 rebuild:'like "build" but skip config step'
             )
@@ -202,7 +203,7 @@ _makemehappy-system() {
             compset -n 1
 
             case $line[1] in
-            (build|clean|rebuild)
+            (build|clean|db|rebuild)
                 _arguments -C -s -w : \
                            '(-h --help)'{-h,--help}'[display help message]' \
                            '*:: :__makemehappy-system-instances' \

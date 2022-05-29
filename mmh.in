@@ -175,6 +175,9 @@ sub_system = ap_system.add_subparsers(dest = 'system',
                                       metavar = 'System Commands')
 sys_list  = sub_system.add_parser('list',
                                   help = 'List all specified build instances')
+sys_db  = sub_system.add_parser('db',
+                                help = 'Link compile command db to system root')
+sys_db.add_argument('instances', default = [ ], nargs = '*')
 sys_build = sub_system.add_parser('build',
                                   help = 'Build all or specified build instances')
 sys_build.add_argument('instances', default = [ ], nargs = '*')
@@ -538,6 +541,8 @@ elif (cmdargs.sub_command == "system"):
         system.clean()
     elif (cmdargs.system == 'list'):
         system.listInstances()
+    elif (cmdargs.system == 'db'):
+        system.makeDBLink()
 
 elif (isinstance(cmdargs.sub_command, str)):
     print("Not implemented yet: {}".format(cmdargs.sub_command))
