@@ -406,16 +406,16 @@ class ExecutionStatistics:
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
-        maybeInfo(self.cfg, self.log, ''.ljust(75, '-'))
+        maybeInfo(self.cfg, self.log, ''.ljust(100, '-'))
         maybeInfo(self.cfg, self.log,
-                  '{pad:>4}{toolchain:>20} {cpu:>20} {config:>16} {tool:>12}'
+                  '{pad:>21}{toolchain:>20} {cpu:>28} {config:>16} {tool:>12}'
                   .format(pad = '',
                           toolchain = 'Toolchain',
                           cpu = 'Architecture',
                           config = 'Config',
                           tool = 'Buildtool'))
         maybeInfo(self.cfg, self.log,
-                  '{pad:>4}{toolchain:>20} {cpu:>20} {config:>16} {tool:>12}     {result}'
+                  '{pad:>21}{toolchain:>20} {cpu:>28} {config:>16} {tool:>12}     {result}'
                   .format(pad = '',
                           toolchain = self.renderToolchain(datum['toolchain']),
                           cpu = datum['cpu'],
@@ -432,16 +432,16 @@ class ExecutionStatistics:
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
-        maybeInfo(self.cfg, self.log, ''.ljust(92, '-'))
+        maybeInfo(self.cfg, self.log, ''.ljust(100, '-'))
         maybeInfo(self.cfg, self.log,
-                  '{pad:>21}{toolchain:>20} {board:>20} {config:>16} {tool:>12}'
+                  '{pad:>21}{toolchain:>20} {board:>28} {config:>16} {tool:>12}'
                   .format(pad = '',
                           toolchain = 'Toolchain',
                           board = 'Board',
                           config = 'Config',
                           tool = 'Buildtool'))
         maybeInfo(self.cfg, self.log,
-                  '{pad:>21}{toolchain:>20} {board:>20} {config:>16} {tool:>12}     {result}'
+                  '{pad:>21}{toolchain:>20} {board:>28} {config:>16} {tool:>12}     {result}'
                   .format(pad = '',
                           toolchain = datum['toolchain'],
                           board = datum['board'],
@@ -458,16 +458,16 @@ class ExecutionStatistics:
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
-        maybeInfo(self.cfg, self.log, ''.ljust(92, '-'))
+        maybeInfo(self.cfg, self.log, ''.ljust(100, '-'))
         maybeInfo(self.cfg, self.log,
-                  '{application:>20} {toolchain:>20} {board:>20} {config:>16} {tool:>12}'
+                  '{application:>20} {toolchain:>20} {board:>28} {config:>16} {tool:>12}'
                   .format(application = 'Application',
                           toolchain = 'Toolchain',
                           board = 'Board',
                           config = 'Config',
                           tool = 'Buildtool'))
         maybeInfo(self.cfg, self.log,
-                  '{application:>20} {toolchain:>20} {board:>20} {config:>16} {tool:>12}     {result}'
+                  '{application:>20} {toolchain:>20} {board:>28} {config:>16} {tool:>12}     {result}'
                   .format(application = datum['application'],
                           toolchain = self.renderToolchain(datum['toolchain']),
                           board = datum['board'],
