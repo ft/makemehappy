@@ -484,7 +484,7 @@ class System:
 
         self.log.info('Creating symbolic link to {} for {}', name, instance)
 
-        if (os.path.exists(name)):
+        if (os.path.exists(name) or os.path.islink(name)):
             os.remove(name)
 
         os.symlink(target, name)
