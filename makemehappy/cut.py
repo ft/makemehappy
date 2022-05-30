@@ -356,11 +356,20 @@ class ExecutionStatistics:
                 time = renderTimedelta(datum['configure-stamp'] -
                                        datum['time-stamp'])
             elif prefix == 'build':
-                time = renderTimedelta(datum['build-stamp'] -
-                                       datum['configure-stamp'])
+                if ('configure-stamp' in datum):
+                    previous = datum['configure-stamp']
+                else:
+                    previous = datum['time-stamp']
+                time = renderTimedelta(datum['build-stamp'] - previous)
             elif prefix == 'testsuite':
                 time = renderTimedelta(datum['testsuite-stamp'] -
                                        datum['build-stamp'])
+            elif prefix == 'install':
+                if ('testsuite-stamp' in datum):
+                    previous = datum['testsuite-stamp']
+                else:
+                    previous = datum['build-stamp']
+                time = renderTimedelta(datum['install-stamp'] - previous)
             else:
                 raise(InvalidStepKind(prefix))
 
@@ -383,6 +392,9 @@ class ExecutionStatistics:
 
     def renderTestStepResult(self, datum):
         self.renderStepResult(datum, 'Testsuite', 'testsuite')
+
+    def renderInstallStepResult(self, datum):
+        self.renderStepResult(datum, 'Install', 'install')
 
     def renderToolchain(self, tc):
         if (isinstance(tc, dict)):
@@ -413,6 +425,7 @@ class ExecutionStatistics:
         self.renderConfigureStepResult(datum)
         self.renderBuildStepResult(datum)
         self.renderTestStepResult(datum)
+        self.renderInstallStepResult(datum)
 
     def renderSystemBoardResult(self, datum):
         #mmh.pp(datum)
@@ -438,6 +451,7 @@ class ExecutionStatistics:
         self.renderConfigureStepResult(datum)
         self.renderBuildStepResult(datum)
         self.renderTestStepResult(datum)
+        self.renderInstallStepResult(datum)
 
     def renderSystemZephyrResult(self, datum):
         #mmh.pp(datum)
@@ -463,6 +477,7 @@ class ExecutionStatistics:
         self.renderConfigureStepResult(datum)
         self.renderBuildStepResult(datum)
         self.renderTestStepResult(datum)
+        self.renderInstallStepResult(datum)
 
     def renderStatistics(self):
         maybeInfo(self.cfg, self.log, '')

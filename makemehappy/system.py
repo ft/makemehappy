@@ -441,9 +441,7 @@ class System:
         else:
             self.log.info("Re-Building selected instance(s):")
             self.rebuildInstances(self.args.instances)
-        # The stats code doesn't work if the parts to a build don't match what
-        # it expects. So we'll need to fix that.
-        #self.showStats()
+        self.showStats()
 
     def clean(self):
         self.setupDirectory()
