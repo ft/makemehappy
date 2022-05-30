@@ -398,7 +398,7 @@ class System:
 
     def buildInstances(self, instances):
         for i in instances:
-            self.log.info("  - {}".format(i))
+            self.log.info("    {}".format(i))
         for instance in instances:
             sys = self.newInstance(instance)
             sys.build()
@@ -406,7 +406,7 @@ class System:
 
     def rebuildInstances(self, instances):
         for i in instances:
-            self.log.info("  - {}".format(i))
+            self.log.info("    {}".format(i))
         for instance in instances:
             sys = self.newInstance(instance)
             sys.rebuild()
@@ -414,7 +414,7 @@ class System:
 
     def cleanInstances(self, instances):
         for v in instances:
-            self.log.info("  - {}".format(v))
+            self.log.info("    {}".format(v))
         for instance in instances:
             sys = self.newInstance(instance)
             sys.clean()
