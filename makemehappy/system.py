@@ -238,8 +238,11 @@ class SystemInstance:
         self.sys.log.info('Installing system instance: {}'.format(self.desc))
         cmd = c.install()
         olddir = os.getcwd()
+        self.sys.log.info(
+            'Changing to directory {}.'.format(self.instance.builddir))
         os.chdir(self.instance.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        self.sys.log.info('Changing back to directory {}.'.format(olddir))
         os.chdir(olddir)
         self.sys.stats.logInstall(rc)
         return (rc == 0)
