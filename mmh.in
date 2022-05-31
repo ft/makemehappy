@@ -536,6 +536,10 @@ elif (cmdargs.sub_command == "system"):
     cfg.load()
     adjustConfig(cfg, cmdargs)
     system = ms.System(log, version, cfg, cmdargs);
+    if cmdargs.log_to_file is True and cmdargs.log_file is None:
+        fn = system.buildRoot() + '.log'
+        print('Logging to: {}'.format(fn))
+        log.handlers[0].setFile(fn)
     system.load()
 
     if (cmdargs.system == 'build'):

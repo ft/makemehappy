@@ -289,6 +289,9 @@ class System:
         else:
             self.mode = 'system-multi'
 
+    def buildRoot(self):
+        return self.args.directory
+
     def setupDirectory(self):
         d = self.args.directory
         if (os.path.exists(d)):
