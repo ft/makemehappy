@@ -219,19 +219,13 @@ def cleanInstance(log, d):
         except Exception as e:
             log.error('Could not remove {}. Reason: {}'.format(path, e))
 
-def maybeInstall(cfg, log, instance):
+def maybeInstall(cfg, log, stats, instance):
     if (instance['install'] == False):
         return True
 
-    b = instance['buildtool']
-    rc = 0
-    if (b == 'make'):
-        rc = mmh.loggedProcess(cfg, log, [ 'make', 'install' ])
-    elif (b == 'ninja'):
-        rc = mmh.loggedProcess(cfg, log, [ 'ninja', 'install' ])
-    else:
-        log.warning('Install step requested but not supported with buildtool {}'
-                    .format(b))
+    cmd = c.install()
+    rc = mmh.loggedProcess(cfg, log, cmd)
+    stats.logInstall(rc)
     return (rc == 0)
 
 def build(cfg, log, args, stats, ext, root, instance):
@@ -248,7 +242,7 @@ def build(cfg, log, args, stats, ext, root, instance):
         rc = cmakeBuild(cfg, log, stats, instance)
         if rc:
             cmakeTest(cfg, log, stats, instance)
-    maybeInstall(cfg, log, instance)
+    maybeInstall(cfg, log, stats, instance)
     os.chdir(root)
 
 def allofthem(cfg, log, mod, ext):

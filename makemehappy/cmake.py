@@ -136,12 +136,14 @@ def configureBoard(log, args, ufw,
 def configureLibrary(log, args,
                      buildtool, buildconfig, architecture,
                      toolchain, sourcedir, builddir):
+    installdir = os.path.join(builddir, 'artifacts')
     cmd = cmake(
         [ usetool(log, buildtool),
           sourceDir(sourcedir),
           binaryDir(builddir),
           compileCommands(),
           makeParam('CMAKE_BUILD_TYPE',      buildconfig),
+          makeParam('CMAKE_INSTALL_PREFIX',  installdir),
           makeParam('PROJECT_TARGET_CPU',    architecture),
           makeParam('CMAKE_TOOLCHAIN_FILE',  toolchain) ])
 
