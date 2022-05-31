@@ -534,6 +534,7 @@ elif (cmdargs.sub_command == "system"):
         cmdargs.instances = [ ]
 
     cfg.load()
+    adjustConfig(cfg, cmdargs)
     system = ms.System(log, version, cfg, cmdargs);
     system.load()
     #mmh.pp(system.data)
