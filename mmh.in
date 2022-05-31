@@ -537,8 +537,6 @@ elif (cmdargs.sub_command == "system"):
     adjustConfig(cfg, cmdargs)
     system = ms.System(log, version, cfg, cmdargs);
     system.load()
-    #mmh.pp(system.data)
-    #mmh.pp(cmdargs)
 
     if (cmdargs.system == 'build'):
         system.build()

@@ -402,7 +402,6 @@ class ExecutionStatistics:
         return tc
 
     def renderBuildResult(self, datum):
-        #mmh.pp(datum)
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
@@ -428,7 +427,6 @@ class ExecutionStatistics:
         self.renderInstallStepResult(datum)
 
     def renderSystemBoardResult(self, datum):
-        #mmh.pp(datum)
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
@@ -454,7 +452,6 @@ class ExecutionStatistics:
         self.renderInstallStepResult(datum)
 
     def renderSystemZephyrResult(self, datum):
-        #mmh.pp(datum)
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
