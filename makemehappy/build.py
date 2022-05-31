@@ -237,12 +237,10 @@ def build(cfg, log, args, stats, ext, root, instance):
     else:
         os.makedirs(dnamefull)
     os.chdir(dnamefull)
-    rc = cmakeConfigure(cfg, log, args, stats, ext, root, instance)
-    if rc:
-        rc = cmakeBuild(cfg, log, stats, instance)
-        if rc:
-            cmakeTest(cfg, log, stats, instance)
-    maybeInstall(cfg, log, stats, instance)
+    (cmakeConfigure(cfg, log, args, stats, ext, root, instance) and
+     cmakeBuild(cfg, log, stats, instance)                      and
+     cmakeTest(cfg, log, stats, instance)                       and
+     maybeInstall(cfg, log, stats, instance))
     os.chdir(root)
 
 def allofthem(cfg, log, mod, ext):
