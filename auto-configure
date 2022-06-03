@@ -1,0 +1,40 @@
+#!/bin/sh
+
+if test "$#" = 1 && test "x$1" = "x-h"; then
+    cat <<EOF
+usage: auto-configure [-h] [CONFIGURE-OPTION(s)...]
+
+Options:
+
+  -h     Display this help message.
+
+
+If no CONFIGURE-OPTION(s) are provided, the following are used:
+
+  - Data Directory: "\$PWD/data"
+  - ETC Directory : "\$PWD/etc"
+
+The program runs configure repeatedly anytime it detects a change in mmh.in.
+This functionality relies on the availability of the inotifywait program.
+EOF
+    exit 0
+fi
+
+if test "$#" = 0; then
+    set -- --datadir="$PWD/data" --etcdir="$PWD/etc"
+fi
+
+clear
+
+printf 'Registering configure parameters:\n\n'
+for param in "$@"; do
+    printf '  %s\n' "$param"
+done
+printf '\n'
+
+while :; do
+    echo ----------------------
+    date
+    inotifywait -e modify mmh.in || exit 1
+    ./configure "$@"
+done

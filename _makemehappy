@@ -1,0 +1,303 @@
+#compdef mmh
+
+# Internal state
+
+typeset -ga _makemehappy_commands=() _makemehappy_aliases=()
+typeset -gA _makemehappy_aliasmap
+
+_makemehappy_aliasmap=(
+    deps      fetch-dependencies
+    dump      dump-description
+    get       download-source
+    init      build-tree-init
+    reset     reset-setup
+    run       run-instance
+    show      show-source
+    top       generate-toplevel
+)
+
+# Utilities have to be named __makemehappy-*()
+
+__makemehappy-comma-complete() {
+    local tag=$1 lst=$2
+    local desc=${tag//-/ }
+    local -a already
+    compset -P '*,'
+    already=( ${(s<,>)IPREFIX} )
+    _describe -t $tag $desc $lst -S, -F already -q
+}
+
+__makemehappy-architectures() {
+    local -a archs
+    archs=( $(command mmh -Q architectures 2>/dev/null) )
+    __makemehappy-comma-complete makemehappy-architectures archs
+}
+
+__makemehappy-buildconfigurations() {
+    local -a cfgs
+    cfgs=( $(command mmh -Q buildconfigs 2>/dev/null) )
+    __makemehappy-comma-complete makemehappy-build-configurations cfgs
+}
+
+__makemehappy-buildtools() {
+    local -a tools
+    tools=( $(command mmh -Q buildtools 2>/dev/null) )
+    __makemehappy-comma-complete makemehappy-build-tools tools
+}
+
+__makemehappy-nothing-else() {
+    _message -e "no further arguments"
+}
+
+__makemehappy-modules () {
+    local expl
+    local -a modules
+    modules=( ${${(f)"$(command mmh -q show-source)"}%%:*} )
+    _wanted makemehappy-modules expl 'makemehappy modules' \
+            compadd "${modules[@]}"
+}
+
+__makemehappy-queries () {
+    local -a makemehappy_query_keywords
+    makemehappy_query_keywords=(
+        'toolchains:List toolchains'
+        'architectures:List target architectures'
+        'buildtools:List build tools'
+        'buildconfigs:List build configurations'
+    )
+    _describe -t makemehappy-queries       \
+              'makemehappy query keywords' \
+              makemehappy_query_keywords
+}
+
+__makemehappy-system-instances () {
+    local expl
+    local -a instances ignored
+    ignored=(${line:#${words[CURRENT]}})
+    instances=( ${${(f)"$(command mmh -q system list 2>/dev/null)"}%%:*} )
+    _wanted system-instances expl 'system instances' \
+            compadd -F ignored "${instances[@]}"
+}
+
+__makemehappy-toolchains() {
+    local -a tcs already
+    tcs=( $(command mmh -Q toolchains 2>/dev/null) )
+    compset -P '*,'
+    already=( ${(s<,>)IPREFIX} )
+    _describe -t makemehappy-toolchains 'makemehappy toolchains' \
+              tcs -S, -F already -q
+}
+
+# Subcommand completions have to be called _makemehappy-*()
+
+_makemehappy-build() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Run complete module building process"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-build-tree-init() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Initialise module build tree"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-download-source() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Download sources for specified sources"
+        return
+    fi
+    __makemehappy-modules
+}
+
+_makemehappy-download-sources() {
+    # Should this just be -a for ‘download-source’?
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Download sources for all known modules"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-dump-description() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Dump module description as read from module spec"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-fetch-dependencies() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Download dependencies of a module"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-generate-toplevel() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Generate toplevel buildsystem for a module build tree"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-reset-setup() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Reset build-tree meta-data"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-run-instance() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "(Re)run previously configured build-tree"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-show-source() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Show source definition for modules"
+        return
+    fi
+    __makemehappy-modules
+}
+
+_makemehappy-system() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Commands for complete or partial system builds"
+        return
+    fi
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '*::: :->args' \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-s --single-instance)'{-s,--single-instance}'[Build a single instance in the build directory root]' \
+               '(-a --all-instances)'{-a,--all-instances}'[Force building all system instances]' \
+        && ret=0
+
+    if [[ -n $state ]]; then
+        if (( CURRENT == 1 )); then
+            local -a commands
+
+            commands=(
+                build:'perform config/build/install/test on system'
+                clean:'clean build trees'
+                db:'link compile command db to system root'
+                list:'list specified instances'
+                rebuild:'like "build" but skip config step'
+            )
+
+            _describe -t commands command commands && ret=0
+        else
+            curcontext=${curcontext%:*}-$line[1]:
+            compset -n 1
+
+            case $line[1] in
+            (build|clean|rebuild)
+                _arguments -C -s -w : \
+                           '(-h --help)'{-h,--help}'[display help message]' \
+                           '*:: :__makemehappy-system-instances' \
+                    && ret=0
+                ;;
+            (db)
+                _arguments -C -s -w : \
+                           '(-h --help)'{-h,--help}'[display help message]' \
+                           '(-l --location)'{-l,--location}'[select directory for db link]:directory:_path_files -g "*(/)"' \
+                           '1:: :__makemehappy-system-instances' \
+                    && ret=0
+                ;;
+            (*) __makemehappy-nothing-else ;;
+            esac
+        fi
+    fi
+
+    return ret
+}
+
+# Main completion entry point
+
+_makemehappy() {
+    local curcontext="${curcontext}" state line ret=1
+    local mode
+    local makemehappycommand
+    local makemehappy_describe
+
+    _arguments -C -s -w : \
+               '(-A --architectures)'{-A,--architectures}'[select architectures to use]:architecture:__makemehappy-architectures' \
+               '(-B --buildtools)'{-B,--buildtools}'[select build-tools to use]:build-tool:__makemehappy-buildtools' \
+               '(-C --buildconfigs)'{-C,--buildconfigs}'[select build-configurations to use]:build-configuration:__makemehappy-buildconfigurations' \
+               '(-d --directory)'{-d,--directory}'[specify build directory]:build directory:_path_files -g "*(/)"' \
+               '(-F --force)'{-F,--force}'[force using MakeMeHappy.yaml]' \
+               '(-f --log-file)'{-f,--log-file}'[specify log file]:file name:_path_files' \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-L --log-all)'{-L,--log-all}'[send all output to logging facility]' \
+               '(-l --log-to-file)'{-l,--log-to-file}'[log output to file (implies --log-all)]' \
+               '(-m --module)'{-m,--module}'[specify module definition file]:module definition file:_path_files' \
+               '(-p --preserve)'{-p,--preserve}'[preserve build root instead of deleting it]' \
+               '(-Q --query)'{-Q,--query}'[query module build information]:mmh query:__makemehappy-queries' \
+               '(-q --quiet)'{-q,--quiet}'[disable informational output]' \
+               '(-s --source)'{-s,--source}'[specify additional source definition]:source definition file:_path_files' \
+               '(-T --toolchains)'{-T,--toolchains}'[select toolchains to use]:toolchain:__makemehappy-toolchains' \
+               '(-v --verbose)'{-v,--verbose}'[request verbose logging]' \
+               '(-V --version)'{-V,--version}'[report makemehappy version]' \
+               '*:: :->subcommand_or_options' && ret=0
+
+    [[ -z $state ]] && return ret
+
+    if (( CURRENT == 1 )); then
+        zstyle -s ":completion:${curcontext}:subcommands" mode mode || mode='both'
+        if [[ ${mode} == 'commands' ]]; then
+            _describe -t subcommands 'makemehappy command' _makemehappy_commands \
+                && ret=0
+        elif [[ ${mode} == 'aliases' ]]; then
+            _describe -t subcommands 'makemehappy alias' _makemehappy_aliases \
+                && ret=0
+        else
+            _describe -t subcommands 'makemehappy command or alias' \
+                      _makemehappy_commands                         \
+                      --                                            \
+                      _makemehappy_aliases                          \
+                && ret=0
+        fi
+    else
+        makemehappycommand="${words[1]}"
+        if [[ -n ${_makemehappy_aliasmap[$makemehappycommand]} ]] ; then
+            makemehappycommand="${_makemehappy_aliasmap[$makemehappycommand]}"
+        fi
+        curcontext="${curcontext%:*}-${makemehappycommand}:"
+        _call_function ret _makemehappy-${makemehappycommand}
+    fi
+    return ret
+}
+
+# First time initialisation
+
+local f desc
+local -A rev
+local makemehappy_describe
+makemehappy_describe='yes, please'
+for f in ${(k)_makemehappy_aliasmap} ; do
+    rev+=( ${_makemehappy_aliasmap[$f]} $f )
+done
+for f in ${(M)${(k)functions}:#_makemehappy-*} ; do
+    desc="$($f)"
+    _makemehappy_commands+=( "${f#_makemehappy-}${desc:+:$desc}" )
+    if [[ -n ${rev[${f#_makemehappy-}]} ]]; then
+        _makemehappy_aliases+=( "${rev[${f#_makemehappy-}]}${desc:+:$desc}" )
+    fi
+done
+
+# First time dispatch to main function redefinition
+
+_makemehappy "$@"

@@ -1,11 +1,14 @@
 from __future__ import print_function
 
+import fnmatch
 import os
 import pprint
 import re
 import subprocess
 import sys
 import yaml
+
+import mako.template as mako
 
 def dotFile(fn):
     return os.path.join(os.environ['HOME'], '.makemehappy', fn)
@@ -30,33 +33,6 @@ def setVerbosity(value):
     global verbosity
     verbosity = value;
 
-mmhCommands = {
-    'build': { 'aliases': [ ] },
-    'build-tree-init': { 'aliases': [ 'init' ] },
-    'download-source': { 'aliases': [ 'download', 'get' ] },
-    'download-sources': { 'aliases': [ ] },
-    'dump-description': { 'aliases': [ "dump" ] },
-    'fetch-dependencies': { 'aliases': [ 'fetch', 'deps' ] },
-    'generate-toplevel': { 'aliases': [ 'top' ] },
-    'reset-setup': { 'aliases': [ 'reset' ] },
-    'run-instance': { 'aliases': [ 'run' ] },
-    'show-source': { 'aliases': [ 'source' ] }
-}
-
-def lookupCommand(cmds):
-    if (len(cmds) < 1):
-        return False
-
-    cmd = cmds[0]
-    if cmd in mmhCommands:
-        return cmd
-
-    for item in mmhCommands:
-        if cmd in mmhCommands[item]['aliases']:
-            return item
-
-    return False
-
 def matchingVersion(version, data):
     if (data == None):
         return False
@@ -68,7 +44,6 @@ def noParameters(args):
     return (args.architectures == None and
             args.buildconfigs  == None and
             args.buildtools    == None and
-            args.interfaces    == None and
             args.toolchains    == None and
             args.cmake         == None)
 
@@ -82,8 +57,11 @@ def load(file):
         data['definition'] = fn
         return data
 
-def dump(fn, data):
-    with open(fn, 'w') as fh:
+def dump(file, data):
+    (root,fn) = os.path.split(os.path.realpath(file))
+    data['definition'] = fn
+    data['root'] = root
+    with open(file, 'w') as fh:
         yaml.dump(data, fh)
 
 xppx = pprint.PrettyPrinter(indent = 4)
@@ -119,3 +97,29 @@ def bracketPattern(s):
 
 def isPattern(s):
     return starPattern(s) or questionPattern(s) or bracketPattern(s)
+
+def flatten(lst):
+    if (isinstance(lst, list)):
+        if (len(lst) == 0):
+            return []
+        (first, rest) = lst[0], lst[1:]
+        return flatten(first) + flatten(rest)
+    else:
+        return [lst]
+
+def expandFile(tmpl):
+    if (tmpl == None):
+        return None
+    curdir = os.getcwd()
+    exp = mako.Template(tmpl).render(system = curdir)
+    return exp
+
+def maybeMatch(lst, pat):
+    m = fnmatch.filter(lst, pat)
+    if (len(m) == 0):
+        return [ pat ]
+    else:
+        return m
+
+def patternsToList(lst, pats):
+    return flatten([ maybeMatch(lst, x) for x in pats ])

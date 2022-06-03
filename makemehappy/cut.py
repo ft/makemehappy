@@ -225,7 +225,7 @@ class InvalidTimeStampKind(Exception):
 
 def endoftime(datum):
     t = datum['type']
-    if t == 'build':
+    if (t == 'build' or t == 'system-board' or t == 'system-zephyr'):
         return datum['time-stamp']
     elif t == 'checkpoint':
         if 'testsuite-stamp' in datum:
@@ -269,11 +269,27 @@ class ExecutionStatistics:
                             'description': description,
                             'time-stamp': datetime.datetime.now() } )
 
-    def build(self, toolchain, cpu, interface, buildcfg, buildtool):
+    def build(self, toolchain, cpu, buildcfg, buildtool):
         self.data.append( { 'type':      'build',
                             'toolchain': toolchain,
                             'cpu':       cpu,
-                            'interface': interface,
+                            'buildcfg':  buildcfg,
+                            'buildtool': buildtool,
+                            'time-stamp': datetime.datetime.now() } )
+
+    def systemBoard(self, toolchain, board, buildcfg, buildtool):
+        self.data.append( { 'type':      'system-board',
+                            'toolchain': toolchain,
+                            'board':     board,
+                            'buildcfg':  buildcfg,
+                            'buildtool': buildtool,
+                            'time-stamp': datetime.datetime.now() } )
+
+    def systemZephyr(self, app, toolchain, board, buildcfg, buildtool):
+        self.data.append( { 'type':      'system-zephyr',
+                            'application': app,
+                            'toolchain': toolchain,
+                            'board':     board,
                             'buildcfg':  buildcfg,
                             'buildtool': buildtool,
                             'time-stamp': datetime.datetime.now() } )
@@ -286,6 +302,10 @@ class ExecutionStatistics:
         self.data[-1]['build-stamp'] = datetime.datetime.now()
         self.data[-1]['build-result'] = (result == 0)
 
+    def logInstall(self, result):
+        self.data[-1]['install-stamp'] = datetime.datetime.now()
+        self.data[-1]['install-result'] = (result == 0)
+
     def logTestsuite(self, num, result):
         self.data[-1]['testsuite-stamp'] = datetime.datetime.now()
         self.data[-1]['testsuite-tests'] = num
@@ -293,7 +313,7 @@ class ExecutionStatistics:
 
     def wasSuccessful(self):
         for entry in self.data:
-            if entry['type'] != 'build':
+            if entry['type'] == 'checkpoint':
                 continue
             if buildFailed(entry):
                 return False
@@ -302,7 +322,7 @@ class ExecutionStatistics:
     def countFailed(self):
         n = 0
         for entry in self.data:
-            if entry['type'] != 'build':
+            if entry['type'] == 'checkpoint':
                 continue
             if buildFailed(entry):
                 n = n + 1
@@ -311,7 +331,7 @@ class ExecutionStatistics:
     def countBuilds(self):
         n = 0
         for entry in self.data:
-            if entry['type'] == 'build':
+            if entry['type'] != 'checkpoint':
                 n = n + 1
         return n
 
@@ -336,11 +356,20 @@ class ExecutionStatistics:
                 time = renderTimedelta(datum['configure-stamp'] -
                                        datum['time-stamp'])
             elif prefix == 'build':
-                time = renderTimedelta(datum['build-stamp'] -
-                                       datum['configure-stamp'])
+                if ('configure-stamp' in datum):
+                    previous = datum['configure-stamp']
+                else:
+                    previous = datum['time-stamp']
+                time = renderTimedelta(datum['build-stamp'] - previous)
             elif prefix == 'testsuite':
                 time = renderTimedelta(datum['testsuite-stamp'] -
                                        datum['build-stamp'])
+            elif prefix == 'install':
+                if ('testsuite-stamp' in datum):
+                    previous = datum['testsuite-stamp']
+                else:
+                    previous = datum['build-stamp']
+                time = renderTimedelta(datum['install-stamp'] - previous)
             else:
                 raise(InvalidStepKind(prefix))
 
@@ -364,30 +393,88 @@ class ExecutionStatistics:
     def renderTestStepResult(self, datum):
         self.renderStepResult(datum, 'Testsuite', 'testsuite')
 
+    def renderInstallStepResult(self, datum):
+        self.renderStepResult(datum, 'Install', 'install')
+
+    def renderToolchain(self, tc):
+        if (isinstance(tc, dict)):
+            return tc['name']
+        return tc
+
     def renderBuildResult(self, datum):
         result = 'Success'
         if buildFailed(datum):
             result = 'Failure   ---!!!---'
-        maybeInfo(self.cfg, self.log, ''.ljust(90, '-'))
+        maybeInfo(self.cfg, self.log, ''.ljust(100, '-'))
         maybeInfo(self.cfg, self.log,
-                  '{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}'
-                  .format(toolchain = 'Toolchain',
+                  '{pad:>21}{toolchain:>20} {cpu:>28} {config:>16} {tool:>12}'
+                  .format(pad = '',
+                          toolchain = 'Toolchain',
                           cpu = 'Architecture',
-                          interf = 'Interface',
                           config = 'Config',
                           tool = 'Buildtool'))
         maybeInfo(self.cfg, self.log,
-                  '{toolchain:>20} {cpu:>20} {interf:>16} {config:>16} {tool:>12}     {result}'
-                  .format('',
-                          toolchain = datum['toolchain'],
+                  '{pad:>21}{toolchain:>20} {cpu:>28} {config:>16} {tool:>12}     {result}'
+                  .format(pad = '',
+                          toolchain = self.renderToolchain(datum['toolchain']),
                           cpu = datum['cpu'],
-                          interf = datum['interface'],
                           config = datum['buildcfg'],
                           tool = datum['buildtool'],
                           result = result))
         self.renderConfigureStepResult(datum)
         self.renderBuildStepResult(datum)
         self.renderTestStepResult(datum)
+        self.renderInstallStepResult(datum)
+
+    def renderSystemBoardResult(self, datum):
+        result = 'Success'
+        if buildFailed(datum):
+            result = 'Failure   ---!!!---'
+        maybeInfo(self.cfg, self.log, ''.ljust(100, '-'))
+        maybeInfo(self.cfg, self.log,
+                  '{pad:>21}{toolchain:>20} {board:>28} {config:>16} {tool:>12}'
+                  .format(pad = '',
+                          toolchain = 'Toolchain',
+                          board = 'Board',
+                          config = 'Config',
+                          tool = 'Buildtool'))
+        maybeInfo(self.cfg, self.log,
+                  '{pad:>21}{toolchain:>20} {board:>28} {config:>16} {tool:>12}     {result}'
+                  .format(pad = '',
+                          toolchain = datum['toolchain'],
+                          board = datum['board'],
+                          config = datum['buildcfg'],
+                          tool = datum['buildtool'],
+                          result = result))
+        self.renderConfigureStepResult(datum)
+        self.renderBuildStepResult(datum)
+        self.renderTestStepResult(datum)
+        self.renderInstallStepResult(datum)
+
+    def renderSystemZephyrResult(self, datum):
+        result = 'Success'
+        if buildFailed(datum):
+            result = 'Failure   ---!!!---'
+        maybeInfo(self.cfg, self.log, ''.ljust(100, '-'))
+        maybeInfo(self.cfg, self.log,
+                  '{application:>20} {toolchain:>20} {board:>28} {config:>16} {tool:>12}'
+                  .format(application = 'Application',
+                          toolchain = 'Toolchain',
+                          board = 'Board',
+                          config = 'Config',
+                          tool = 'Buildtool'))
+        maybeInfo(self.cfg, self.log,
+                  '{application:>20} {toolchain:>20} {board:>28} {config:>16} {tool:>12}     {result}'
+                  .format(application = datum['application'],
+                          toolchain = self.renderToolchain(datum['toolchain']),
+                          board = datum['board'],
+                          config = datum['buildcfg'],
+                          tool = datum['buildtool'],
+                          result = result))
+        self.renderConfigureStepResult(datum)
+        self.renderBuildStepResult(datum)
+        self.renderTestStepResult(datum)
+        self.renderInstallStepResult(datum)
 
     def renderStatistics(self):
         maybeInfo(self.cfg, self.log, '')
@@ -406,11 +493,16 @@ class ExecutionStatistics:
             t = entry['type']
             if t == 'build':
                 self.renderBuildResult(entry)
+            elif t == 'system-board':
+                self.renderSystemBoardResult(entry)
+            elif t == 'system-zephyr':
+                self.renderSystemZephyrResult(entry)
             elif t == 'checkpoint':
                 self.renderCheckpoint(entry)
             else:
                 self.log.warn('Statistics log entry has unknown type: {}'
                               .format(t))
+        #print("DEBUG: {}", self.data)
         maybeInfo(self.cfg, self.log, '')
         time = renderTimedelta(self.data[-1]['time-stamp'] -
                                self.data[0]['time-stamp'])
@@ -431,6 +523,7 @@ def outputMMHYAML(version, fn, data, args):
     data.pop('definition', None)
     data.pop('root', None)
     data['version'] = version
+    data['mode'] = 'module'
     data['parameters'] = {}
     if (args.architectures != None):
         data['parameters']['architectures'] = args.architectures
@@ -438,8 +531,6 @@ def outputMMHYAML(version, fn, data, args):
         data['parameters']['buildconfigs'] = args.buildconfigs
     if (args.buildtools != None):
         data['parameters']['buildtools'] = args.buildtools
-    if (args.interfaces != None):
-        data['parameters']['interfaces'] = args.interfaces
     if (args.toolchains != None):
         data['parameters']['toolchains'] = args.toolchains
     if (args.cmake != None):
@@ -498,7 +589,7 @@ class CodeUnderTest:
         if ('type' in self.moduleData):
             self.moduleType = self.moduleData['type']
 
-    def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools, interfaces):
+    def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools):
         if toolchains is not None:
             self.moduleData['toolchains'] = []
             for tc in toolchains:
@@ -509,8 +600,6 @@ class CodeUnderTest:
             self.moduleData['buildconfigs'] = buildconfigs
         if buildtools is not None:
             self.moduleData['buildtools'] = buildtools
-        if interfaces is not None:
-            self.moduleData['interfaces'] = interfaces
 
     def loadSources(self):
         self.log.info("Loading source definitions...")
@@ -682,9 +771,6 @@ class CodeUnderTest:
 
     def allToolchains(self):
         return self.queryToolchain(self.cfg.allToolchains(), 'name')
-
-    def allInterfaces(self):
-        return self.queryToolchain(self.cfg.allInterfaces(), 'interface')
 
     def allArchitectures(self):
         return self.queryToolchain(self.cfg.allArchitectures(), 'architecture')

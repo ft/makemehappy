@@ -9,13 +9,83 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
-** TODO Implement version dependency judgements
 ** TODO Add more sub-commands
-*** TODO Run compilation instances from build-tree
+*** TODO run: Run compilation instances from module-tree
 - [X] All
 - [ ] One
 - [ ] Some
+*** TODO cmake: Invoke CMake to configure a build-tree
+Sometimes when working on the CMake-system  part of a software module, it might
+useful to be able to invoke CMake's configuration step for a certain build tree
+at will. This is possible to do manually, of course, but cumbersome, since much
+of the build's parameters need to be specified on CMake's command line. And mmh
+could figure out all of those for you.
+
+In mmh builds,  all important build specific information is  encoded in the di-
+rectory name that mmh generated. This should become the ‘cmake’ sub-command.
+
+#+BEGIN_EXAMPLE
+# From build directory (assumes top-level in ../..):
+% mmh cmake
+# From module source directory:
+% mmh cmake ci/build/gnu_native_posix_debug_make
+# Configure multiple build-trees:
+% mmh cmake ci/build/gnu_native_posix_debug_{make,ninja}
+#+END_EXAMPLE
+
+All important parameters are encoded in the build-directory name:
+
+- Zephyr: ~zephyr-gnuarmemb_nucleo-f767zi_none_debug_ninja~
+- Board: ~gnu_native_posix_debug_make~ (no ~zephyr-~ prefix)
+*** DONE system: Build many parameter combinations for a system-build
+In normal operation, mmh tries to build  a module's code with as many parameter
+combinations as possible (toolchain, build-cfg, build-tool etc). To do this, it
+resolves dependencies and  generates a CMake top-level setup to  build and test
+the whole affair.
+
+For production software, this level of automation may be undesirable. Maintain-
+ers may decide to rather implement this top-level system themselves and instan-
+tiate the dependencies on their own as well. Thus a build without these automa-
+tion steps is a system-build.  This kind of system-build  is supported by UFW's
+CMake extensions.
+
+One of the limitations of CMake is, that a single build can only use one single
+toolchain. In embedded development it is  not uncommon having to resort to ven-
+dor specific toolchains, thus for complete builds requiring the use of multiple
+toolchains to build all applications that belong to a system.
+
+It's actually possible to overcome this, by using CMake's ExternalProject modu-
+le and run CMake  in a recursive scheme, so that each  sub-call of cmake confi-
+gures a build for a single toolchain,  thus tying everything into a single mas-
+sive build. The CMake modules of the UFW library implement this scheme.
+
+This has several downsides: The CMakeLists.txt file becomes tough to follow be-
+cause the same  file gets parsed in multiple ways  by multiple CMake processes.
+The build tree becomes  complex and quite deep so the  top-level CMake call can
+keep track of what is happening. This is rather unergonomic for the user to de-
+cent into. And  finally, it becomes tough to perform  parallel build correctly.
+If you use  Ninja, for instance an  run your top-level ninja  in parallel mode,
+the recursive calls may also be parallel,  which — in complex builds — can mas-
+sively overload your system.
+
+UFW's API follows  a pretty declarative approach in  specifying desired builds.
+This declaration  can also be done  outside of CMake,  say in a YAML  file, and
+instead of  having CMake call CMake  for configuration and have  the build tool
+call the  build tool again  recursively for building,  have mmh call  cmake and
+then have mmh call the build system as desired.
+
+This has the one  downside, that a build like that  introduces a new dependency
+upon mmh.  But on the  plus side, it would  solve all the  previously mentioned
+problems. Since mmh would have perfect access to all build parameters, it would
+make it easy to implement a pleasant command line interface to build parts of a
+large system build as well.
+
+The ‘system’ command  should therefore implement the  functionality provided by
+UFW's recursive CMake  calling scheme. The UFW library could  be updated accor-
+dingly, because  the CMake code  required for  this is not  particularly pretty
+either. This could be done for UFW 2.0.0,  at which point we could also break a
+couple of things that require inelegant code to implement.
+** TODO Implement version dependency judgements
 ** TODO Add options to override dependency versions
 It would be best to be able to put the option more than once and for it to use
 patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
@@ -23,9 +93,19 @@ patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
   mmh --dep-version "*=master" build
 
 …to build a module with all dependency versions set to ‘master’.
-** DONE Add YamlStack variant for configuration parsing
-** TODO Add option to keep running when a build-instance fails
 ** TODO Add a way to define dependencies for third-party modules
+** TODO Flesh out user manual
+** TODO Data read from YAML files should be verified
+If we don't, we need to check tons of conditions at the points the data is
+actually used. Checking data upfront allows us to write much more straight
+forward code.
+** DEFERRED Add an option to specify source directory instead of cwd
+** DONE Remove Interface Definition
+** DONE Use slash (/) as a delimiter in module build instances
+** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
+** DONE Add YamlStack variant for configuration parsing
+** DONE Add option to keep running when a build-instance fails
+CLOSED: [2022-05-08 Sun 12:55]
 ** DONE With non-temporary build-roots, invert --preserve
 ** DONE Generate mmh script
 Configure:
@@ -33,11 +113,6 @@ Configure:
 - Data directory (`/usr/share/MakeMeHappy`)
 - Config directory (`/etc/MakeMeHappy`)
 ** DONE Add Debian Packaging
-** TODO Flesh out user manual
-** TODO Data read from YAML files should be verified
-If we don't, we need to check tons of conditions at the points the data is
-actually used. Checking data upfront allows us to write much more straight
-forward code.
 ** DONE Allow the user to specify a subset of all defined build instances
 If the module.yaml file defines 40 or 50 possible combinations of toolchains,
 build configurations, tools and the like, it would be useful to pick from
@@ -53,9 +128,6 @@ Lets do this:
 
 That it's possible to run different variants of builds, if the module's build
 system allows or requires that.
-** TODO Allow handing a directory into "run" command
-That way we could rerun a specific instance without having to manually listing
-all characteristics of that instance.
 ** DONE Add a second value kind to variables: defaults
 This:
 
@@ -110,7 +182,8 @@ mymod:
   module: MyModSupport
 
 This will be more powerful with generation-waypoints in place. See below.
-** TODO Introduce waypoints that for extension generation
+** DONE Introduce waypoints that for extension generation
+CLOSED: [2022-05-08 Sun 12:49]
 With third party extensions you get a way of replacing add_subdirectory() calls
 with arbitrary cmake functions or macros. The generation of that looks like
 this:
@@ -135,6 +208,9 @@ be this:
 This is more complex of a problem, especially with module interdependencies to
 be considered. Some third-party modules, that border upon having circular
 dependencies can't really be used without something like this.
+
+The ‘basic’ and ‘init’ steps were added a while ago. This should be good enough
+for the time being.
 ** DONE Make it possible for an extension to be used by more than one module
 cmake-extensions:
   mymod:
@@ -150,14 +226,17 @@ cmake-extension-variants:
     - mymod-c
   # Also, maybe via pattern:
   mymod: ^mymod-.*$
-** TODO Allow source types other than git; symlinks especially
+** DONE Allow source types other than git; symlinks especially
+CLOSED: [2022-05-08 Sun 12:43]
 Allowing symlinks gives users the ability to inject ongoing development of
 modules into the dependency chain of other modules, making it possible to
 develop modules side by side.
+
+Symlink type was implemented pre-v0.10.
 * Wishlist
-** DONE Forget "tools" — check all dependencies into "deps"
-** TODO Zsh completion would be nice
-** ACTIVE Gather statistics while running
+** DONE Zsh completion would be nice
+CLOSED: [2022-05-14 Sat 16:54]
+** DEFERRED Gather statistics while running
 *** TODO How many dependency versions had a patch-level mismatch?
 *** TODO How many dependency versions had a minor mismatch?
 *** TODO How many dependency versions had a major mismatch?
@@ -165,3 +244,4 @@ develop modules side by side.
 *** DONE How many build-instances had their test runs succeed/fail?
 *** DONE How much time did individual steps take to execute?
 *** DONE Render statistics nicely at program termination
+** DONE Forget "tools" — check all dependencies into "deps"

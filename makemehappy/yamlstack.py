@@ -84,7 +84,7 @@ def queryToolchain(data, item):
     for layer in data:
         if 'toolchains' in layer:
             rv.extend(list(x[item] for x in layer['toolchains'] if item in x))
-    rv = list(set(rv))
+    rv = list(set(mmh.flatten(rv)))
     rv.sort()
     return rv
 
@@ -118,9 +118,6 @@ class ConfigStack(YamlStack):
 
     def allToolchains(self):
         return queryToolchain(self.data, 'name')
-
-    def allInterfaces(self):
-        return queryToolchain(self.data, 'interface')
 
     def allArchitectures(self):
         return queryToolchain(self.data, 'architecture')

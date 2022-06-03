@@ -13,28 +13,22 @@ toolchains:
   - name: gnu
     architecture: native
     version: default
-    interface: posix
   - name: clang
     architecture: native
     version: default
-    interface: posix
   - name: gnu-arm-none-eabi
     architecture: cortex-m4-hardfp
     version: default
-    interface: none
   - name: ti-arm
     architecture: cortex-m3
     version: default
-    interface: none
   - name: ti-c2000
     architecture: c28x-float
     version: default
-    interface: none
 
 buildtools:
   - make
   - ninja
-  - jollet
 
 buildconfigs:
   - debug

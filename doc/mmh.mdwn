@@ -45,9 +45,9 @@ includes the current state of a module with all its dependencies (as well as
 all recursive dependencies), and a top-level CMakeLists.txt that would build
 the dependencies, followed by the module itself. In addition, `mmh` supports
 exercising this build-tree using a combination or one or many `toolchains`,
-`architectures`, `buildconfigs`, `buildtools` and `interfaces`. All of that is
-powered by a layered configuration approach, that allows for fine-grained
-control of all of these parameters as well as module sources.
+`architectures`, `buildconfigs` and `buildtools`. All of that is powered by a
+layered configuration approach, that allows for fine-grained control of all of
+these parameters as well as module sources.
 
 ## General Operations
 
