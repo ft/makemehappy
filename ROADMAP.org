@@ -99,7 +99,7 @@ patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
 If we don't, we need to check tons of conditions at the points the data is
 actually used. Checking data upfront allows us to write much more straight
 forward code.
-** TODO Add an option to specify source directory instead of cwd
+** DEFERRED Add an option to specify source directory instead of cwd
 ** DONE Remove Interface Definition
 ** DONE Use slash (/) as a delimiter in module build instances
 ** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
