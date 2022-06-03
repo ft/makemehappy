@@ -2,8 +2,8 @@ Source: makemehappy
 Section: devel
 Priority: optional
 Maintainer: Frank Terbeck <ft@bewatermyfriend.org>
-Build-Depends: debhelper (>= 12),
-               debhelper-compat (= 12),
+Build-Depends: debhelper (>= 13),
+               debhelper-compat (= 13),
                dh-python,
                python3-all,
                pandoc,
