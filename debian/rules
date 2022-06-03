@@ -16,6 +16,7 @@ override_dh_auto_configure:
 .PHONY: .override_dh_auto_install
 override_dh_auto_install:
 	dh_auto_install
+	dh_installexamples examples/*
 	install --mode=0755 -d debian/makemehappy/usr/share/zsh/vendor-completions
 	install --mode=0644 _makemehappy debian/makemehappy/usr/share/zsh/vendor-completions
 
