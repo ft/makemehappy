@@ -1,3 +1,14 @@
+makemehappy (0.11-1) unstable; urgency=medium
+
+  * [66aa8df0] New upstream release
+  * [8b533245] Declare compliance with Debian Policy 4.6.0.1.
+  * [5de62fcd] Add zsh completion to debian package
+  * [4264d37d] Install examples directory
+  * [62afec47] debian: Update copyright years
+  * [76e50cff] Update debhelper compat to version 13
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Fri, 03 Jun 2022 23:52:09 +0200
+
 makemehappy (0.10-1) unstable; urgency=medium
 
   * [a1ebdafe] New upstream release
