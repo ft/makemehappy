@@ -50,149 +50,201 @@ except ValueError:
     cmakeParameters = None
 
 ap = argparse.ArgumentParser()
-subp = ap.add_subparsers(dest = 'sub_command',
-                         metavar = 'Sub Commands')
 
-ap.add_argument("-d", "--directory",
-                default = None,
-                help = "specify the build-root directory")
+### Top Level Options
 
-ap.add_argument("-m", "--module",
-                default = "module.yaml",
-                help = "specify the file that contains the"
-                     + " module description (defaults to module.yaml)")
+ap.add_argument(
+    "-d", "--directory", default = None,
+    help = "specify the build-root directory")
 
-ap.add_argument("-p", "--preserve", action = "store_true",
-                help = "preserve build root instead of deleting it."
-                     + " In combination with -d, delete build root"
-                     + " before termination.")
+ap.add_argument(
+    "-m", "--module", default = "module.yaml",
+    help = "specify the file that contains the"
+         + " module description (defaults to module.yaml)")
 
-ap.add_argument("-q", "--quiet",
-                action = "store_true",
-                help = "Disable informational output")
+ap.add_argument(
+    "-p", "--preserve", action = "store_true",
+    help = "preserve build root instead of deleting it."
+         + " In combination with -d, delete build root"
+         + " before termination.")
 
-ap.add_argument("-L", "--log-all", action = "store_true",
-                help = "send all output to logging facility")
+ap.add_argument(
+    "-q", "--quiet", action = "store_true",
+    help = "Disable informational output")
 
-ap.add_argument("-l", "--log-to-file", action = "store_true",
-                help = "log output to file (implies --log-all)")
+ap.add_argument(
+    "-L", "--log-all", action = "store_true",
+    help = "send all output to logging facility")
 
-ap.add_argument("-f", "--log-file",
-                default = None,
-                help = "specify log-file name to use")
+ap.add_argument(
+    "-l", "--log-to-file", action = "store_true",
+    help = "log output to file (implies --log-all)")
 
-ap.add_argument("-T", "--toolchains",
-                default = None,
-                help = "select toolchains to include in build")
+ap.add_argument(
+    "-f", "--log-file", default = None,
+    help = "specify log-file name to use")
 
-ap.add_argument("-B", "--buildtools",
-                default = None,
-                help = "select buildtools to include in build")
+ap.add_argument(
+    "-T", "--toolchains", default = None,
+    help = "select toolchains to include in build")
 
-ap.add_argument("-C", "--buildconfigs",
-                default = None,
-                help = "select build configurations to include in build")
+ap.add_argument(
+    "-B", "--buildtools", default = None,
+    help = "select buildtools to include in build")
 
-ap.add_argument("-A", "--architectures",
-                default = None,
-                help = "select architectures to include in build")
+ap.add_argument(
+    "-C", "--buildconfigs", default = None,
+    help = "select build configurations to include in build")
 
-ap.add_argument("-Q", "--query",
-                default = None,
-                help = "query aspects about the program")
+ap.add_argument(
+    "-A", "--architectures", default = None,
+    help = "select architectures to include in build")
 
-ap.add_argument("-s", "--source",
-                default = [ ],
-                action = "append",
-                help = "add a module source definition")
+ap.add_argument(
+    "-Q", "--query", default = None,
+    help = "query aspects about the program")
 
-ap.add_argument("-F", "--force",
-                action = "store_true",
-                help = "force using MakeMeHappy.yaml")
+ap.add_argument(
+    "-s", "--source", default = [], action = "append",
+    help = "add a module source definition")
 
-ap.add_argument("-V", "--version", action = "store_true",
-                help = "show program version")
+ap.add_argument(
+    "-F", "--force", action = "store_true",
+    help = "force using MakeMeHappy.yaml")
 
-ap.add_argument("-v", "--verbose", action = "store_true",
-                help = "produce verbose output")
+ap.add_argument(
+    "-V", "--version", action = "store_true",
+    help = "show program version")
 
-ap_build    = subp.add_parser('build',
-                              help = 'Build a module')
+ap.add_argument(
+    "-v", "--verbose", action = "store_true",
+    help = "produce verbose output")
 
-ap_init     = subp.add_parser('build-tree-init',
-                              aliases = [ 'init' ],
-                              help = 'Build a module')
+### Top-Level Commands
+
+subp = ap.add_subparsers(
+    dest = 'sub_command', metavar = 'Sub Commands')
+
+# build
+ap_build = subp.add_parser('build', help = 'Build a module')
+
+# init
+ap_init = subp.add_parser(
+    'build-tree-init', aliases = [ 'init' ],
+    help = 'Build a module')
+
 ap_init.set_defaults(sub_command = 'build-tree-init')
 
-ap_download = subp.add_parser('download-source',
-                              aliases = [ 'get' ],
-                              help = 'Download sources for a module')
-ap_download.add_argument('modules', nargs = '+')
-ap_download.set_defaults(sub_command = 'download-source')
+# download
+ap_download = subp.add_parser(
+    'download-source', aliases = [ 'get' ],
+    help = 'Download sources for a module')
 
-ap_sources  = subp.add_parser('download-sources',
-                              help = 'Download sources for ALL module')
+ap_download.set_defaults(sub_command = 'download-source')
+ap_download.add_argument('modules', nargs = '+')
+
+# download-sources
+ap_sources = subp.add_parser(
+    'download-sources',
+    help = 'Download sources for ALL module')
+
 ap_sources.add_argument('destination', nargs = '?', default = '.')
 
-ap_dump     = subp.add_parser('dump-description',
-                              aliases = [ 'dump' ],
-                              help = 'Show parsed instruction file data')
+# dump-description
+ap_dump = subp.add_parser(
+    'dump-description', aliases = [ 'dump' ],
+    help = 'Show parsed instruction file data')
+
 ap_dump.set_defaults(sub_command = 'dump-description')
 
-ap_fetch    = subp.add_parser('fetch-dependencies',
-                              aliases = [ 'deps' ],
-                              help = 'Download dependencies of a module')
+# fetch-dependencies
+ap_fetch = subp.add_parser(
+    'fetch-dependencies', aliases = [ 'deps' ],
+    help = 'Download dependencies of a module')
+
 ap_fetch.set_defaults(sub_command = 'fetch-dependencies')
 
-ap_top      = subp.add_parser('generate-toplevel',
-                              aliases = [ 'top' ],
-                              help = 'Generate toplevel of module build-tree')
+# generate-toplevel
+ap_top = subp.add_parser(
+    'generate-toplevel', aliases = [ 'top' ],
+    help = 'Generate toplevel of module build-tree')
+
 ap_top.set_defaults(sub_command = 'generate-toplevel')
 
-ap_reset    = subp.add_parser('reset-setup',
-                              aliases = [ 'reset' ],
-                              help = 'Reset build-tree meta-data')
+# reset-setup
+ap_reset = subp.add_parser(
+    'reset-setup', aliases = [ 'reset' ],
+    help = 'Reset build-tree meta-data')
+
 ap_reset.set_defaults(sub_command = 'reset-setup')
 
-ap_run      = subp.add_parser('run-instance',
-                              aliases = [ 'run' ],
-                              help = '(Re)run previously configured build-tree')
-ap_run.add_argument('instances', nargs = '*')
+# run-instance
+ap_run = subp.add_parser(
+    'run-instance', aliases = [ 'run' ],
+    help = '(Re)run previously configured build-tree')
+
 ap_run.set_defaults(sub_command = 'run-instance')
+ap_run.add_argument('instances', nargs = '*')
 
-ap_show     = subp.add_parser('show-source',
-                              aliases = [ 'show' ],
-                              help = 'Show source location for module(s)')
-ap_show.add_argument('modules', nargs = '*')
+# show-source
+ap_show = subp.add_parser(
+    'show-source', aliases = [ 'show' ],
+    help = 'Show source location for module(s)')
+
 ap_show.set_defaults(sub_command = 'show-source')
+ap_show.add_argument('modules', nargs = '*')
 
-ap_system   = subp.add_parser('system',
-                              help = 'Handle building production systems')
-ap_system.add_argument("-s", "--single-instance", action = "store_true",
-                       help = "Build a single instance in the build directory root")
+# system
+ap_system = subp.add_parser(
+    'system', help = 'Handle building production systems')
+
+ap_system.set_defaults(sub_command = 'system')
+ap_system.add_argument(
+    "-s", "--single-instance", action = "store_true",
+    help = "Build a single instance in the build directory root")
 ap_system.add_argument(
     "-a", "--all-instances", action = "store_true",
     help = "Force building all system instances")
-ap_system.set_defaults(sub_command = 'system')
-sub_system = ap_system.add_subparsers(dest = 'system',
-                                      metavar = 'System Commands')
-sys_list  = sub_system.add_parser('list',
-                                  help = 'List all specified build instances')
-sys_db  = sub_system.add_parser('db',
-                                help = 'Link compile command db to system root')
+
+
+### System Commands
+
+sub_system = ap_system.add_subparsers(
+    dest = 'system', metavar = 'System Commands')
+
+# list
+sys_list = sub_system.add_parser(
+    'list', help = 'List all specified build instances')
+
+# db
+sys_db = sub_system.add_parser(
+    'db', help = 'Link compile command db to system root')
+
 sys_db.add_argument(
     "-l", "--location", default = '.',
     help = "specify the build-root directory")
 sys_db.add_argument('instances', default = [ ], nargs = '*')
-sys_build = sub_system.add_parser('build',
-                                  help = 'Build all or specified build instances')
+
+# build
+sys_build = sub_system.add_parser(
+    'build', help = 'Build all or specified build instances')
+
 sys_build.add_argument('instances', default = [ ], nargs = '*')
-sys_rebuild = sub_system.add_parser('rebuild',
-                                  help = 'Rebuild all or specified build instances')
+
+# rebuild
+sys_rebuild = sub_system.add_parser(
+    'rebuild', help = 'Rebuild all or specified build instances')
+
 sys_rebuild.add_argument('instances', default = [ ], nargs = '*')
-sys_clean = sub_system.add_parser('clean',
-                                  help = 'Clean all or specified build instances')
+
+# clean
+sys_clean = sub_system.add_parser(
+    'clean', help = 'Clean all or specified build instances')
+
 sys_clean.add_argument('instances', default = [ ], nargs = '*')
+
+### End of Argument Parser Spec
+
 
 cmdargs = ap.parse_args()
 #print(cmdargs)
