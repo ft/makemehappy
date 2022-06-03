@@ -1,6 +1,56 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.10 → v0.11 (released 2022-06-03):
+
+** Breaking Compatibility:
+
+- Removed ‘download’ alias for ‘download-source’. Use ‘get’ instead.
+- Modules using ‘zephyr’ type now have to use ‘toolchains’ and ‘boards’ instead
+  of ‘toolchain’ and ‘board’ for improved consistency with the new ‘system’
+  sub-command's behaviour.
+- Build-directories of modules now use slashes (/) as delimiters between
+  instance parameters, like toolchain, build-config and the like. This is also
+  to improve consistency with the build-directory trees used by the ‘system’
+  command, but also removes the need for some ugly transfomations like
+  replacing all underscores by dashes in zephyr board names.
+- The ‘interface’ parameter for build instances was removed.
+- This release requires the upcoming 2.0.0 version of ufw.
+
+** New Features
+
+- New ‘system’ sub-command: Building many instances of system pre-defined
+  outside of mmh; for instance via git-submodules. This is a replacement for
+  the recursive CMake execution scheme implemented by ufw in order to support
+  more than one C/C++ toolchain in CMake.
+- New zsh completion definition (compsys): _makemehappy.
+
+** Bugfixes
+
+- Fix installation step in systems that do not install any artefacts.
+- Fix installation step in execution statistics.
+
+** Diffstat:
+
+    ROADMAP.org                         | 116 ++++++-
+    _makemehappy                        | 303 +++++++++++++++++
+    auto-configure                      |  40 +++
+    data/config.yaml                    |   4 -
+    doc/mmh.mdwn                        |   6 +-
+    module.yaml => examples/module.yaml |   6 -
+    examples/system.yaml                |  55 +++
+    makemehappy/build.py                | 164 +++++----
+    makemehappy/cmake.py                | 178 ++++++++++
+    makemehappy/cut.py                  | 134 ++++++--
+    makemehappy/system.py               | 497 ++++++++++++++++++++++++++++
+    makemehappy/toplevel.py             |  27 +-
+    makemehappy/utilities.py            |  64 ++--
+    makemehappy/yamlstack.py            |   5 +-
+    makemehappy/zephyr.py               |  50 +++
+    mmh.in                              | 380 ++++++++++++++-------
+    16 files changed, 1720 insertions(+), 309 deletions(-)
+
+
 * v0.9 → v0.10 (released 2021-08-13):
 
 ** New Features
