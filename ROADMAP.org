@@ -37,7 +37,7 @@ All important parameters are encoded in the build-directory name:
 
 - Zephyr: ~zephyr-gnuarmemb_nucleo-f767zi_none_debug_ninja~
 - Board: ~gnu_native_posix_debug_make~ (no ~zephyr-~ prefix)
-*** ACTIVE system: Build many parameter combinations for a system-build
+*** DONE system: Build many parameter combinations for a system-build
 In normal operation, mmh tries to build  a module's code with as many parameter
 combinations as possible (toolchain, build-cfg, build-tool etc). To do this, it
 resolves dependencies and  generates a CMake top-level setup to  build and test
