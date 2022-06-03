@@ -204,10 +204,17 @@ _makemehappy-system() {
             compset -n 1
 
             case $line[1] in
-            (build|clean|db|rebuild)
+            (build|clean|rebuild)
                 _arguments -C -s -w : \
                            '(-h --help)'{-h,--help}'[display help message]' \
                            '*:: :__makemehappy-system-instances' \
+                    && ret=0
+                ;;
+            (db)
+                _arguments -C -s -w : \
+                           '(-h --help)'{-h,--help}'[display help message]' \
+                           '(-l --location)'{-l,--location}'[select directory for db link]:directory:_path_files -g "*(/)"' \
+                           '1:: :__makemehappy-system-instances' \
                     && ret=0
                 ;;
             (*) __makemehappy-nothing-else ;;

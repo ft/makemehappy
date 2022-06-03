@@ -485,9 +485,13 @@ class System:
             instance = self.args.instances[0]
             target = os.path.join(d, instance, name)
 
-        self.log.info('Creating symbolic link to {} for {}', name, instance)
+        loc = self.args.location
+        self.log.info('Creating symbolic link to {} for {} (location: {})',
+                        name, instance, loc)
+        link = os.path.join(self.args.location, name)
+        target = os.path.relpath(target, loc)
 
-        if (os.path.exists(name) or os.path.islink(name)):
-            os.remove(name)
+        if (os.path.exists(link) or os.path.islink(link)):
+            os.remove(link)
 
-        os.symlink(target, name)
+        os.symlink(target, link)
