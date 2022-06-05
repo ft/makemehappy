@@ -78,7 +78,8 @@ def ctest(lst):
 def configureZephyr(log, args, ufw,
                     board, buildtool, buildconfig, buildsystem,
                     toolchain, sourcedir, builddir, installdir,
-                    appsource, kernel, kconfig, modulepath, modules):
+                    appsource, kernel, dtc, kconfig,
+                    modulepath, modules):
     modules = z.generateModules(modulepath, modules)
     overlay = [ z.findTransformer(ufw, buildconfig) ]
 
@@ -95,6 +96,7 @@ def configureZephyr(log, args, ufw,
           makeParam('CMAKE_INSTALL_PREFIX',   installdir),
           makeParam('BOARD',                  board),
           makeParam('ZEPHYR_MODULES',         modules),
+          makeParam('DTC_OVERLAY_FILE',       dtc),
           makeParam('OVERLAY_CONFIG',         overlay),
           makeParam('UFW_ZEPHYR_KERNEL',      mmh.expandFile(kernel)),
           makeParam('UFW_ZEPHYR_APPLICATION', mmh.expandFile(appsource)),
