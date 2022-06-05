@@ -67,7 +67,7 @@ def maybeExtend(lst, scalar, default = '.'):
     return lst
 
 def runTarget(target, directory = None):
-    cmd = c.cmake([ '--build' ])
+    cmd = cmake([ '--build' ])
     maybeExtend(cmd, directory)
     cmd.extend(['--target', target ])
     return cmd
