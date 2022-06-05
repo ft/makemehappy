@@ -98,6 +98,8 @@ def generateZephyrInstances(log, mod):
                     for tc in target['toolchains']:
                         if ('kconfig' not in target):
                             target['kconfig'] = []
+                        if ('dtc-overlays' not in target):
+                            target['dtc-overlays'] = []
                         if ('options' not in target):
                             target['options'] = []
                         if ('modules' not in target):
@@ -107,6 +109,7 @@ def generateZephyrInstances(log, mod):
                               'board'       : board,
                               'architecture': board,
                               'modules'     : target['modules'],
+                              'dtc-overlays': target['dtc-overlays'],
                               'kconfig'     : target['kconfig'],
                               'options'     : target['options'],
                               'buildcfg'    : cfg,
@@ -182,6 +185,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             buildsystem = '',
             appsource   = os.path.join(root, 'code-under-test'),
             kernel      = os.path.join(root, 'deps', 'zephyr-kernel'),
+            dtc         = instance['dtc-overlays'],
             kconfig     = instance['kconfig'],
             modulepath  = [ os.path.join(root, 'deps') ],
             modules     = instance['modules'])
