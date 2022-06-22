@@ -171,6 +171,11 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             sourcedir    = root,
             builddir     = '.')
     elif (instance['type'] == 'zephyr'):
+        if ('application' in instance):
+            app = os.path.join('code-under-test', instance['application'])
+        else:
+            app = 'code-under-test'
+
         cmd = c.configureZephyr(
             log         = log,
             args        = cmakeArgs,
@@ -183,7 +188,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             installdir  = './artifacts',
             buildtool   = instance['buildtool'],
             buildsystem = '',
-            appsource   = os.path.join(root, 'code-under-test'),
+            appsource   = os.path.join(root, app),
             kernel      = os.path.join(root, 'deps', 'zephyr-kernel'),
             dtc         = instance['dtc-overlays'],
             kconfig     = instance['kconfig'],
