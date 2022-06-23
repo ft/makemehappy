@@ -104,10 +104,13 @@ def generateZephyrInstances(log, mod):
                             target['options'] = []
                         if ('modules' not in target):
                             target['modules'] = []
+                        if ('application' not in target):
+                            target['application'] = None
                         instances.append(
                             { 'toolchain'   : tc,
                               'board'       : board,
                               'architecture': board,
+                              'application' : target['application'],
                               'modules'     : target['modules'],
                               'dtc-overlays': target['dtc-overlays'],
                               'kconfig'     : target['kconfig'],
@@ -171,7 +174,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             sourcedir    = root,
             builddir     = '.')
     elif (instance['type'] == 'zephyr'):
-        if ('application' in instance):
+        if ('application' in instance and instance['application'] != None):
             app = os.path.join('code-under-test', instance['application'])
         else:
             app = 'code-under-test'
