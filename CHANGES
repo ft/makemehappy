@@ -1,6 +1,26 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.11 → v0.12 (released 2022-06-24):
+
+** New Features
+
+- Add support for dtc-overlays in system and module builds.
+- module: Allow zephyr instances to define application directory other than a
+  repository's root-directory.
+
+** Bugfixes
+
+- system: Fix ‘clean’ subcommand.
+
+** Diffstat:
+
+    makemehappy/build.py  | 14 +++++++++++++-
+    makemehappy/cmake.py  |  6 ++++--
+    makemehappy/system.py |  2 ++
+    3 files changed, 19 insertions(+), 3 deletions(-)
+
+
 * v0.10 → v0.11 (released 2022-06-03):
 
 ** Breaking Compatibility:
