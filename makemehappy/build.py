@@ -98,15 +98,21 @@ def generateZephyrInstances(log, mod):
                     for tc in target['toolchains']:
                         if ('kconfig' not in target):
                             target['kconfig'] = []
+                        if ('dtc-overlays' not in target):
+                            target['dtc-overlays'] = []
                         if ('options' not in target):
                             target['options'] = []
                         if ('modules' not in target):
                             target['modules'] = []
+                        if ('application' not in target):
+                            target['application'] = None
                         instances.append(
                             { 'toolchain'   : tc,
                               'board'       : board,
                               'architecture': board,
+                              'application' : target['application'],
                               'modules'     : target['modules'],
+                              'dtc-overlays': target['dtc-overlays'],
                               'kconfig'     : target['kconfig'],
                               'options'     : target['options'],
                               'buildcfg'    : cfg,
@@ -168,6 +174,11 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             sourcedir    = root,
             builddir     = '.')
     elif (instance['type'] == 'zephyr'):
+        if ('application' in instance and instance['application'] != None):
+            app = os.path.join('code-under-test', instance['application'])
+        else:
+            app = 'code-under-test'
+
         cmd = c.configureZephyr(
             log         = log,
             args        = cmakeArgs,
@@ -180,8 +191,9 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             installdir  = './artifacts',
             buildtool   = instance['buildtool'],
             buildsystem = '',
-            appsource   = os.path.join(root, 'code-under-test'),
+            appsource   = os.path.join(root, app),
             kernel      = os.path.join(root, 'deps', 'zephyr-kernel'),
+            dtc         = instance['dtc-overlays'],
             kconfig     = instance['kconfig'],
             modulepath  = [ os.path.join(root, 'deps') ],
             modules     = instance['modules'])
