@@ -73,6 +73,10 @@ ap.add_argument(
     help = "Disable informational output")
 
 ap.add_argument(
+    "-P", "--show-phases", action = "store_true",
+    help = "Show build phases even with --log-to-file.")
+
+ap.add_argument(
     "-L", "--log-all", action = "store_true",
     help = "send all output to logging facility")
 

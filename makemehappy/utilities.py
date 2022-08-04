@@ -123,3 +123,7 @@ def maybeMatch(lst, pat):
 
 def patternsToList(lst, pats):
     return flatten([ maybeMatch(lst, x) for x in pats ])
+
+def maybeShowPhase(phase, tag, args):
+    if (args.log_to_file and args.show_phases):
+        print('{}: {}'.format(tag, phase))
