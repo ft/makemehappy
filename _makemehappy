@@ -12,6 +12,7 @@ _makemehappy_aliasmap=(
     init      build-tree-init
     reset     reset-setup
     run       run-instance
+    result    show-result
     show      show-source
     top       generate-toplevel
 )
@@ -161,6 +162,14 @@ _makemehappy-run-instance() {
         return
     fi
     __makemehappy-nothing-else
+}
+
+_makemehappy-show-result() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Show result table from log-file"
+        return
+    fi
+    _path_files
 }
 
 _makemehappy-show-source() {

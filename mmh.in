@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import re
 import sys
 
 import makemehappy.build as build
@@ -189,6 +190,14 @@ ap_run = subp.add_parser(
 
 ap_run.set_defaults(sub_command = 'run-instance')
 ap_run.add_argument('instances', nargs = '*')
+
+# show-source
+ap_result = subp.add_parser(
+    'show-result', aliases = [ 'result' ],
+    help = 'Show result table from log-file')
+
+ap_result.set_defaults(sub_command = 'show-result')
+ap_result.add_argument('file', nargs = 1)
 
 # show-source
 ap_show = subp.add_parser(
@@ -520,6 +529,23 @@ elif (cmdargs.sub_command == "build"):
 elif (cmdargs.sub_command == "dump-description"):
     data = mmh.load(cmdargs.module)
     mmh.pp(data)
+
+elif (cmdargs.sub_command == "show-result"):
+    input = cmdargs.file[0]
+    table = []
+    marker = re.compile(
+        r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+INFO:\s+MakeMeHappy:\s+Build\s+Summary:$')
+    strip = re.compile(
+        r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+INFO:\s+MakeMeHappy:\s')
+    for line in open(input):
+        if (re.match(marker, line)):
+            entry = re.sub(strip, '', line)
+            table = [ entry ]
+        elif (len(table) > 0):
+            entry = re.sub(strip, '', line)
+            table += entry
+    for line in table:
+        print(line, end='')
 
 elif (cmdargs.sub_command == "show-source"):
     src.load()
