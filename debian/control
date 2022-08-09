@@ -13,7 +13,7 @@ Build-Depends: debhelper (>= 13),
                lmodern,
                texinfo
 Rules-Requires-Root: no
-Standards-Version: 4.6.0.1
+Standards-Version: 4.6.1.0
 Homepage: https://github.com/ft/makemehappy
 
 Package: makemehappy
