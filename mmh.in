@@ -19,6 +19,7 @@ from makemehappy.loghandler import MMHLogHandler
 version = "@@VERSION@@"
 fullname = "MakeMeHappy"
 name = "mmh"
+commandReturnValue = 0
 
 log = Logger(fullname)
 log.handlers.append(MMHLogHandler())
@@ -112,6 +113,10 @@ ap.add_argument(
 ap.add_argument(
     "-s", "--source", default = [], action = "append",
     help = "add a module source definition")
+
+ap.add_argument(
+    "-S", "--succeed", action = "store_true",
+    help = "force successful termination")
 
 ap.add_argument(
     "-F", "--force", action = "store_true",
@@ -263,6 +268,11 @@ cmdargs = ap.parse_args()
 #print(cmdargs)
 #print(cmdargs.sub_command)
 
+def mmh_exit(code):
+    if cmdargs.succeed:
+        exit(0)
+    exit(code)
+
 if cmdargs.query is not None:
     cfg.load()
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
@@ -280,9 +290,9 @@ if cmdargs.query is not None:
         result = cut.allBuildConfigs()
     else:
         mmh.warn('Unknown query: {}'.format(q))
-        exit(1)
+        mmh_exit(1)
     print(" ".join(result))
-    exit(0)
+    mmh_exit(0)
 
 if (isinstance(cmdargs.directory, str)):
     cmdargs.preserve = not(cmdargs.preserve)
@@ -305,12 +315,12 @@ if (cmdargs.version):
     print('  datadir = {}'.format(datadir))
     print('  etcdir  = {}'.format(etcdir))
     print()
-    exit(0)
+    mmh_exit(0)
 
 for item in cmdargs.source:
     if (os.path.isfile(item) == False):
         mmh.warn("Source definition does not exist: {}".format(item))
-        exit(1)
+        mmh_exit(1)
     src.push(item)
 
 if cmdargs.log_to_file:
@@ -388,7 +398,7 @@ if (cmdargs.sub_command != 'reset-setup' and
                 fv = data['version']
             log.error("{}: Version mismatch: {} != {}".format(fn, version, fv))
             log.error("If suitable ‘--force’ to force using the file!")
-            exit(1)
+            mmh_exit(1)
 
 def adjustConfig(cfg, args):
     layer = {}
@@ -405,7 +415,7 @@ def adjustConfig(cfg, args):
 def requireModuleDefinition(args):
     if (os.path.isfile(args.module) == False):
         mmh.warn("Module definition does not exist: {}".format(args.module))
-        exit(1)
+        mmh_exit(1)
 
 if (cmdargs.sub_command == "build-tree-init"):
     requireModuleDefinition(cmdargs)
@@ -451,7 +461,7 @@ elif (cmdargs.sub_command == "generate-toplevel"):
 elif (cmdargs.sub_command == "reset-setup"):
     if (cmdargs.directory == None):
         print("reset-argument only works with -d!")
-        exit(1)
+        mmh_exit(1)
 
     fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
     data = { 'version': version }
@@ -462,7 +472,7 @@ elif (cmdargs.sub_command == "run-instance"):
         cfg.load()
         for d in cmdargs.instances:
             build.runInstance(cfg, log, cmdargs, d)
-        exit(0)
+        mmh_exit(0)
 
     requireModuleDefinition(cmdargs)
     cfg.load()
@@ -483,11 +493,10 @@ elif (cmdargs.sub_command == "run-instance"):
     cut.renderStatistics()
     if cut.wasSuccessful():
         log.info('All {} builds succeeded.'.format(cut.countBuilds()))
-        exit(0)
     else:
         log.info('{} build(s) out of {} failed.'
                  .format(cut.countFailed(), cut.countBuilds()))
-        exit(1)
+        commandReturnValue = 1
 
 elif (cmdargs.sub_command == "build"):
     requireModuleDefinition(cmdargs)
@@ -520,11 +529,10 @@ elif (cmdargs.sub_command == "build"):
     cut.renderStatistics()
     if cut.wasSuccessful():
         log.info('All {} builds succeeded.'.format(cut.countBuilds()))
-        exit(0)
     else:
         log.info('{} build(s) out of {} failed.'
                  .format(cut.countFailed(), cut.countBuilds()))
-        exit(1)
+        commandReturnValue = 1
 
 elif (cmdargs.sub_command == "dump-description"):
     data = mmh.load(cmdargs.module)
@@ -537,6 +545,7 @@ elif (cmdargs.sub_command == "show-result"):
         r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+INFO:\s+MakeMeHappy:\s+Build\s+Summary:$')
     strip = re.compile(
         r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+INFO:\s+MakeMeHappy:\s')
+    success = re.compile(r'All \d+ builds succeeded.')
     for line in open(input):
         if (re.match(marker, line)):
             entry = re.sub(strip, '', line)
@@ -546,6 +555,16 @@ elif (cmdargs.sub_command == "show-result"):
             table += [ entry ]
     for line in table:
         print(line, end='')
+
+    if (len(table) > 0):
+        final = table[-1]
+        if (re.match(success, final)):
+            commandReturnValue = 0
+        else:
+            commandReturnValue = 1
+    else:
+        print('Could not find result table in log: {}'.format(input))
+        commandReturnValue = 1
 
 elif (cmdargs.sub_command == "show-source"):
     src.load()
@@ -602,6 +621,7 @@ elif (cmdargs.sub_command == "download-sources"):
     else:
         log.error("Downloading {} of {} sources failed!",
                   len(failed), len(loaded))
+        commandReturnValue = 1
         for fail in sorted(failed):
             log.error("  Failure: {} from {} [{}]",
                       fail,
@@ -620,29 +640,32 @@ elif (cmdargs.sub_command == "system"):
 
     cfg.load()
     adjustConfig(cfg, cmdargs)
-    system = ms.System(log, version, cfg, cmdargs);
-    if cmdargs.log_to_file is True and cmdargs.log_file is None:
-        fn = system.buildRoot() + '.log'
-        print('Logging to: {}'.format(fn))
-        log.handlers[0].setFile(fn)
-    system.load()
+    try:
+        system = ms.System(log, version, cfg, cmdargs);
+        if cmdargs.log_to_file is True and cmdargs.log_file is None:
+            fn = system.buildRoot() + '.log'
+            print('Logging to: {}'.format(fn))
+            log.handlers[0].setFile(fn)
+        system.load()
 
-    if (cmdargs.system == 'build'):
-        system.build()
-    elif (cmdargs.system == 'rebuild'):
-        system.rebuild()
-    elif (cmdargs.system == 'clean'):
-        system.clean()
-    elif (cmdargs.system == 'list'):
-        system.listInstances()
-    elif (cmdargs.system == 'db'):
-        system.makeDBLink()
+        if (cmdargs.system == 'build'):
+            system.build()
+        elif (cmdargs.system == 'rebuild'):
+            system.rebuild()
+        elif (cmdargs.system == 'clean'):
+            system.clean()
+        elif (cmdargs.system == 'list'):
+            system.listInstances()
+        elif (cmdargs.system == 'db'):
+            system.makeDBLink()
+    except Exception:
+        commandReturnValue = 1
 
 elif (isinstance(cmdargs.sub_command, str)):
     print("Not implemented yet: {}".format(cmdargs.sub_command))
 
 else:
     mmh.warn("This should not happen. {}".format(cmdargs))
-    exit(1)
+    mmh_exit(1)
 
-exit(0)
+mmh_exit(commandReturnValue)
