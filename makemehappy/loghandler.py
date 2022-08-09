@@ -1,3 +1,4 @@
+import os
 import sys
 
 from logbook.base import NOTSET
@@ -17,6 +18,8 @@ class MMHLogHandler(Handler):
     def setFile(self, fn):
         self.filename = fn
         if isinstance(self.filename, str):
+            if (os.path.exists(self.filename)):
+                os.unlink(self.filename)
             self._handler = FileHandler(self.filename)
         elif isinstance(self.filename, bool):
             self._handler = StreamHandler(sys.stdout)

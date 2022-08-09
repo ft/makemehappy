@@ -12,6 +12,7 @@ _makemehappy_aliasmap=(
     init      build-tree-init
     reset     reset-setup
     run       run-instance
+    result    show-result
     show      show-source
     top       generate-toplevel
 )
@@ -163,6 +164,22 @@ _makemehappy-run-instance() {
     __makemehappy-nothing-else
 }
 
+_makemehappy-show-result() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Show result table from log-file"
+        return
+    fi
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-s --short)'{-s,--short}'[Do not show and result output]' \
+               '(-q --quiet)'{-q,--quiet}'[Only show final short-form result]' \
+               '*:: :_path_files' \
+        && ret=0
+}
+
 _makemehappy-show-source() {
     if [[ -n ${makemehappy_describe} ]]; then
         print "Show source definition for modules"
@@ -241,6 +258,7 @@ _makemehappy() {
                '(-F --force)'{-F,--force}'[force using MakeMeHappy.yaml]' \
                '(-f --log-file)'{-f,--log-file}'[specify log file]:file name:_path_files' \
                '(-h --help)'{-h,--help}'[display help message]' \
+               '(-P --show-phases)'{-P,--show-phases}'[Show build phases even with --log-to-file.]' \
                '(-L --log-all)'{-L,--log-all}'[send all output to logging facility]' \
                '(-l --log-to-file)'{-l,--log-to-file}'[log output to file (implies --log-all)]' \
                '(-m --module)'{-m,--module}'[specify module definition file]:module definition file:_path_files' \
@@ -248,6 +266,7 @@ _makemehappy() {
                '(-Q --query)'{-Q,--query}'[query module build information]:mmh query:__makemehappy-queries' \
                '(-q --quiet)'{-q,--quiet}'[disable informational output]' \
                '(-s --source)'{-s,--source}'[specify additional source definition]:source definition file:_path_files' \
+               '(-S --succeed)'{-S,--succeed}'[force successful termination]' \
                '(-T --toolchains)'{-T,--toolchains}'[select toolchains to use]:toolchain:__makemehappy-toolchains' \
                '(-v --verbose)'{-v,--verbose}'[request verbose logging]' \
                '(-V --version)'{-V,--version}'[report makemehappy version]' \

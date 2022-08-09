@@ -156,6 +156,11 @@ class UnknownModuleType(Exception):
 def findToolchainByExtension(ext, tc):
     return findToolchain(ext.toolchainPath(), tc)
 
+def instanceTag(instance):
+    return ('module/' +
+            instance['type'] + '/' +
+            instanceName(instance))
+
 def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     cmakeArgs = None
     if (args.cmake == None):
@@ -163,6 +168,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     else:
         cmakeArgs = args.cmake
 
+    mmh.maybeShowPhase('configure', instanceTag(instance), args)
     if (instance['type'] == 'cmake'):
         cmd = c.configureLibrary(
             log          = log,
@@ -203,17 +209,19 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     stats.logConfigure(rc)
     return (rc == 0)
 
-def cmakeBuild(cfg, log, stats, instance):
+def cmakeBuild(cfg, log, args, stats, instance):
+    mmh.maybeShowPhase('compile', instanceTag(instance), args)
     rc = mmh.loggedProcess(cfg, log, c.compile())
     stats.logBuild(rc)
     return (rc == 0)
 
-def cmakeTest(cfg, log, stats, instance):
+def cmakeTest(cfg, log, args, stats, instance):
     # The last line of this command reads  like this: "Total Tests: N" …where N
     # is the number of registered tests. Fetch this integer from stdout and on-
     # ly run ctest for real, if tests were registered using add_test().
     num = c.countTests()
     if (num > 0):
+        mmh.maybeShowPhase('test', instanceTag(instance), args)
         rc = mmh.loggedProcess(cfg, log, c.test())
         stats.logTestsuite(num, rc)
         return (rc == 0)
@@ -231,10 +239,11 @@ def cleanInstance(log, d):
         except Exception as e:
             log.error('Could not remove {}. Reason: {}'.format(path, e))
 
-def maybeInstall(cfg, log, stats, instance):
+def maybeInstall(cfg, log, args, stats, instance):
     if (instance['install'] == False):
         return True
 
+    mmh.maybeShowPhase('install', instanceTag(instance), args)
     cmd = c.install()
     rc = mmh.loggedProcess(cfg, log, cmd)
     stats.logInstall(rc)
@@ -250,9 +259,9 @@ def build(cfg, log, args, stats, ext, root, instance):
         os.makedirs(dnamefull)
     os.chdir(dnamefull)
     (cmakeConfigure(cfg, log, args, stats, ext, root, instance) and
-     cmakeBuild(cfg, log, stats, instance)                      and
-     cmakeTest(cfg, log, stats, instance)                       and
-     maybeInstall(cfg, log, stats, instance))
+     cmakeBuild(cfg, log, args, stats, instance)                and
+     cmakeTest(cfg, log, args, stats, instance)                 and
+     maybeInstall(cfg, log, args, stats, instance))
     os.chdir(root)
 
 def allofthem(cfg, log, mod, ext):

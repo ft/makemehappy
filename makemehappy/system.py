@@ -81,7 +81,22 @@ def getSpec(data, key, name):
             return d
     return None
 
+class InvalidArguments(Exception):
+    pass
+
+class InvalidBuildTree(Exception):
+    pass
+
+class InvalidPathExtension(Exception):
+    pass
+
 class InvalidSystemInstance(Exception):
+    pass
+
+class InvalidBuildSpec(Exception):
+    pass
+
+class SystemFailedSomeBuilds(Exception):
     pass
 
 class SystemInstanceBoard:
@@ -217,10 +232,12 @@ class SystemInstance:
 
     def configure(self):
         self.sys.log.info('Configuring system instance: {}'.format(self.desc))
+        mmh.maybeShowPhase('configure', self.desc, self.sys.args)
         return self.instance.configure()
 
     def compile(self):
         self.sys.log.info('Compiling system instance: {}'.format(self.desc))
+        mmh.maybeShowPhase('compile', self.desc, self.sys.args)
         cmd = c.cmake(['--build', self.instance.builddir ])
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
         self.sys.stats.logBuild(rc)
@@ -230,6 +247,7 @@ class SystemInstance:
         num = c.countTests(self.instance.builddir)
         if (num > 0):
             self.sys.log.info('Testing system instance: {}'.format(self.desc))
+            mmh.maybeShowPhase('test', self.desc, self.sys.args)
             cmd = c.test(self.instance.builddir)
             rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
             self.sys.stats.logTestsuite(num, rc)
@@ -238,6 +256,7 @@ class SystemInstance:
 
     def install(self):
         self.sys.log.info('Installing system instance: {}'.format(self.desc))
+        mmh.maybeShowPhase('install', self.desc, self.sys.args)
         cmd = c.install()
         olddir = os.getcwd()
         self.sys.log.info(
@@ -251,6 +270,7 @@ class SystemInstance:
 
     def clean(self):
         self.sys.log.info('Cleaning system instance: {}'.format(self.desc))
+        mmh.maybeShowPhase('clean', self.desc, self.sys.args)
         cmd = c.clean(self.instance.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
         return (rc == 0)
@@ -286,7 +306,7 @@ class System:
                 log.error(
                     'system: --single-instance requires exactly one instance. {} specified.'
                     .format(n))
-                exit(1)
+                raise(InvalidBuildTree())
             self.mode = 'system-single'
         else:
             self.mode = 'system-multi'
@@ -310,7 +330,7 @@ class System:
                         fv = data['version']
                     self.log.error("{}: Version mismatch: {} != {}".format(state, self.version, fv))
                     self.log.error("If suitable ‘--force’ to force using the file!")
-                    exit(1)
+                    raise(InvalidBuildTree())
                 if (self.mode == None):
                     self.mode = data['mode']
                     self.log.info('Using mode from state: {}'.format(self.mode))
@@ -318,7 +338,7 @@ class System:
                     self.log.error(
                         'Build directory {} uses {} mode; Current mode: {}'
                         .format(d, data['mode'], self.mode))
-                    exit(1)
+                    raise(InvalidBuildTree())
                 else:
                     self.log.info('Build tree matching current mode: {}. Good!'
                                   .format(self.mode))
@@ -331,7 +351,7 @@ class System:
                             .format(self.args.directory,
                                     data['single-instance'],
                                     self.singleInstance))
-                        exit(1)
+                        raise(InvalidBuildTree())
                 elif (self.mode == 'system-multi'):
                     if ('instances' in data):
                         if (self.args.all_instances):
@@ -354,7 +374,7 @@ class System:
                         mmh.dump(state, data)
             else:
                 self.log.error('Failed to load build state from {}'.format(state))
-                exit(1)
+                raise(InvalidBuildTree())
         else:
             os.mkdir(d)
             if (self.mode == None):
@@ -383,7 +403,7 @@ class System:
                     self.log.error("Unknown instance: {}", instance)
                     error = True
             if (error):
-                exit(1)
+                raise(InvalidSystemSpec())
 
     def newInstance(self, desc):
         return SystemInstance(self, desc)
@@ -394,12 +414,11 @@ class System:
         if self.stats.wasSuccessful():
             self.log.info('All {} builds succeeded.'.format(
                 self.stats.countBuilds()))
-            exit(0)
         else:
             self.log.info('{} build(s) out of {} failed.'
                           .format(self.stats.countFailed(),
                                   self.stats.countBuilds()))
-            exit(1)
+            raise(SystemFailedSomeBuilds())
 
     def buildInstances(self, instances):
         for i in instances:
@@ -476,7 +495,7 @@ class System:
         n = len(self.args.instances)
         if (n != 1 and not (n == 0 and self.singleInstance != None)):
             self.log.error('The db sub-command requires exactly one argument')
-            exit(1)
+            raise(InvalidArguments())
 
         name = 'compile_commands.json'
 
