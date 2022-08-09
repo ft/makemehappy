@@ -169,7 +169,15 @@ _makemehappy-show-result() {
         print "Show result table from log-file"
         return
     fi
-    _path_files
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-s --short)'{-s,--short}'[Do not show and result output]' \
+               '(-q --quiet)'{-q,--quiet}'[Only show final short-form result]' \
+               '*:: :_path_files' \
+        && ret=0
 }
 
 _makemehappy-show-source() {
