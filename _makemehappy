@@ -258,6 +258,7 @@ _makemehappy() {
                '(-Q --query)'{-Q,--query}'[query module build information]:mmh query:__makemehappy-queries' \
                '(-q --quiet)'{-q,--quiet}'[disable informational output]' \
                '(-s --source)'{-s,--source}'[specify additional source definition]:source definition file:_path_files' \
+               '(-S --succeed)'{-S,--succeed}'[force successful termination]' \
                '(-T --toolchains)'{-T,--toolchains}'[select toolchains to use]:toolchain:__makemehappy-toolchains' \
                '(-v --verbose)'{-v,--verbose}'[request verbose logging]' \
                '(-V --version)'{-V,--version}'[report makemehappy version]' \
