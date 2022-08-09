@@ -543,7 +543,7 @@ elif (cmdargs.sub_command == "show-result"):
             table = [ entry ]
         elif (len(table) > 0):
             entry = re.sub(strip, '', line)
-            table += entry
+            table += [ entry ]
     for line in table:
         print(line, end='')
 
