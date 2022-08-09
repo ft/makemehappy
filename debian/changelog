@@ -1,3 +1,10 @@
+makemehappy (0.13-1) unstable; urgency=medium
+
+  * [26654fe9] New upstream release
+  * [27f27e60] Bump standards version to 4.6.1.0
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Tue, 09 Aug 2022 23:37:21 +0200
+
 makemehappy (0.12-1) unstable; urgency=medium
 
   * [96908e56] New upstream release
