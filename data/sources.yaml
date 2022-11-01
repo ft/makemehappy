@@ -125,6 +125,8 @@ modules:
     zephyr-mcumgr:
       repository: https://github.com/zephyrproject-rtos/mcumgr.git
     ## Miscellaneous Modules
+    ufwz:
+      repository: https://github.com/ft/ufwz.git
     zephyr-fatfs:
       repository: https://github.com/zephyrproject-rtos/fatfs.git
     zephyr-libmetal:
