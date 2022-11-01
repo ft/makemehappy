@@ -66,7 +66,8 @@ def fill(thing, common):
         maybeCopy(thing, common, key)
 
 def fillData(data):
-    data['common'] = {}
+    if ('common' not in data):
+        data['common'] = {}
 
     if ('zephyr' in data):
         for z in data['zephyr']:
