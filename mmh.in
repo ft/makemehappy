@@ -203,6 +203,10 @@ ap_result = subp.add_parser(
 
 ap_result.set_defaults(sub_command = 'show-result')
 ap_result.add_argument(
+    "-f", "--full", action = "store_true",
+    dest = 'full_result',
+    help = "Replay full log with log-prefix stripped.")
+ap_result.add_argument(
     "-q", "--quiet", action = "store_true",
     dest = 'quiet_result',
     help = "Do not show and result output.")
@@ -550,9 +554,9 @@ elif (cmdargs.sub_command == "show-result"):
     input = cmdargs.file[0]
     table = []
     marker = re.compile(
-        r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+INFO:\s+MakeMeHappy:\s+Build\s+Summary:$')
+        r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+[A-Z]+:\s+MakeMeHappy:\s+Build\s+Summary:$')
     strip = re.compile(
-        r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+INFO:\s+MakeMeHappy:\s')
+        r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+[A-Z]+:\s+MakeMeHappy:\s')
     success = re.compile(r'All \d+ builds succeeded.')
     for line in open(input):
         if (re.match(marker, line)):
@@ -561,6 +565,9 @@ elif (cmdargs.sub_command == "show-result"):
         elif (len(table) > 0):
             entry = re.sub(strip, '', line)
             table += [ entry ]
+        if (cmdargs.full_result and len(table) == 0):
+            stripped = re.sub(strip, '', line)
+            print(stripped, end='')
 
     if (cmdargs.quiet_result == False):
         if (cmdargs.short_result == False):

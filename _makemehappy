@@ -173,6 +173,7 @@ _makemehappy-show-result() {
     local curcontext=$curcontext state line ret=1
 
     _arguments -C -s -w : \
+               '(-f --full)'{-f,--full}'[Replay full log with log-prefix stripped]' \
                '(-h --help)'{-h,--help}'[display help message]' \
                '(-s --short)'{-s,--short}'[Do not show and result output]' \
                '(-q --quiet)'{-q,--quiet}'[Only show final short-form result]' \
