@@ -126,7 +126,7 @@ def patternsToList(lst, pats):
 
 def maybeShowPhase(phase, tag, args):
     if (args.log_to_file and args.show_phases):
-        print('{}: {}'.format(tag, phase))
+        print('{}: {}'.format(tag, phase), flush = True)
 
 def get_install_components(log, spec):
     if (isinstance(spec, bool)):
