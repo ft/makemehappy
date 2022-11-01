@@ -139,6 +139,8 @@ modules:
       repository: https://github.com/zephyrproject-rtos/open-amp.git
     zephyr-openthread:
       repository: https://github.com/zephyrproject-rtos/openthread.git
+    zephyr-picolibc:
+      repository: https://github.com/zephyrproject-rtos/picolibc.git
     zephyr-tinycbor:
       repository: https://github.com/zephyrproject-rtos/tinycbor.git
     zephyr-tinycrypt:
