@@ -244,8 +244,12 @@ def maybeInstall(cfg, log, args, stats, instance):
         return True
 
     mmh.maybeShowPhase('install', instanceTag(instance), args)
-    cmd = c.install()
-    rc = mmh.loggedProcess(cfg, log, cmd)
+    for component in mmh.get_install_components(
+            self.sys.log, self.instance.spec['install']):
+        cmd = c.install(component = component)
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        if (rc != 0):
+            break
     stats.logInstall(rc)
     return (rc == 0)
 
