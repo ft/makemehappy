@@ -127,3 +127,21 @@ def patternsToList(lst, pats):
 def maybeShowPhase(phase, tag, args):
     if (args.log_to_file and args.show_phases):
         print('{}: {}'.format(tag, phase))
+
+def get_install_components(log, spec):
+    if (isinstance(spec, bool)):
+        if (spec == True):
+            # None will trigger the default install target
+            return [ None ]
+        else:
+            log.info('System installation disabled')
+            return []
+
+    if (isinstance(spec, str)):
+        return [ spec ]
+
+    if (isinstance(spec, list)):
+        return spec
+
+    log.warning('Invalid installation spec: {}', spec)
+    return []
