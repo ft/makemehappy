@@ -124,9 +124,11 @@ def maybeMatch(lst, pat):
 def patternsToList(lst, pats):
     return flatten([ maybeMatch(lst, x) for x in pats ])
 
-def maybeShowPhase(phase, tag, args):
+def maybeShowPhase(log, phase, tag, args):
+    string = f'{tag}: {phase}'
+    log.info(f'Phase: {string}')
     if (args.log_to_file and args.show_phases):
-        print('{}: {}'.format(tag, phase), flush = True)
+        print(string, flush = True)
 
 def get_install_components(log, spec):
     if (isinstance(spec, bool)):

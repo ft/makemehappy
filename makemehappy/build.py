@@ -168,7 +168,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     else:
         cmakeArgs = args.cmake
 
-    mmh.maybeShowPhase('configure', instanceTag(instance), args)
+    mmh.maybeShowPhase(log, 'configure', instanceTag(instance), args)
     if (instance['type'] == 'cmake'):
         cmd = c.configureLibrary(
             log          = log,
@@ -210,7 +210,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     return (rc == 0)
 
 def cmakeBuild(cfg, log, args, stats, instance):
-    mmh.maybeShowPhase('compile', instanceTag(instance), args)
+    mmh.maybeShowPhase(log, 'compile', instanceTag(instance), args)
     rc = mmh.loggedProcess(cfg, log, c.compile())
     stats.logBuild(rc)
     return (rc == 0)
@@ -221,7 +221,7 @@ def cmakeTest(cfg, log, args, stats, instance):
     # ly run ctest for real, if tests were registered using add_test().
     num = c.countTests()
     if (num > 0):
-        mmh.maybeShowPhase('test', instanceTag(instance), args)
+        mmh.maybeShowPhase(log, 'test', instanceTag(instance), args)
         rc = mmh.loggedProcess(cfg, log, c.test())
         stats.logTestsuite(num, rc)
         return (rc == 0)
@@ -243,7 +243,7 @@ def maybeInstall(cfg, log, args, stats, instance):
     if (instance['install'] == False):
         return True
 
-    mmh.maybeShowPhase('install', instanceTag(instance), args)
+    mmh.maybeShowPhase(log, 'install', instanceTag(instance), args)
     for component in mmh.get_install_components(
             self.sys.log, self.instance.spec['install']):
         cmd = c.install(component = component)

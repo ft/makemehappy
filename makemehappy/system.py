@@ -234,12 +234,12 @@ class SystemInstance:
 
     def configure(self):
         self.sys.log.info('Configuring system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase('configure', self.desc, self.sys.args)
+        mmh.maybeShowPhase(self.sys.log, 'configure', self.desc, self.sys.args)
         return self.instance.configure()
 
     def compile(self):
         self.sys.log.info('Compiling system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase('compile', self.desc, self.sys.args)
+        mmh.maybeShowPhase(self.sys.log, 'compile', self.desc, self.sys.args)
         cmd = c.cmake(['--build', self.instance.builddir ])
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
         self.sys.stats.logBuild(rc)
@@ -249,7 +249,7 @@ class SystemInstance:
         num = c.countTests(self.instance.builddir)
         if (num > 0):
             self.sys.log.info('Testing system instance: {}'.format(self.desc))
-            mmh.maybeShowPhase('test', self.desc, self.sys.args)
+            mmh.maybeShowPhase(self.sys.log, 'test', self.desc, self.sys.args)
             cmd = c.test(self.instance.builddir)
             rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
             self.sys.stats.logTestsuite(num, rc)
@@ -258,7 +258,7 @@ class SystemInstance:
 
     def install(self):
         self.sys.log.info('Installing system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase('install', self.desc, self.sys.args)
+        mmh.maybeShowPhase(self.sys.log, 'install', self.desc, self.sys.args)
         olddir = os.getcwd()
         self.sys.log.info(
             'Changing to directory {}.'.format(self.instance.builddir))
@@ -276,7 +276,7 @@ class SystemInstance:
 
     def clean(self):
         self.sys.log.info('Cleaning system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase('clean', self.desc, self.sys.args)
+        mmh.maybeShowPhase(self.sys.log, 'clean', self.desc, self.sys.args)
         cmd = c.clean(self.instance.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
         return (rc == 0)
