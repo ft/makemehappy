@@ -171,9 +171,11 @@ def test(directory = None):
     maybeExtend(cmd, directory)
     return cmd
 
-def install(directory = None):
+def install(directory = None, component = None):
     cmd = cmake([ '--install' ])
     maybeExtend(cmd, directory)
+    if (component != None):
+        cmd.extend([ '--component', component])
     return cmd
 
 def clean(directory = None):

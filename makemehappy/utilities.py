@@ -124,6 +124,26 @@ def maybeMatch(lst, pat):
 def patternsToList(lst, pats):
     return flatten([ maybeMatch(lst, x) for x in pats ])
 
-def maybeShowPhase(phase, tag, args):
+def maybeShowPhase(log, phase, tag, args):
+    string = f'{tag}: {phase}'
+    log.info(f'Phase: {string}')
     if (args.log_to_file and args.show_phases):
-        print('{}: {}'.format(tag, phase))
+        print(string, flush = True)
+
+def get_install_components(log, spec):
+    if (isinstance(spec, bool)):
+        if (spec == True):
+            # None will trigger the default install target
+            return [ None ]
+        else:
+            log.info('System installation disabled')
+            return []
+
+    if (isinstance(spec, str)):
+        return [ spec ]
+
+    if (isinstance(spec, list)):
+        return spec
+
+    log.warning('Invalid installation spec: {}', spec)
+    return []

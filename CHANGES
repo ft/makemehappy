@@ -1,6 +1,38 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.13 → v0.14 (released 2022-11-02):
+
+** New Features
+
+- Allow selecting CMake components for installation. The ‘install’ key can be
+  either ‘true’ or ‘false’ to enable/disable installation; when it is another
+  string or a list of strings, mmh will trigger the names CMake components.
+  This, for instance, works with ufw's ‘ufw-git-install’ component. But any
+  other components your build declares will work as well.
+- Add ‘--full’ option to ‘show-result’: This will output the entire data from a
+  given log file stripping the per-line log-prefix.
+- Add phase information to logging output as well.
+- sources: Add ‘zephyr-picolibc’ module.
+- sources: Add ‘ufwz’ module.
+
+** Bugfixes
+
+- Fix using ‘common’ section from ‘system.yaml’.
+- show-phases: Force output after printing phase name.
+
+** Diffstat:
+
+    _makemehappy             |  1 +
+    data/sources.yaml        |  4 ++++
+    makemehappy/build.py     | 16 ++++++++++------
+    makemehappy/cmake.py     |  4 +++-
+    makemehappy/system.py    | 22 ++++++++++++++--------
+    makemehappy/utilities.py | 24 ++++++++++++++++++++++--
+    mmh.in                   | 11 +++++++++--
+    7 files changed, 63 insertions(+), 19 deletions(-)
+
+
 * v0.12 → v0.13 (released 2022-08-09):
 
 ** New Features
