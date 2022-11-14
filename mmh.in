@@ -605,7 +605,7 @@ elif (cmdargs.sub_command == "download-source"):
     for module in cmdargs.modules:
         meta = src.lookup(module)
         source = meta['repository']
-        mmh.loggedProcess(cfg, log, ['git', 'clone', source])
+        mmh.loggedProcess(cfg, log, ['git', 'clone', source, module])
 
 elif (cmdargs.sub_command == "download-sources"):
     destination = cmdargs.destination
