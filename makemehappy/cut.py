@@ -678,7 +678,12 @@ class CodeUnderTest:
         self.stats.checkpoint('load-dependencies')
         self.depstack = Stack(self.dependencies())
         self.deptrace = Trace()
-        fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
+        rc = fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
+
+        if (rc == False):
+            self.log("Fatal error loading dependencies. Giving up!")
+            exit(1)
+
         self.deporder = self.calculateDependencyOrder()
         self.extensions = CMakeExtensions(self.moduleData,
                                           self.deptrace,
