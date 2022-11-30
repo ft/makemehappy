@@ -681,7 +681,7 @@ class CodeUnderTest:
         rc = fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
 
         if (rc == False):
-            self.log("Fatal error loading dependencies. Giving up!")
+            self.log.error("Fatal error loading dependencies. Giving up!")
             exit(1)
 
         self.deporder = self.calculateDependencyOrder()
