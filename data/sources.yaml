@@ -143,6 +143,8 @@ modules:
       repository: https://github.com/zephyrproject-rtos/openthread.git
     zephyr-picolibc:
       repository: https://github.com/zephyrproject-rtos/picolibc.git
+    zephyr-scilib:
+      repository: https://github.com/zephyrproject-rtos/zscilib.git
     zephyr-tinycbor:
       repository: https://github.com/zephyrproject-rtos/tinycbor.git
     zephyr-tinycrypt:

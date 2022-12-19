@@ -75,12 +75,23 @@ def runTarget(target, directory = None):
 def ctest(lst):
     return commandWithArguments('ctest', lst)
 
+class InvalidZephyrModuleSpec(Exception):
+    pass
+
 def configureZephyr(log, args, ufw,
                     board, buildtool, buildconfig, buildsystem,
                     toolchain, sourcedir, builddir, installdir,
                     appsource, kernel, dtc, kconfig,
                     modulepath, modules):
     modules = z.generateModules(modulepath, modules)
+
+    for m in modules:
+        if (isinstance(m, dict)):
+            log.error('Error in module spec:')
+            for k in m:
+                log.error('  {}: {}', k, m[k])
+            raise InvalidZephyrModuleSpec(m, modulepath)
+
     overlay = [ z.findTransformer(ufw, buildconfig) ]
 
     if (kconfig != None):

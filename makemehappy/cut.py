@@ -180,12 +180,20 @@ def fetch(cfg, log, src, st, trace):
             log.info("Symlinking dependency: {} to {}" .format(dep['name'], url))
             os.symlink(url, p)
         elif (source['type'] == 'git'):
-            mmh.loggedProcess(cfg, log, ['git', 'clone', url, p])
+            rc = mmh.loggedProcess(cfg, log, ['git', 'clone', url, p])
+            if (rc != 0):
+                log.error("Failed to clone code for module {}!"
+                          .format(dep['name']))
+                return False
             # Check out the requested revision
             olddir = os.getcwd()
             os.chdir(p)
-            mmh.loggedProcess(cfg, log, ['git', 'checkout', dep['revision']])
+            rc = mmh.loggedProcess(cfg, log, ['git', 'checkout', dep['revision']])
             os.chdir(olddir)
+            if (rc != 0):
+                log.error("Failed to switch to revision {} for module {}!"
+                          .format(dep['revision'], dep['name']))
+                return False
         else:
             raise(InvalidRepositoryType(source))
 
@@ -670,7 +678,12 @@ class CodeUnderTest:
         self.stats.checkpoint('load-dependencies')
         self.depstack = Stack(self.dependencies())
         self.deptrace = Trace()
-        fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
+        rc = fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
+
+        if (rc == False):
+            self.log.error("Fatal error loading dependencies. Giving up!")
+            exit(1)
+
         self.deporder = self.calculateDependencyOrder()
         self.extensions = CMakeExtensions(self.moduleData,
                                           self.deptrace,

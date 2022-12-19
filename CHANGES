@@ -1,6 +1,30 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.14 → v0.15 (released 2022-12-19):
+
+** New Features
+
+- source: New zephyr-scilib module
+
+** Bugfixes
+
+- download-source: Use module name as destination for clone.
+- fetch-dependencies: Error out if setting up a dependency fails.
+- Fix component installation feature in module-builds.
+- Error out if an unknown zephyr module is specified.
+
+** Diffstat:
+
+    data/sources.yaml     |  2 ++
+    makemehappy/build.py  |  5 ++---
+    makemehappy/cmake.py  | 11 +++++++++++
+    makemehappy/cut.py    | 19 ++++++++++++++++---
+    makemehappy/zephyr.py |  2 +-
+    mmh.in                |  2 +-
+    6 files changed, 33 insertions(+), 8 deletions(-)
+
+
 * v0.13 → v0.14 (released 2022-11-02):
 
 ** New Features

@@ -11,7 +11,7 @@ def findModule(path, name):
         candidate = os.path.join(d, name)
         if (isModule(candidate)):
             return candidate
-    return None
+    return { 'UnknownModule': name }
 
 def generateModules(path, names):
     realpath = [ mmh.expandFile(x) for x in path ]
