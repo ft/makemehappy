@@ -1,3 +1,9 @@
+makemehappy (0.15-1) unstable; urgency=medium
+
+  * [7b8d4047] New upstream release
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Mon, 19 Dec 2022 11:02:35 +0100
+
 makemehappy (0.14-1) unstable; urgency=medium
 
   * [26d96cea] New upstream release
