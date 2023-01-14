@@ -16,6 +16,14 @@
 - Patchlevel mismatch: Informational message
 - Module specifies a deprecated version: Warning
 
+Severity Levels should be configurable via command line and config.yaml stack.
+
+Possible levels:
+
+- error
+- warning
+- info
+- ignore
 ** TODO Implement a YAML linters
 
 All linters should make sure, the used keys are type correct. Unrecognised keys
