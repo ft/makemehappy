@@ -116,6 +116,25 @@ modules:
 Violating deprecations should be warnings by default.
 
 ** TODO Allow "west" key in sources spec to specify a zephyr module's west name
+** TODO Allow third-party zephyr modules to have a makemehappy.yaml file
+This can be used to automatically match module versions with zephyr-kernel
+versions.
+
+The idea is to first checkout the module's "main" branch; load this file, then
+check the configured zephyr-kernel version, and switch the module to the revi-
+sion specified therein.
+
+kernel-map:
+  # For up to and including v2.0.0 use 1.2.3
+  v2.0.0: v1.2.3
+  # For up to and including v2.7.0 use 1.3.0
+  v2.7.0: v1.3.0
+  # and so on…
+  v3.0.0: v2.0.0
+  # and so forth…
+  v3.1.0: v2.1.0
+  # If we don't know what to use based on the table, use this.
+  fallback: master
 ** TODO Get zephyr module dependency from west.yaml from zephyr-kernel repo
 ** TODO Add a way to load extensions (like toolchainpath) in system.yaml
 
