@@ -39,6 +39,12 @@ src = SourceStack(log, 'Source Definition',
                   os.path.join(etcdir,  'sources.yaml'),
                   os.path.join(datadir, 'sources.yaml'))
 
+def mmh_search_in_dirs(stack, name):
+    stack.push(os.path.join(datadir, name))
+    stack.push(os.path.join(etcdir,  name))
+    stack.push(mmh.xdgFile(name))
+    stack.push(mmh.dotFile(name))
+
 cmakeParameters = None
 cmakeSeparator = None
 try:
@@ -109,6 +115,10 @@ ap.add_argument(
 ap.add_argument(
     "-Q", "--query", default = None,
     help = "query aspects about the program")
+
+ap.add_argument(
+    "-c", "--config", default = [], action = "append",
+    help = "add configuration to config-stack")
 
 ap.add_argument(
     "-s", "--source", default = [], action = "append",
@@ -329,11 +339,17 @@ if (cmdargs.version):
     print()
     mmh_exit(0)
 
-for item in cmdargs.source:
-    if (os.path.isfile(item) == False):
-        mmh.warn("Source definition does not exist: {}".format(item))
-        mmh_exit(1)
-    src.push(item)
+def mmh_add_to_stack(lst, stack, desc):
+    for item in lst:
+        if (re.match(r".*\\.yaml$", item) == None):
+            item += '.yaml'
+        if (os.path.isfile(item)):
+            stack.push(item)
+        else:
+            mmh_search_in_dirs(stack, item)
+
+mmh_add_to_stack(cmdargs.config, cfg, "Config")
+mmh_add_to_stack(cmdargs.source, src, "Source")
 
 if cmdargs.log_to_file:
     cmdargs.log_all = True

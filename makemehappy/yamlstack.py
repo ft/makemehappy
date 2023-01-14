@@ -13,7 +13,8 @@ class YamlStack:
         self.data.insert(0, layer)
 
     def push(self, item):
-        self.log.info("{}: {}".format(self.desc, item))
+        # This is a little noisy, fileload() will suffice, I think.
+        #self.log.info("{}: {}".format(self.desc, item))
         self.files = self.files + [item]
 
     def fileload(self, fn):

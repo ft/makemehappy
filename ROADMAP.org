@@ -66,7 +66,9 @@ With --thorough:
 :ID:       70cbcd25-8887-4036-a5d9-19d8a4075688
 :CREATED:  [2022-06-09 Do 09:45]
 :END:
-** TODO Config Extensions
+** DONE Config Extensions
+CLOSED: [2023-01-14 Sat 18:09]
+- State "DONE"       from "TODO"       [2023-01-14 Sat 18:09]
 
 Read Configs with --config=foo
 
