@@ -24,7 +24,7 @@ Possible levels:
 - warning
 - info
 - ignore
-** TODO Implement a YAML linters
+** TODO Implement YAML linters
 
 All linters should make sure, the used keys are type correct. Unrecognised keys
 should be warnings.
