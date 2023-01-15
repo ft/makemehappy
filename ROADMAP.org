@@ -150,7 +150,9 @@ modules:
 
 Violating deprecations should be warnings by default.
 
-** TODO Allow "west" key in sources spec to specify a zephyr module's west name
+** DONE Allow "west" key in sources spec to specify a zephyr module's west name
+CLOSED: [2023-01-15 Sun 23:48]
+- State "DONE"       from "TODO"       [2023-01-15 Sun 23:48]
 ** TODO Allow third-party zephyr modules to have a makemehappy.yaml file
 This can be used to automatically match module versions with zephyr-kernel
 versions.
