@@ -18,6 +18,9 @@ toolchains, but also for modules and the planned revision-overrides. It's
 probably easy to add removers the lists-of-strings and keys-of-dicts, if it's
 just in the first level of the data-structure.
 
+Removals are applied when merging the stacked data-structre and happens just
+before data from a higher level file is merged.
+
 #+begin_src yaml
 # In config.yaml:
 remove:
