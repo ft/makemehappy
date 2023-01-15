@@ -6,6 +6,7 @@ import yaml
 import makemehappy.utilities as mmh
 import makemehappy.build as build
 import makemehappy.yamlstack as ys
+import makemehappy.zephyr as z
 
 from makemehappy.buildroot import BuildRoot
 from makemehappy.toplevel import Toplevel
@@ -113,6 +114,7 @@ class ZephyrExtensions:
 class Trace:
     def __init__(self):
         self.data = []
+        self.westData = None
 
     def has(self, needle):
         return (needle in (entry['name'] for entry in self.data))
@@ -126,6 +128,11 @@ class Trace:
 
     def push(self, entry):
         self.data = [entry] + self.data
+
+    def west(self, kernel = None):
+        if (kernel == None):
+            return self.westData
+        self.westData = z.loadWestYAML(kernel)
 
 class Stack:
     def __init__(self, init):
@@ -215,6 +222,12 @@ def fetch(cfg, log, src, st, trace):
                 st.push(newdep)
 
         st.delete(dep['name'])
+
+        if (dep['name'] == 'zephyr-kernel'):
+            # After loading the zephyr kernel repository, load its west
+            # specification, in order to be able inherit zephyr-* module
+            # versions later on in the fetching process.
+            trace.west(p)
 
     # And recurse with the new stack and trace; we're done when the new stack
     # is empty.

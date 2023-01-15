@@ -48,3 +48,7 @@ def findTransformer(ufw, cfg):
     if (os.path.exists(transformer)):
         return transformer
     return None
+
+def loadWestYAML(kernel):
+    f = os.path.join(kernel, 'west.yml')
+    return mmh.load(f)
