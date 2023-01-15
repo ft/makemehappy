@@ -165,7 +165,9 @@ kernel-map:
   v3.1.0: v2.1.0
   # If we don't know what to use based on the table, use this.
   fallback: master
-** TODO Get zephyr module dependency from west.yaml from zephyr-kernel repo
+** DONE Get zephyr module dependency from west.yaml from zephyr-kernel repo
+CLOSED: [2023-01-15 Sun 22:42]
+- State "DONE"       from "TODO"       [2023-01-15 Sun 22:42]
 ** TODO Add a way to load extensions (like toolchainpath) in system.yaml
 
 From subdirectories, that have modules with a module.yaml. At the moment, only
