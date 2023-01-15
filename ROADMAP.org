@@ -12,6 +12,33 @@
 ** TODO ‘toolchains’ configuration should be a dict of dicts
 I'm not sure if it's worth fixing this now. Only if it's straight-forward, I
 guess.
+** TODO Enable removing parameters from YAML Stack data
+It's unfortunate, that this is not possible at the moment, particularly for
+toolchains, but also for modules and the planned revision-overrides. It's
+probably easy to add removers the lists-of-strings and keys-of-dicts, if it's
+just in the first level of the data-structure.
+
+#+begin_src yaml
+# In config.yaml:
+remove:
+  toolchains:
+    - clang
+    - ti-c2000
+  revision-overrides:
+    - zephyr-kernel
+    - ufw
+  buildconfigs:
+    - minsizerel
+    - relwithdebug
+  buildtools:
+    - make
+
+# In sources.yaml
+remove:
+  modules:
+    - newlib
+    - mcuboot
+#+end_src
 ** TODO Implement version dependency judgements
 
 - Major version mismatch: Error
@@ -90,7 +117,7 @@ otherwise mmh should signal an error. Any particular string value needs to
 exist as a branch outright.
 ** TODO Allow config to override module revision specs
 
-revision-override:
+revision-overrides:
   *foo*:
     revision: v1.0.0
   *bar*:
