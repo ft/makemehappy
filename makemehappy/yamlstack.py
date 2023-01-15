@@ -80,7 +80,13 @@ class SourceStack(YamlStack):
 
         if (len(data) == 0):
             raise(UnknownModule(needle))
-        return mergeStack(data)
+
+        data = mergeStack(data)
+
+        if ('main' not in data):
+            data['main'] = [ 'main', 'master' ]
+
+        return data
 
 def queryItem(data, item):
         rv = []

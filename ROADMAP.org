@@ -106,8 +106,10 @@ Look in datapath, etcpath, homepath, and localpath (current working dir) and
 put them on top of the config stack.
 
 This should also work with the sources stack, via --sources=bar.
-** TODO Specify "main" branch in sources.yaml
+** DONE Specify "main" branch in sources.yaml
+CLOSED: [2023-01-15 Sun 22:49]
 
+- State "DONE"       from "TODO"       [2023-01-15 Sun 22:49]
 Can be a list of strings or a string.  The default is
 
   [ 'main', 'master' ]
