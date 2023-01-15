@@ -1,5 +1,7 @@
 import os
 
+from functools import reduce
+
 import makemehappy.utilities as mmh
 
 class YamlStack:
@@ -30,6 +32,12 @@ class NoSourceData(Exception):
 
 class UnknownModule(Exception):
     pass
+
+def merge(a, b):
+    return {**a, **b}
+
+def mergeStack(data):
+    return reduce(merge, list(reversed(data)))
 
 class SourceStack(YamlStack):
     def __init__(self, log, desc, *lst):
@@ -63,13 +71,16 @@ class SourceStack(YamlStack):
         if (self.data == False):
             raise(NoSourceData())
 
+        data = []
         for slice in self.data:
             if not('modules' in slice):
                 continue
             if (needle in slice['modules']):
-                return slice['modules'][needle]
+                data += [ slice['modules'][needle] ]
 
-        raise(UnknownModule(needle))
+        if (len(data) == 0):
+            raise(UnknownModule(needle))
+        return mergeStack(data)
 
 def queryItem(data, item):
         rv = []
