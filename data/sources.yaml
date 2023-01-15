@@ -109,8 +109,6 @@ modules:
       west: hal_nuvoton
     zephyr-hal-openisa:
       repository: https://github.com/zephyrproject-rtos/hal_openisa.git
-    zephyr-hal-qmsi:
-      repository: https://github.com/zephyrproject-rtos/hal_qmsi.git
     zephyr-hal-quicklogic:
       repository: https://github.com/zephyrproject-rtos/hal_quicklogic.git
       west: hal_quicklogic
@@ -129,8 +127,6 @@ modules:
     zephyr-hal-texas:
       repository: https://github.com/zephyrproject-rtos/hal_ti.git
       west: hal_ti
-    zephyr-hal-unisoc:
-      repository: https://github.com/zephyrproject-rtos/hal_unisoc.git
     zephyr-hal-xtensa:
       repository: https://github.com/zephyrproject-rtos/hal_xtensa.git
       west: hal_xtensa
@@ -142,8 +138,6 @@ modules:
     zephyr-mcuboot:
       repository: https://github.com/zephyrproject-rtos/mcuboot.git
       west: mcuboot
-    zephyr-mcumgr:
-      repository: https://github.com/zephyrproject-rtos/mcumgr.git
     ## Miscellaneous Modules
     ufwz:
       repository: https://github.com/ft/ufwz.git
