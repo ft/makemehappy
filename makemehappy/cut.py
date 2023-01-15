@@ -165,11 +165,24 @@ def getSource(dep, src):
 class InvalidRepositoryType(Exception):
     pass
 
+class InvalidDependency(Exception):
+    pass
+
 def fetch(cfg, log, src, st, trace):
     if (st.empty() == True):
         return trace
 
     for dep in st.data:
+        if ('revision' not in dep):
+            log.info('Module {} does not specify a revision'
+                     .format(dep['name']))
+            log.info('Attempting to resolve via zephyr-west')
+            dep['revision'] = z.westRevision(src, trace.west(), dep['name'])
+            if (dep['revision'] == None):
+                log.error('Could not determine version for module {}'
+                          .format(dep['name']))
+                raise(InvalidDependency(dep))
+
         log.info("Fetching revision {} of module {}"
                  .format(dep['revision'], dep['name']))
 
