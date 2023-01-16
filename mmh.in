@@ -121,6 +121,10 @@ ap.add_argument(
     help = "add configuration to config-stack")
 
 ap.add_argument(
+    "-r", "--revision", default = [], action = "append",
+    help = "add a revision-override specification")
+
+ap.add_argument(
     "-s", "--source", default = [], action = "append",
     help = "add a module source definition")
 
@@ -437,6 +441,21 @@ def adjustConfig(cfg, args):
     if args.log_to_file == True:
         layer['log-to-file'] = not(cfg.lookup('log-to-file'))
         adjustments = adjustments + 1
+    if (len(args.revision) > 0):
+        layer['revision-overrides'] = {}
+        for rev in reversed(args.revision):
+            try:
+                (pat,value) = rev.split('=', 1)
+                layer['revision-overrides'][pat] = {}
+                if (value == '!main'):
+                    layer['revision-overrides'][pat]['use-main-branch'] = True
+                else:
+                    layer['revision-overrides'][pat]['revision'] = value
+            except ValueError:
+                log.error("cmdline: Invalid revision-spec: {}"
+                          .format(rev))
+                mmh_exit(1)
+            adjustments = adjustments + 1
     if adjustments > 0:
         cfg.pushLayer(layer)
 
