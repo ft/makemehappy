@@ -170,7 +170,11 @@ def revisionOverride(cfg, src, mod):
     for patterns in lst:
         for pattern in patterns:
             if (fnmatch.fnmatch(mod, pattern)):
-                if ('revision' in patterns[pattern]):
+                if ('preserve' in patterns[pattern]):
+                    if (patterns[pattern]['preserve']):
+                        return None
+                    continue
+                elif ('revision' in patterns[pattern]):
                     return patterns[pattern]['revision']
                 elif ('use-main-branch' in patterns[pattern]):
                     if (not patterns[pattern]['use-main-branch']):
