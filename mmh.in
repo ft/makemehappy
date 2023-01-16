@@ -27,23 +27,17 @@ log.handlers.append(MMHLogHandler())
 etcdir = '@@ETCDIR@@'
 datadir = '@@DATADIR@@'
 
-cfg = ConfigStack(log, 'Configuration',
-                  mmh.dotFile('config.yaml'),
-                  mmh.xdgFile('config.yaml'),
-                  os.path.join(etcdir,  'config.yaml'),
-                  os.path.join(datadir, 'config.yaml'))
-
-src = SourceStack(log, 'Source Definition',
-                  mmh.dotFile('sources.yaml'),
-                  mmh.xdgFile('sources.yaml'),
-                  os.path.join(etcdir,  'sources.yaml'),
-                  os.path.join(datadir, 'sources.yaml'))
+cfg = ConfigStack(log, 'Configuration')
+src = SourceStack(log, 'Source Definition')
 
 def mmh_search_in_dirs(stack, name):
     stack.push(os.path.join(datadir, name))
     stack.push(os.path.join(etcdir,  name))
     stack.push(mmh.xdgFile(name))
     stack.push(mmh.dotFile(name))
+
+mmh_search_in_dirs(cfg, 'config.yaml')
+mmh_search_in_dirs(src, 'sources.yaml')
 
 cmakeParameters = None
 cmakeSeparator = None

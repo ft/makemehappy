@@ -37,7 +37,7 @@ def merge(a, b):
     return {**a, **b}
 
 def mergeStack(data):
-    return reduce(merge, list(reversed(data)))
+    return reduce(merge, data)
 
 class SourceStack(YamlStack):
     def __init__(self, log, desc, *lst):
