@@ -1,4 +1,5 @@
 import datetime
+import fnmatch
 import math
 import os
 import yaml
@@ -162,6 +163,16 @@ def getSource(dep, src):
 
     return tmp
 
+def revisionOverride(cfg, mod):
+    lst = cfg.allOverrides()
+    for patterns in lst:
+        for pattern in patterns:
+            if (fnmatch.fnmatch(mod, pattern)):
+                if ('revision' in patterns[pattern]):
+                    return patterns[pattern]['revision']
+                # TODO: Support things like use-main-branch
+    return None
+
 class InvalidRepositoryType(Exception):
     pass
 
@@ -173,6 +184,11 @@ def fetch(cfg, log, src, st, trace):
         return trace
 
     for dep in st.data:
+        rover = revisionOverride(cfg, dep['name'])
+        if (rover != None):
+            log.info("Revision Override for {} to {}"
+                     .format(dep['name'], rover))
+            dep['revision'] = rover
         if ('revision' not in dep):
             log.info('Module {} does not specify a revision'
                      .format(dep['name']))

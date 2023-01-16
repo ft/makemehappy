@@ -145,3 +145,11 @@ class ConfigStack(YamlStack):
 
     def allBuildConfigs(self):
         return queryItem(self.data, 'buildconfigs')
+
+    def allOverrides(self):
+        rv = []
+        item = 'revision-overrides'
+        for layer in self.data:
+            if item in layer:
+                rv += [ layer[item] ]
+        return rv

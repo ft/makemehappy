@@ -120,7 +120,8 @@ Can be a list of strings or a string.  The default is
 Which will use "main" if it exists and if not it uses "master" if it exists;
 otherwise mmh should signal an error. Any particular string value needs to
 exist as a branch outright.
-** TODO Allow config to override module revision specs
+** ACTIVE Allow config to override module revision specs
+- State "ACTIVE"     from "TODO"       [2023-01-16 Mon 04:23]
 
 revision-overrides:
   *foo*:
