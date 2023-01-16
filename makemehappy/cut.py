@@ -163,15 +163,50 @@ def getSource(dep, src):
 
     return tmp
 
-def revisionOverride(cfg, mod):
+def revisionOverride(cfg, src, mod):
     lst = cfg.allOverrides()
+    # TODO: Is this the correct order with respect to layers and multiple
+    #       patterns that could match?
     for patterns in lst:
         for pattern in patterns:
             if (fnmatch.fnmatch(mod, pattern)):
                 if ('revision' in patterns[pattern]):
                     return patterns[pattern]['revision']
-                # TODO: Support things like use-main-branch
+                elif ('use-main-branch' in patterns[pattern] and
+                      patterns[pattern]['use-main-branch'] == True):
+                    s = src.lookup(mod)
+                    m = s['main']
+                    if (isinstance(m, str)):
+                        return [ m ]
+                    return m
     return None
+
+def gitRemoteHasBranch(rev):
+    rc = mmh.devnullProcess(['git', 'rev-parse', '--verify', 'origin/' + rev])
+    return (rc == 0)
+
+def fetchCheckout(cfg, log, mod, rev):
+    revision = None
+    if (isinstance(rev, list)):
+        for branch in rev:
+            if (gitRemoteHasBranch(branch)):
+                log.info('Using main branch: {} for module {}'
+                         .format(branch, mod))
+                revision = branch
+                break
+        if (revision == None):
+            log.error("Could not determine main branch: {} for module {}!"
+                      .format(rev, mod))
+            return None
+    else:
+        revision = rev
+
+    rc = mmh.loggedProcess(cfg, log, ['git', 'checkout', revision])
+    if (rc != 0):
+        log.error("Failed to switch to revision {} for module {}!"
+                  .format(revision, mod))
+        return None
+    return revision
 
 class InvalidRepositoryType(Exception):
     pass
@@ -184,7 +219,7 @@ def fetch(cfg, log, src, st, trace):
         return trace
 
     for dep in st.data:
-        rover = revisionOverride(cfg, dep['name'])
+        rover = revisionOverride(cfg, src, dep['name'])
         if (rover != None):
             log.info("Revision Override for {} to {}"
                      .format(dep['name'], rover))
@@ -224,12 +259,11 @@ def fetch(cfg, log, src, st, trace):
             # Check out the requested revision
             olddir = os.getcwd()
             os.chdir(p)
-            rc = mmh.loggedProcess(cfg, log, ['git', 'checkout', dep['revision']])
-            os.chdir(olddir)
-            if (rc != 0):
-                log.error("Failed to switch to revision {} for module {}!"
-                          .format(dep['revision'], dep['name']))
+            rev = fetchCheckout(cfg, log, dep['name'], dep['revision'])
+            if (rev == None):
                 return False
+            dep['revision'] = rev
+            os.chdir(olddir)
         else:
             raise(InvalidRepositoryType(source))
 

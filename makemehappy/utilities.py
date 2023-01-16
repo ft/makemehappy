@@ -84,6 +84,13 @@ def loggedProcess(cfg, log, cmd):
     rc = subprocess.run(cmd)
     return rc.returncode
 
+def devnullProcess(cmd):
+    rc = subprocess.run(cmd,
+                        stdout = open(os.devnull, "w"),
+                        stderr = subprocess.STDOUT)
+    return rc.returncode
+
+
 def starPattern(s):
     return '*' in s
 
