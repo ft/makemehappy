@@ -266,6 +266,8 @@ _makemehappy() {
                '(-p --preserve)'{-p,--preserve}'[preserve build root instead of deleting it]' \
                '(-Q --query)'{-Q,--query}'[query module build information]:mmh query:__makemehappy-queries' \
                '(-q --quiet)'{-q,--quiet}'[disable informational output]' \
+               '(-r --revision)'{-r,--revision}'[specify revision override]:revision override:' \
+               '(-c --config)'{-c,--config}'[specify additional configuration file]:configuration file:_path_files' \
                '(-s --source)'{-s,--source}'[specify additional source definition]:source definition file:_path_files' \
                '(-S --succeed)'{-S,--succeed}'[force successful termination]' \
                '(-T --toolchains)'{-T,--toolchains}'[select toolchains to use]:toolchain:__makemehappy-toolchains' \
