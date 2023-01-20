@@ -39,6 +39,24 @@ def merge(a, b):
 def mergeStack(data):
     return reduce(merge, data)
 
+def findByName(lst, name):
+    for i, d in enumerate(lst):
+        if ('name' in d and d['name'] == name):
+            return i
+    return None
+
+def mergeByName(a, b):
+    for item in b:
+        idx = findByName(a, item['name'])
+        if (idx == None):
+            a.append(item)
+        else:
+            a[idx] = {**a[idx], **item}
+    return a
+
+def mergeLODbyName(data):
+    return reduce(mergeByName, data)
+
 class SourceStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
@@ -88,68 +106,95 @@ class SourceStack(YamlStack):
 
         return data
 
-def queryItem(data, item):
-        rv = []
-        for layer in data:
-            if item in layer:
-                rv.extend(layer[item])
-        rv = list(set(rv))
-        rv.sort()
-        return rv
-
-def queryToolchain(data, item):
-    rv = []
-    for layer in data:
-        if 'toolchains' in layer:
-            rv.extend(list(x[item] for x in layer['toolchains'] if item in x))
-    rv = list(set(mmh.flatten(rv)))
-    rv.sort()
-    return rv
-
 class NoSourceData(Exception):
     pass
 
 class UnknownConfigItem(Exception):
     pass
 
+class UnknownToolchain(Exception):
+    pass
+
 class ConfigStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
+        self.mergeDicts = [ 'revision-overrides' ]
+        self.mergeLists = [ 'buildtools', 'buildconfigs' ]
+        self.mergeLODbyName = [ 'toolchains' ]
 
     def lookup(self, needle):
         if (self.data == False):
             raise(NoConfigData())
 
-        for slice in self.data:
-            if needle in slice:
-                return slice[needle]
+        if (needle in self.mergeDicts):
+            data = []
+            for slice in self.data:
+                if (needle in slice):
+                    data += [ slice[needle] ]
 
-        raise(UnknownConfigItem(needle))
+            if (len(data) == 0):
+                raise(UnknownConfigItem(needle))
+
+            rv = mergeStack(data)
+            return rv
+        elif (needle in self.mergeLODbyName):
+            data = []
+            for slice in self.data:
+                if (needle in slice):
+                    data += [ slice[needle] ]
+
+            if (len(data) == 0):
+                raise(UnknownConfigItem(needle))
+
+            rv = mergeLODbyName(data)
+            return rv
+        elif (needle in self.mergeLists):
+            lst = []
+            for slice in self.data:
+                if (needle in slice):
+                    lst += slice[needle]
+            lst = list(set(lst))
+            lst.sort()
+            return lst
+        else:
+            for slice in self.data:
+                if (needle in slice):
+                    return slice[needle]
+            raise(UnknownConfigItem(needle))
 
     def fetchToolchain(self, name):
-        for layer in self.data:
-            if 'toolchains' in layer:
-                for tc in layer['toolchains']:
-                    if (tc['name'] == name):
-                        return tc
-        raise(UnknownConfigItem(name))
+        lst = self.lookup('toolchains')
+        for tc in lst:
+            if (tc['name'] == name):
+                return tc
+        raise(UnknownToolchain(name))
+
+    def queryToolchain(self, key):
+        rv = []
+        for item in self.lookup('toolchains'):
+            if (isinstance(item[key], list)):
+                rv += item[key]
+            else:
+                rv += [ item[key] ]
+        rv.sort()
+        return rv
+
+    def querySorted(self, key):
+        rv = self.lookup(key)
+        rv.sort()
+        return rv
 
     def allToolchains(self):
-        return queryToolchain(self.data, 'name')
+        return self.queryToolchain('name')
 
     def allArchitectures(self):
-        return queryToolchain(self.data, 'architecture')
+        return self.queryToolchain('architecture')
 
     def allBuildtools(self):
-        return queryItem(self.data, 'buildtools')
+        return self.querySorted('buildtools')
 
     def allBuildConfigs(self):
-        return queryItem(self.data, 'buildconfigs')
+        return self.querySorted('buildconfigs')
 
     def allOverrides(self):
-        rv = []
-        item = 'revision-overrides'
-        for layer in self.data:
-            if item in layer:
-                rv += [ layer[item] ]
-        return rv
+        return self.lookup('revision-overrides')
