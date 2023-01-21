@@ -44,15 +44,16 @@
 
 ** Diffstat:
 
-    ROADMAP.org              | 251 +++++++++++++++++++++++++++++++++++----
-    _makemehappy             |   4 +-
+    ROADMAP.org              | 259 +++++++++++++++++++++++++++++++++++----
+    _makemehappy             |  63 +++++++++-
     data/sources.yaml        |  37 +++++-
-    makemehappy/cut.py       |  92 +++++++++++++-
-    makemehappy/utilities.py |   7 ++
-    makemehappy/yamlstack.py | 187 +++++++++++++++++++----------
+    makemehappy/build.py     | 103 ++++++----------
+    makemehappy/cut.py       | 106 ++++++++++++++--
+    makemehappy/utilities.py |  18 ++-
+    makemehappy/yamlstack.py | 187 ++++++++++++++++++----------
     makemehappy/zephyr.py    |  37 ++++++
-    mmh.in                   | 122 +++++++++++++------
-    8 files changed, 602 insertions(+), 135 deletions(-)
+    mmh.in                   | 210 +++++++++++++++++++++----------
+    9 files changed, 781 insertions(+), 239 deletions(-)
 
 
 * v0.14 → v0.15 (released 2022-12-19):
