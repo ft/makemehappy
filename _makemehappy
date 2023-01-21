@@ -159,6 +159,14 @@ _makemehappy-generate-toplevel() {
     __makemehappy-nothing-else
 }
 
+_makemehappy-prepare() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Completely prepare module build tree"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
 _makemehappy-reset-setup() {
     if [[ -n ${makemehappy_describe} ]]; then
         print "Reset build-tree meta-data"

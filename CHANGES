@@ -29,6 +29,8 @@
   specifying a fixed revision or the use of a module's development branch.
 - Implement revision-overrides by --revision option on the command line.
 - Implement foo/bar/*/baz style instance filters for module builds.
+- Add ‘prepare’ subcommand that completely initialises a build tree, ready to
+  be used by ‘run-instance’.
 
 ** Bugfixes
 

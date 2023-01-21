@@ -190,6 +190,11 @@ ap_top = subp.add_parser(
 
 ap_top.set_defaults(sub_command = 'generate-toplevel')
 
+# prepare
+ap_prepare = subp.add_parser(
+    'prepare',
+    help = 'Generate toplevel of module build-tree')
+
 # reset-setup
 ap_reset = subp.add_parser(
     'reset-setup', aliases = [ 'reset' ],
@@ -481,6 +486,30 @@ def requireModuleDefinition(args):
         mmh.warn("Module definition does not exist: {}".format(args.module))
         mmh_exit(1)
 
+def do_prepare():
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+    cut.loadModule()
+    cut.cliAdjust(toolchains    = cmdargs.toolchains,
+                  architectures = cmdargs.architectures,
+                  buildconfigs  = cmdargs.buildconfigs,
+                  buildtools    = cmdargs.buildtools)
+    cut.loadSources()
+    cut.initRoot(version, cmdargs)
+    if cmdargs.log_to_file is True and cmdargs.log_file is None:
+        fn = cut.root.name() + '.log'
+        print('Logging to: {}'.format(fn))
+        log.handlers[0].setFile(fn)
+    cut.populateRoot()
+    cut.linkIntoRoot()
+    cut.changeToRoot()
+    cut.loadDependencies()
+    cut.cmakeIntoYAML()
+    cut.generateToplevel()
+    return cut
+
 if (cmdargs.sub_command == "build-tree-init"):
     requireModuleDefinition(cmdargs)
     cfg.load()
@@ -556,29 +585,12 @@ elif (cmdargs.sub_command == "run-instance"):
                  .format(cut.countFailed(), cut.countBuilds()))
         commandReturnValue = 1
 
-elif (cmdargs.sub_command == "build"):
-    requireModuleDefinition(cmdargs)
+elif (cmdargs.sub_command == "prepare"):
+    do_prepare()
 
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    cut.loadModule()
-    cut.cliAdjust(toolchains    = cmdargs.toolchains,
-                  architectures = cmdargs.architectures,
-                  buildconfigs  = cmdargs.buildconfigs,
-                  buildtools    = cmdargs.buildtools)
-    cut.loadSources()
-    cut.initRoot(version, cmdargs)
-    if cmdargs.log_to_file is True and cmdargs.log_file is None:
-        fn = cut.root.name() + '.log'
-        print('Logging to: {}'.format(fn))
-        log.handlers[0].setFile(fn)
-    cut.populateRoot()
-    cut.linkIntoRoot()
-    cut.changeToRoot()
-    cut.loadDependencies()
-    cut.cmakeIntoYAML()
-    cut.generateToplevel()
+elif (cmdargs.sub_command == "build"):
+    cut = do_prepare()
+
     cut.build()
 
     if (cmdargs.preserve == False):
