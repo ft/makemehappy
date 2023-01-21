@@ -214,11 +214,6 @@ class ConfigStack(YamlStack):
         rv.sort()
         return rv
 
-    def querySorted(self, key):
-        rv = self.lookup(key)
-        rv.sort()
-        return rv
-
     def allToolchains(self):
         return self.queryToolchain('name')
 
@@ -226,10 +221,10 @@ class ConfigStack(YamlStack):
         return self.queryToolchain('architecture')
 
     def allBuildtools(self):
-        return self.querySorted('buildtools')
+        return self.lookup('buildtools')
 
     def allBuildConfigs(self):
-        return self.querySorted('buildconfigs')
+        return self.lookup('buildconfigs')
 
     def allOverrides(self):
         return self.lookup('revision-overrides')
