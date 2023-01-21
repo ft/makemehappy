@@ -5,70 +5,11 @@ from functools import reduce
 
 import makemehappy.utilities as mmh
 
-def merge(a, b):
-    return {**a, **b}
-
-def mergeStack(data):
-    return reduce(merge, data)
-
 def findByName(lst, name):
     for i, d in enumerate(lst):
         if ('name' in d and d['name'] == name):
             return i
     return None
-
-def mergeByName(a, b):
-    for item in b:
-        idx = findByName(a, item['name'])
-        if (idx == None):
-            a.append(item)
-        else:
-            a[idx] = {**a[idx], **item}
-    return a
-
-def mergeLODbyName(data):
-    return reduce(mergeByName, data)
-
-def processRemoveList(data, layer, needle):
-    if ('remove' not in layer):
-        return data
-    if (needle not in layer['remove']):
-        return data
-    return list(filter(lambda x: (x not in layer['remove'][needle]), data))
-
-def np(item, rem):
-    return (item['name'] not in rem)
-
-def processRemoveLOD(data, layer, needle):
-    if ('remove' not in layer):
-        return data
-    if (needle not in layer['remove']):
-        return data
-    return list(map(lambda sublist: \
-                    list(filter(lambda item: np(item, layer['remove'][needle]),
-                                sublist)),
-                    data))
-
-def processRemoveDict(data, layer, needle):
-    if ('remove' not in layer):
-        return data
-    if (needle not in layer['remove']):
-        return data
-    lst = []
-    for item in data:
-        for pat in layer['remove'][needle]:
-            del(item[pat])
-        lst += [ item ]
-    return lst
-
-def processRemoveSources(data, layer, needle):
-    if ('remove' not in layer):
-        return data
-    if ('modules' not in layer['remove']):
-        return data
-    if (needle not in layer['remove']['modules']):
-        return data
-    return []
 
 class YamlStack:
     def __init__(self, log, desc, *lst):
@@ -81,8 +22,6 @@ class YamlStack:
         self.data.insert(0, layer)
 
     def push(self, item):
-        # This is a little noisy, fileload() will suffice, I think.
-        #self.log.info("{}: {}".format(self.desc, item))
         self.files = [ item ] + self.files
 
     def fileload(self, fn):
@@ -156,52 +95,65 @@ class UnknownToolchain(Exception):
 class ConfigStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
-        self.mergeDicts = []
+        self.merged = None
+        self.remove = [ 'definition', 'root', 'remove' ]
         self.mergeLists = [ 'buildtools', 'buildconfigs' ]
         self.mergeLODbyName = [ 'revision-overrides', 'toolchains' ]
+
+    def merge(self):
+        if (self.data == None):
+            raise(NoConfigData())
+
+        # The top level data structure is a dict. These are predefined types as
+        # lists, so we're populating them here. Toolchains and overrides are
+        # merged by the ‘name’ properties of their dictionary items. The tools
+        # and configs are merged on string values. These lists also support
+        # removal by the top-level ‘remove’ key, using the same matching. With
+        # other top-level keys, the one from the highest priority layer wins.
+        self.merged = { 'buildtools':         [],
+                        'buildconfigs':       [],
+                        'toolchains':         [],
+                        'revision-overrides': [] }
+        slices = list(copy.deepcopy(reversed(self.data)))
+        for slice in slices:
+            if ('remove' in slice):
+                for cat in slice['remove']:
+                    if (cat in self.mergeLists):
+                        self.merged[cat] = list(
+                            filter(lambda x: (x not in slice['remove'][cat]),
+                                   self.merged[cat]))
+                    elif (cat in self.mergeLODbyName):
+                        self.merged[cat] = list(
+                            filter(lambda x: (x['name'] not in slice['remove'][cat]),
+                                   self.merged[cat]))
+            for key in slice:
+                if (key in self.mergeLists):
+                    self.merged[key] = list(set(slice[key] + self.merged[key]))
+                elif (key in self.mergeLODbyName):
+                    # We're reversing here for correct order in revision-
+                    # overrides, since those names can be patterns. With the
+                    # other keys of this type, order does not matter.
+                    for entry in reversed(slice[key]):
+                        idx = findByName(self.merged[key], entry['name'])
+                        if (idx != None):
+                            new = { **self.merged[key][idx], **entry }
+                            del(self.merged[key][idx])
+                        else:
+                            new = entry
+                        self.merged[key].insert(0, new)
+                else:
+                    self.merged[key] = slice[key]
+
+        for rem in self.remove:
+            if (rem in self.merged):
+                del(self.merged[rem])
 
     def lookup(self, needle):
         if (self.data == None):
             raise(NoConfigData())
-
-        if (needle in self.mergeDicts):
-            data = []
-            for slice in self.data:
-                data = processRemoveDict(data, slice, needle)
-                if (needle in slice):
-                    data += [ slice[needle] ]
-
-            if (len(data) == 0):
-                raise(UnknownConfigItem(needle))
-
-            rv = mergeStack(data)
-            return rv
-        elif (needle in self.mergeLODbyName):
-            data = []
-            for slice in self.data:
-                data = processRemoveLOD(data, slice, needle)
-                if (needle in slice):
-                    data += [ slice[needle] ]
-
-            if (len(data) == 0):
-                raise(UnknownConfigItem(needle))
-
-            rv = mergeLODbyName(data)
-            return rv
-        elif (needle in self.mergeLists):
-            lst = []
-            for slice in self.data:
-                lst = processRemoveList(lst, slice, needle)
-                if (needle in slice):
-                    lst += slice[needle]
-            lst = list(set(lst))
-            lst.sort()
-            return lst
-        else:
-            for slice in self.data:
-                if (needle in slice):
-                    return slice[needle]
-            raise(UnknownConfigItem(needle))
+        if (needle in self.merged):
+            return self.merged[needle]
+        raise(UnknownConfigItem(needle))
 
     def fetchToolchain(self, name):
         lst = self.lookup('toolchains')

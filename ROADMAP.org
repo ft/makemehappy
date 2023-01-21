@@ -9,7 +9,7 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** TODO YAML Stacks should be merged after loading, not on every lookup
+** DONE YAML Stacks should be merged after loading, not on every lookup
 The overhead didn't use to be all that bad, but with the additional features,
 it is becoming noticeable.
 ** TODO Make module builds allow for "foo/bar/baz/quux" type build specs

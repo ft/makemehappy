@@ -419,6 +419,8 @@ def adjustConfig(cfg, args):
         adjustments = adjustments + 1
     if (len(args.revision) > 0):
         layer['revision-overrides'] = []
+        if ('remove' not in layer):
+            layer['remove'] = {}
         for rev in reversed(args.revision):
             try:
                 (pat,value) = rev.split('=', 1)
@@ -427,6 +429,9 @@ def adjustConfig(cfg, args):
                 else:
                     new = { 'name': pat, 'revision': value }
                 layer['revision-overrides'].append(new)
+                if ('revision-overrides' not in layer['remove']):
+                    layer['remove']['revision-overrides'] = []
+                layer['remove']['revision-overrides'].append(pat)
             except ValueError:
                 log.error("cmdline: Invalid revision-spec: {}"
                           .format(rev))
@@ -439,6 +444,7 @@ def adjustConfig(cfg, args):
 if cmdargs.query is not None:
     cfg.load()
     adjustConfig(cfg, cmdargs)
+    cfg.merge()
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     if (os.path.isfile(cmdargs.module) == True):
         cut.loadModule()
@@ -467,6 +473,7 @@ if (cmdargs.sub_command == "build-tree-init"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
+    cfg.merge()
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.initRoot(version, cmdargs)
     cut.populateRoot()
@@ -476,6 +483,7 @@ elif (cmdargs.sub_command == "fetch-dependencies"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
+    cfg.merge()
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.initRoot(version, cmdargs)
     cut.loadModule()
@@ -491,6 +499,7 @@ elif (cmdargs.sub_command == "generate-toplevel"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
+    cfg.merge()
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.initRoot(version, cmdargs)
     cut.loadModule()
@@ -516,6 +525,7 @@ elif (cmdargs.sub_command == "reset-setup"):
 elif (cmdargs.sub_command == "run-instance"):
     if (len(cmdargs.instances) >= 1):
         cfg.load()
+        cfg.merge()
         for d in cmdargs.instances:
             build.runInstance(cfg, log, cmdargs, d)
         mmh_exit(0)
@@ -523,6 +533,7 @@ elif (cmdargs.sub_command == "run-instance"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
+    cfg.merge()
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.initRoot(version, cmdargs)
     cut.loadModule()
@@ -549,6 +560,7 @@ elif (cmdargs.sub_command == "build"):
 
     cfg.load()
     adjustConfig(cfg, cmdargs)
+    cfg.merge()
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.loadModule()
     cut.cliAdjust(toolchains    = cmdargs.toolchains,
@@ -635,6 +647,7 @@ elif (cmdargs.sub_command == "show-source"):
 
 elif (cmdargs.sub_command == "download-source"):
     cfg.load()
+    cfg.merge()
     src.load()
     src.merge()
 
@@ -646,6 +659,7 @@ elif (cmdargs.sub_command == "download-source"):
 elif (cmdargs.sub_command == "download-sources"):
     destination = cmdargs.destination
     cfg.load()
+    cfg.merge()
     src.load()
     src.merge()
     loaded = {}
@@ -698,6 +712,7 @@ elif (cmdargs.sub_command == "system"):
 
     cfg.load()
     adjustConfig(cfg, cmdargs)
+    cfg.merge()
     try:
         system = ms.System(log, version, cfg, cmdargs);
         if cmdargs.log_to_file is True and cmdargs.log_file is None:
