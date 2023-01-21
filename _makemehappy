@@ -72,6 +72,20 @@ __makemehappy-queries () {
               makemehappy_query_keywords
 }
 
+__makemehappy-module-instances () {
+    local expl
+    local -a instances ignored
+
+    if [[ -n $mmhdir ]]; then
+        ignored=(${line:#${words[CURRENT]}})
+        instances=( ${${(f)"$(command mmh -q -d "$mmhdir" list)"}%%:*} )
+        _wanted module-instances expl 'module instances' \
+                compadd -F ignored "${instances[@]}"
+        return
+    fi
+    _message -e 'list-instances requires --directory'
+}
+
 __makemehappy-system-instances () {
     local expl
     local -a instances ignored
@@ -193,15 +207,10 @@ _makemehappy-run-instance() {
     local curcontext=$curcontext state line ret=1
 
     _arguments -C -s -w : \
-               '*::: :->args' \
+               '*::: :__makemehappy-module-instances' \
                '(-h --help)'{-h,--help}'[display help message]' \
                '(-a --all-instances)'{-a,--all-instances}'[Force building all system instances]' \
         && ret=0
-
-    if [[ $state == args ]]; then
-        _message -e instance-filter
-    fi
-    return ret
 }
 
 _makemehappy-show-result() {
@@ -290,6 +299,12 @@ _makemehappy() {
     local mode
     local makemehappycommand
     local makemehappy_describe
+    local -i dirindex=${words[(I)-d|--directory]}
+    local mmhdir
+
+    if (( dirindex )); then
+        mmhdir=${words[dirindex + 1]}
+    fi
 
     _arguments -C : \
                '(-A --architectures)'{-A,--architectures}'[select architectures to use]:architecture:__makemehappy-architectures' \
