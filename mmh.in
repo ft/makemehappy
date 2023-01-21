@@ -202,6 +202,13 @@ ap_reset = subp.add_parser(
 
 ap_reset.set_defaults(sub_command = 'reset-setup')
 
+# list-instances
+ap_list = subp.add_parser(
+    'list-instances', aliases = [ 'list' ],
+    help = 'List instances available in build-tree')
+
+ap_list.set_defaults(sub_command = 'list-instances')
+
 # run-instance
 ap_run = subp.add_parser(
     'run-instance', aliases = [ 'run' ],
@@ -559,6 +566,16 @@ elif (cmdargs.sub_command == "reset-setup"):
     fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
     data = { 'version': version }
     mmh.dump(fn, data)
+
+elif (cmdargs.sub_command == "list-instances"):
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+    cut.initRoot(version, cmdargs)
+    cut.loadModule()
+    for inst in sorted(cut.listInstances()):
+        print(inst)
 
 elif (cmdargs.sub_command == "run-instance"):
     requireModuleDefinition(cmdargs)

@@ -278,8 +278,7 @@ def build(cfg, log, args, stats, ext, root, instance):
      maybeInstall(cfg, log, args, stats, instance))
     os.chdir(root)
 
-def allofthem(cfg, log, mod, ext, args):
-    olddir = os.getcwd()
+def listInstances(log, mod, args):
     if (mod.moduleType == 'zephyr'):
         instances = generateZephyrInstances(log, mod)
     else:
@@ -292,6 +291,11 @@ def allofthem(cfg, log, mod, ext, args):
                               instances))
         instances = filtered
 
+    return instances
+
+def allofthem(cfg, log, mod, ext, args):
+    olddir = os.getcwd()
+    instances = listInstances(log, mod, args)
     log.info('Using {} build-instances:'.format(len(instances)))
     for instance in instances:
         log.info('    {}'.format(instanceName(instance)))

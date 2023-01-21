@@ -800,6 +800,10 @@ class CodeUnderTest:
                                  self.deporder)
         self.toplevel.generateToplevel()
 
+    def listInstances(self):
+        return list(map(build.instanceName,
+                        build.listInstances(self.log, self, self.args)))
+
     def build(self):
         build.allofthem(self.cfg, self.log, self, self.extensions, self.args)
 

@@ -10,6 +10,7 @@ _makemehappy_aliasmap=(
     dump      dump-description
     get       download-source
     init      build-tree-init
+    list      list-instances
     reset     reset-setup
     run       run-instance
     result    show-result
@@ -154,6 +155,14 @@ _makemehappy-fetch-dependencies() {
 _makemehappy-generate-toplevel() {
     if [[ -n ${makemehappy_describe} ]]; then
         print "Generate toplevel buildsystem for a module build tree"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-list-instances() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "List available build instances in module build tree"
         return
     fi
     __makemehappy-nothing-else

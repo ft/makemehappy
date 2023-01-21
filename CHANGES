@@ -31,6 +31,7 @@
 - Implement foo/bar/*/baz style instance filters for module builds.
 - Add ‘prepare’ subcommand that completely initialises a build tree, ready to
   be used by ‘run-instance’.
+- Add ‘list-instances’ command to list module build instances.
 
 ** Bugfixes
 
