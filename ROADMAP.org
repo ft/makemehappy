@@ -9,45 +9,13 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** CANCELED ‘toolchains’ configuration should be a dict of dicts
-I'm not sure if it's worth fixing this now. Only if it's straight-forward, I
-guess.
-
-This is not happening, because we've allowed module.yaml file to override
-toolchains in the past, and I am not breaking that.
-** DONE Enable removing parameters from YAML Stack data
-It's unfortunate, that this is not possible at the moment, particularly for
-toolchains, but also for modules and the planned revision-overrides. It's
-probably easy to add removers the lists-of-strings and keys-of-dicts, if it's
-just in the first level of the data-structure.
-
-Removals are applied when merging the stacked data-structre and happens just
-before data from a higher level file is merged.
-
-- [X] config.yaml
-- [X] sources.yaml
-
-#+begin_src yaml
-# In config.yaml:
-remove:
-  toolchains:
-    - clang
-    - ti-c2000
-  revision-overrides:
-    - zephyr-kernel
-    - ufw
-  buildconfigs:
-    - minsizerel
-    - relwithdebug
-  buildtools:
-    - make
-
-# In sources.yaml
-remove:
-  modules:
-    - newlib
-    - mcuboot
-#+end_src
+** TODO YAML Stacks should be merged after loading, not on every lookup
+The overhead didn't use to be all that bad, but with the additional features,
+it is becoming noticeable.
+** TODO Make module builds allow for "foo/bar/baz/quux" type build specs
+This is similar to what system builds allow. The UI experience is kind of nice.
+** TODO Add revision-overrides subcommand to inspect active revisions
+For a module, all modules, with or without matched override.
 ** TODO Implement version dependency judgements
 
 - Major version mismatch: Error
@@ -105,51 +73,6 @@ With --thorough:
 :ID:       70cbcd25-8887-4036-a5d9-19d8a4075688
 :CREATED:  [2022-06-09 Do 09:45]
 :END:
-** DONE Config Extensions
-CLOSED: [2023-01-14 Sat 18:09]
-- State "DONE"       from "TODO"       [2023-01-14 Sat 18:09]
-
-Read Configs with --config=foo
-
-Look in datapath, etcpath, homepath, and localpath (current working dir) and
-put them on top of the config stack.
-
-This should also work with the sources stack, via --sources=bar.
-** DONE Specify "main" branch in sources.yaml
-CLOSED: [2023-01-15 Sun 22:49]
-
-- State "DONE"       from "TODO"       [2023-01-15 Sun 22:49]
-Can be a list of strings or a string.  The default is
-
-  [ 'main', 'master' ]
-
-Which will use "main" if it exists and if not it uses "master" if it exists;
-otherwise mmh should signal an error. Any particular string value needs to
-exist as a branch outright.
-** ACTIVE Allow config to override module revision specs
-- State "ACTIVE"     from "TODO"       [2023-01-16 Mon 04:23]
-
-TODO: Check pattern processing order with multiple matching overrides from
-      multiple sources.
-
-revision-overrides:
-  *foo*:
-    revision: v1.0.0
-  *bar*:
-    use-main-branch: true
-
-Would force all modules that match "*foo*" to use the "v1.0.0" revision instead
-of the revision specified in module.yaml dependency definitions.
-
-Modules matching "*bar*" will use the "main" branch configured in its source
-definition.
-
-This should also work from the command line:
-
-  mmh --revision "*foo*=v1.0.0" --revision "*bar*=!main" build
-
-…where "!KEYWORD" is a special pattern and "main" would be equivalent to
-setting "use-main-branch: true" in a configuration file.
 ** TODO Allow sources.yaml to specify deprecated module versions
 
 Example:
@@ -160,9 +83,6 @@ modules:
 
 Violating deprecations should be warnings by default.
 
-** DONE Allow "west" key in sources spec to specify a zephyr module's west name
-CLOSED: [2023-01-15 Sun 23:48]
-- State "DONE"       from "TODO"       [2023-01-15 Sun 23:48]
 ** TODO Allow third-party zephyr modules to have a makemehappy.yaml file
 This can be used to automatically match module versions with zephyr-kernel
 versions.
@@ -182,9 +102,6 @@ kernel-map:
   v3.1.0: v2.1.0
   # If we don't know what to use based on the table, use this.
   fallback: master
-** DONE Get zephyr module dependency from west.yaml from zephyr-kernel repo
-CLOSED: [2023-01-15 Sun 22:42]
-- State "DONE"       from "TODO"       [2023-01-15 Sun 22:42]
 ** TODO Add a way to load extensions (like toolchainpath) in system.yaml
 
 From subdirectories, that have modules with a module.yaml. At the moment, only
@@ -225,6 +142,85 @@ All important parameters are encoded in the build-directory name:
 
 Note that the build directories are encoded differently nowadays.
 ** TODO Flesh out user manual
+** DONE Config Extensions
+CLOSED: [2023-01-14 Sat 18:09]
+- State "DONE"       from "TODO"       [2023-01-14 Sat 18:09]
+
+Read Configs with --config=foo
+
+Look in datapath, etcpath, homepath, and localpath (current working dir) and
+put them on top of the config stack.
+
+This should also work with the sources stack, via --sources=bar.
+** DONE Specify "main" branch in sources.yaml
+CLOSED: [2023-01-15 Sun 22:49]
+
+- State "DONE"       from "TODO"       [2023-01-15 Sun 22:49]
+Can be a list of strings or a string.  The default is
+
+  [ 'main', 'master' ]
+
+Which will use "main" if it exists and if not it uses "master" if it exists;
+otherwise mmh should signal an error. Any particular string value needs to
+exist as a branch outright.
+** DONE Allow config to override module revision specs
+revision-overrides:
+  - name: "*foo*"
+    revision: v1.0.0
+  - name: "*bar*"
+    use-main-branch: true
+
+Would force all modules that match "*foo*" to use the "v1.0.0" revision instead
+of the revision specified in module.yaml dependency definitions.
+
+Modules matching "*bar*" will use the "main" branch configured in its source
+definition.
+
+This should also work from the command line:
+
+  mmh --revision "*foo*=v1.0.0" --revision "*bar*=!main" build
+
+…where "!KEYWORD" is a special pattern and "main" would be equivalent to
+setting "use-main-branch: true" in a configuration file.
+** DONE Allow "west" key in sources spec to specify a zephyr module's west name
+CLOSED: [2023-01-15 Sun 23:48]
+- State "DONE"       from "TODO"       [2023-01-15 Sun 23:48]
+** DONE Enable removing parameters from YAML Stack data
+It's unfortunate, that this is not possible at the moment, particularly for
+toolchains, but also for modules and the planned revision-overrides. It's
+probably easy to add removers the lists-of-strings and keys-of-dicts, if it's
+just in the first level of the data-structure.
+
+Removals are applied when merging the stacked data-structre and happens just
+before data from a higher level file is merged.
+
+- [X] config.yaml
+- [X] sources.yaml
+
+#+begin_src yaml
+# In config.yaml:
+remove:
+  toolchains:
+    - clang
+    - ti-c2000
+  revision-overrides:
+    - zephyr-kernel
+    - ufw
+  buildconfigs:
+    - minsizerel
+    - relwithdebug
+  buildtools:
+    - make
+
+# In sources.yaml
+remove:
+  modules:
+    - newlib
+    - mcuboot
+#+end_src
+** DONE Get zephyr module dependency from west.yaml from zephyr-kernel repo
+CLOSED: [2023-01-15 Sun 22:42]
+- State "DONE"       from "TODO"       [2023-01-15 Sun 22:42]
 ** DONE system: Build many parameter combinations for a system-build
 In normal operation, mmh tries to build  a module's code with as many parameter
 combinations as possible (toolchain, build-cfg, build-tool etc). To do this, it
@@ -420,9 +416,13 @@ modules into the dependency chain of other modules, making it possible to
 develop modules side by side.
 
 Symlink type was implemented pre-v0.10.
+** CANCELED ‘toolchains’ configuration should be a dict of dicts
+I'm not sure if it's worth fixing this now. Only if it's straight-forward, I
+guess.
+
+This is not happening, because we've allowed module.yaml file to override
+toolchains in the past, and I am not breaking that.
 * Wishlist
-** TODO Make module builds allow for "foo/bar/baz/quux" type build specs
-This is similar to what system builds allow. The UI experience is kind of nice.
 ** TODO Allow for --single-instance with module builds as well
 This should be pretty straight forward, and useful.
 ** TODO Module type: nobuild
