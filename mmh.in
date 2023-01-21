@@ -623,6 +623,7 @@ elif (cmdargs.sub_command == "show-result"):
 
 elif (cmdargs.sub_command == "show-source"):
     src.load()
+    src.merge()
     names = cmdargs.modules
     if (len(names) == 0):
         names = src.allSources();
@@ -635,6 +636,7 @@ elif (cmdargs.sub_command == "show-source"):
 elif (cmdargs.sub_command == "download-source"):
     cfg.load()
     src.load()
+    src.merge()
 
     for module in cmdargs.modules:
         meta = src.lookup(module)
@@ -645,6 +647,7 @@ elif (cmdargs.sub_command == "download-sources"):
     destination = cmdargs.destination
     cfg.load()
     src.load()
+    src.merge()
     loaded = {}
     failed = {}
     for source in src.data:

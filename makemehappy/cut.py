@@ -693,6 +693,7 @@ class CodeUnderTest:
     def loadSources(self):
         self.log.info("Loading source definitions...")
         self.sources.load()
+        self.sources.merge()
 
     def initRoot(self, version, args):
         self.root = BuildRoot(log = self.log,

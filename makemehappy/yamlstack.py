@@ -1,3 +1,4 @@
+import copy
 import os
 
 from functools import reduce
@@ -74,7 +75,7 @@ class YamlStack:
         self.log = log
         self.desc = desc
         self.files = list(lst)
-        self.data = False
+        self.data = None
 
     def pushLayer(self, layer):
         self.data.insert(0, layer)
@@ -101,57 +102,47 @@ class UnknownModule(Exception):
 class SourceStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
+        self.merged = None
 
-    def load(self):
-        super(SourceStack, self).load()
-        for slice in self.data:
-            if not('modules' in slice):
-                continue
-            for module in slice['modules']:
-                if (not ('type' in slice['modules'][module])):
-                    slice['modules'][module]['type'] = 'git'
+    def merge(self):
+        if (self.data == None):
+            raise(NoSourceData())
+
+        # The top level data structure is a dict. With sources, we only care
+        # about the ‘modules’ and ‘remove’ keys. The merged dict will contain
+        # ‘modules’ only, processing the ‘remove’ key as we move up the layers.
+        self.merged = { 'modules': {} }
+        slices = copy.deepcopy(reversed(self.data))
+        for slice in slices:
+            if ('remove' in slice and 'modules' in slice['remove']):
+                for rem in slice['remove']['modules']:
+                    del(self.merged['modules'][rem])
+            if ('modules' in slice):
+                for mod in slice['modules']:
+                    if (mod in self.merged['modules']):
+                        self.merged['modules'][mod] = {
+                            **self.merged['modules'][mod],
+                            **slice['modules'][mod] }
+                    else:
+                        self.merged['modules'][mod] = slice['modules'][mod]
+
+        for module in self.merged['modules']:
+            if ('type' not in self.merged['modules'][module]):
+                self.merged['modules'][module]['type'] = 'git'
+            if ('main' not in self.merged['modules'][module]):
+                self.merged['modules'][module]['main'] = [ 'main', 'master' ]
 
     def allSources(self):
-        rv = []
-        if (self.data == False):
+        if (self.merged == None):
             raise(NoSourceData())
-
-        for slice in reversed(self.data):
-            if ('remove' in slice and 'modules' in slice['remove']):
-                rv = list(
-                    filter(lambda x: x not in slice['remove']['modules'], \
-                           rv))
-            if not('modules' in slice):
-                continue
-            for module in slice['modules']:
-                if (module in rv):
-                    continue
-                rv.append(module)
-
-        rv.sort()
-        return rv
+        return self.merged['modules'].keys()
 
     def lookup(self, needle):
-        if (self.data == False):
+        if (self.data == None):
             raise(NoSourceData())
-
-        data = []
-        for slice in reversed(self.data):
-            data = processRemoveSources(data, slice, needle)
-            if not('modules' in slice):
-                continue
-            if (needle in slice['modules']):
-                data += [ { needle: slice['modules'][needle] } ]
-
-        if (len(data) == 0):
-            raise(UnknownModule(needle))
-
-        data = mergeStack(map(lambda x: x[needle], data))
-
-        if ('main' not in data):
-            data['main'] = [ 'main', 'master' ]
-
-        return data
+        if (needle in self.merged['modules']):
+            return self.merged['modules'][needle]
+        raise(UnknownModule(needle))
 
 class NoSourceData(Exception):
     pass
@@ -170,7 +161,7 @@ class ConfigStack(YamlStack):
         self.mergeLODbyName = [ 'revision-overrides', 'toolchains' ]
 
     def lookup(self, needle):
-        if (self.data == False):
+        if (self.data == None):
             raise(NoConfigData())
 
         if (needle in self.mergeDicts):
