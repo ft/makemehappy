@@ -1,3 +1,4 @@
+import fnmatch
 import os
 import re
 import shutil
@@ -42,6 +43,11 @@ def generateInstances(log, mod):
     if ('install' in mod.moduleData):
         install = mod.moduleData['install']
 
+    if ('name' in mod.moduleData):
+        name = mod.moduleData['name']
+    else:
+        name = 'NoName'
+
     instances = []
     for tc in chains:
         if not(toolchainViable(mod.moduleData, tc)):
@@ -52,6 +58,7 @@ def generateInstances(log, mod):
                 add = (lambda a:
                     instances.append({'toolchain'   : maybeToolchain(tc),
                                       'architecture': a,
+                                      'name'        : name,
                                       'buildcfg'    : cfg,
                                       'buildtool'   : tool,
                                       'install'     : install,
@@ -106,10 +113,15 @@ def generateZephyrInstances(log, mod):
                             target['modules'] = []
                         if ('application' not in target):
                             target['application'] = None
+                        if ('name' in mod.moduleData):
+                            name = mod.moduleData['name']
+                        else:
+                            name = 'NoName'
                         instances.append(
                             { 'toolchain'   : tc,
                               'board'       : board,
                               'architecture': board,
+                              'name'        : name,
                               'application' : target['application'],
                               'modules'     : target['modules'],
                               'dtc-overlays': target['dtc-overlays'],
@@ -127,11 +139,15 @@ def instanceName(instance):
     if (isinstance(tc, dict)):
         tc = tc['name']
     if (instance['type'] == 'zephyr'):
-        tc = 'zephyr-' + tc
-    return "{}/{}/{}/{}".format(tc,
-                                instance['architecture'],
-                                instance['buildcfg'],
-                                instance['buildtool'])
+        t = 'zephyr'
+    else:
+        t = 'cmake'
+    return "{}/{}/{}/{}/{}/{}".format(t,
+                                      instance['architecture'],
+                                      instance['name'],
+                                      tc,
+                                      instance['buildcfg'],
+                                      instance['buildtool'])
 
 def instanceDirectory(stats, instance):
     stats.build(instance['toolchain'],
@@ -156,11 +172,6 @@ class UnknownModuleType(Exception):
 def findToolchainByExtension(ext, tc):
     return findToolchain(ext.toolchainPath(), tc)
 
-def instanceTag(instance):
-    return ('module/' +
-            instance['type'] + '/' +
-            instanceName(instance))
-
 def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     cmakeArgs = None
     if (args.cmake == None):
@@ -168,7 +179,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     else:
         cmakeArgs = args.cmake
 
-    mmh.maybeShowPhase(log, 'configure', instanceTag(instance), args)
+    mmh.maybeShowPhase(log, 'configure', instanceName(instance), args)
     if (instance['type'] == 'cmake'):
         cmd = c.configureLibrary(
             log          = log,
@@ -210,7 +221,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     return (rc == 0)
 
 def cmakeBuild(cfg, log, args, stats, instance):
-    mmh.maybeShowPhase(log, 'compile', instanceTag(instance), args)
+    mmh.maybeShowPhase(log, 'compile', instanceName(instance), args)
     rc = mmh.loggedProcess(cfg, log, c.compile())
     stats.logBuild(rc)
     return (rc == 0)
@@ -221,7 +232,7 @@ def cmakeTest(cfg, log, args, stats, instance):
     # ly run ctest for real, if tests were registered using add_test().
     num = c.countTests()
     if (num > 0):
-        mmh.maybeShowPhase(log, 'test', instanceTag(instance), args)
+        mmh.maybeShowPhase(log, 'test', instanceName(instance), args)
         rc = mmh.loggedProcess(cfg, log, c.test())
         stats.logTestsuite(num, rc)
         return (rc == 0)
@@ -243,7 +254,7 @@ def maybeInstall(cfg, log, args, stats, instance):
     if (instance['install'] == False):
         return True
 
-    mmh.maybeShowPhase(log, 'install', instanceTag(instance), args)
+    mmh.maybeShowPhase(log, 'install', instanceName(instance), args)
     for component in mmh.get_install_components(log, instance['install']):
         cmd = c.install(component = component)
         rc = mmh.loggedProcess(cfg, log, cmd)
@@ -267,12 +278,25 @@ def build(cfg, log, args, stats, ext, root, instance):
      maybeInstall(cfg, log, args, stats, instance))
     os.chdir(root)
 
-def allofthem(cfg, log, mod, ext):
-    olddir = os.getcwd()
+def listInstances(log, mod, args):
     if (mod.moduleType == 'zephyr'):
         instances = generateZephyrInstances(log, mod)
     else:
         instances = generateInstances(log, mod)
+    if (len(args.instances) > 0 and args.sub_command != 'list-instances'):
+        filtered = []
+        for pat in args.instances:
+            filtered = filtered \
+                + list(filter(lambda x: fnmatch.fnmatch(instanceName(x), pat),
+                              instances))
+        instances = filtered
+
+    instances.sort(key = lambda x: instanceName(x))
+    return instances
+
+def allofthem(cfg, log, mod, ext, args):
+    olddir = os.getcwd()
+    instances = listInstances(log, mod, args)
     log.info('Using {} build-instances:'.format(len(instances)))
     for instance in instances:
         log.info('    {}'.format(instanceName(instance)))
@@ -287,50 +311,3 @@ def findToolchain(tcp, tc):
         if (os.path.exists(candidate)):
             return candidate
     raise(UnknownToolchain(tcp, tc))
-
-def runInstance(cfg, log, args, directory):
-    dirs = os.path.split(directory)
-    m = re.match('([^/]+)/([^/]+)/([^/]+)/([^/]+)', directory)
-    if (m is None):
-        log.warning("Not a build-instance directory: {}".format(directory))
-        return
-    olddir = os.getcwd()
-    root = os.path.join(olddir, args.directory)
-    directory = os.path.join(root, 'build', directory)
-    cleanInstance(log, directory)
-    (toolchain, architecture, buildconfig, buildtool) = m.groups()
-    tc = findToolchain(args.toolchainPath, toolchain)
-    cmakeArgs = []
-    if (args.cmake is not None):
-        cmakeArgs = args.cmake
-    log.info("Moving to build-instance {}".format(directory))
-    os.chdir(directory)
-    # TODO: Leaving this for now. This whole procedure is a little weird, since
-    #       is reimplements a lot of the normal operation of mmh's module build
-    #       facility. Except that zephyr based builds won't work. Soooo, this
-    #       should probably use the normal code paths too.
-    cmd = ['cmake',
-           '-G{}'.format(cmakeBuildtool(buildtool)),
-           '-DCMAKE_TOOLCHAIN_FILE={}'.format(tc),
-           '-DCMAKE_BUILD_TYPE={}'.format(buildconfig),
-           '-DPROJECT_TARGET_CPU={}'.format(architecture)
-           ] + cmakeArgs + [root]
-    rc = mmh.loggedProcess(cfg, log, cmd)
-    if (rc != 0):
-        log.warning("CMake failed for {}".format(directory))
-        log.info("Moving back to {}".format(olddir))
-        os.chdir(olddir)
-        return
-    rc = mmh.loggedProcess(cfg, log, c.compile())
-    if (rc != 0):
-        log.warning("Build-process failed for {}".format(directory))
-        log.info("Moving back to {}".format(olddir))
-        os.chdir(olddir)
-        return
-    num = c.countTests()
-    if (num > 0):
-        rc = mmh.loggedProcess(cfg, log, c.test())
-        if (rc != 0):
-            log.warning("Test-suite failed for {}".format(directory))
-    log.info("Moving back to {}".format(olddir))
-    os.chdir(olddir)

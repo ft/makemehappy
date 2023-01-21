@@ -9,12 +9,97 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** TODO Add more sub-commands
-*** TODO run: Run compilation instances from module-tree
-- [X] All
-- [ ] One
-- [ ] Some
-*** TODO cmake: Invoke CMake to configure a build-tree
+** TODO Add revision-overrides subcommand to inspect active revisions
+For a module, all modules, with or without matched override.
+** TODO Implement version dependency judgements
+
+- Major version mismatch: Error
+- Minor version mismatch: Warning
+- Patchlevel mismatch: Informational message
+- Module specifies a deprecated version: Warning
+
+Severity Levels should be configurable via command line and config.yaml stack.
+
+Possible levels:
+
+- error
+- warning
+- info
+- ignore
+** TODO Implement YAML linters
+
+All linters should make sure, the used keys are type correct. Unrecognised keys
+should be warnings.
+
+*** Automatic mode
+
+mmh lint foobar.yaml
+
+For yaml files that specify "mmh: TYPE".
+
+*** Specified mode
+
+mmh lint --type=config config.yaml
+
+Possible types:
+
+- config
+- sources
+- module
+- system
+
+*** System Linter
+
+- Check zephyr module revisions against west.yaml
+
+*** Module Linter
+
+- Allow --thorough to contact remote repositories and check if "revision" for
+  dependencies make sense.
+
+*** Source Linter
+
+With --thorough:
+
+- Check if "repository" exists.
+- Check if "main" branch spec can be resolved against remote repository.
+
+** TODO Allow sources.yaml to specify deprecated module versions
+
+Example:
+
+modules:
+  ufw:
+    deprecate: [ v23.32.99, v100.1.0 ]
+
+Violating deprecations should be warnings by default.
+
+** TODO Allow third-party zephyr modules to have a makemehappy.yaml file
+This can be used to automatically match module versions with zephyr-kernel
+versions.
+
+The idea is to first checkout the module's "main" branch; load this file, then
+check the configured zephyr-kernel version, and switch the module to the revi-
+sion specified therein.
+
+kernel-map:
+  # For up to and including v2.0.0 use 1.2.3
+  v2.0.0: v1.2.3
+  # For up to and including v2.7.0 use 1.3.0
+  v2.7.0: v1.3.0
+  # and so on…
+  v3.0.0: v2.0.0
+  # and so forth…
+  v3.1.0: v2.1.0
+  # If we don't know what to use based on the table, use this.
+  fallback: master
+** TODO Add a way to load extensions (like toolchainpath) in system.yaml
+
+From subdirectories, that have modules with a module.yaml. At the moment, only
+the extensions from ‘ufw’ are considered.
+
+** TODO Add a way to define dependencies for third-party modules
+** TODO cmake: Invoke CMake to configure a build-tree
 Sometimes when working on the CMake-system  part of a software module, it might
 useful to be able to invoke CMake's configuration step for a certain build tree
 at will. This is possible to do manually, of course, but cumbersome, since much
@@ -37,7 +122,90 @@ All important parameters are encoded in the build-directory name:
 
 - Zephyr: ~zephyr-gnuarmemb_nucleo-f767zi_none_debug_ninja~
 - Board: ~gnu_native_posix_debug_make~ (no ~zephyr-~ prefix)
-*** DONE system: Build many parameter combinations for a system-build
+
+Note that the build directories are encoded differently nowadays.
+** TODO Flesh out user manual
+** DONE Make module builds allow for "foo/bar/baz/quux" type build specs
+This is similar to what system builds allow. The UI experience is kind of nice.
+** DONE run: Run compilation instances from module-tree
+- [X] All
+- [X] One
+- [X] Some
+
+Implemented by foo/bar/*/baz style instance-filters.
+** DONE YAML Stacks should be merged after loading, not on every lookup
+The overhead didn't use to be all that bad, but with the additional features,
+it is becoming noticeable.
+** DONE Config Extensions
+Read Configs with --config=foo
+
+Look in datapath, etcpath, homepath, and localpath (current working dir) and
+put them on top of the config stack.
+
+This should also work with the sources stack, via --sources=bar.
+** DONE Specify "main" branch in sources.yaml
+Can be a list of strings or a string.  The default is
+
+  [ 'main', 'master' ]
+
+Which will use "main" if it exists and if not it uses "master" if it exists;
+otherwise mmh should signal an error. Any particular string value needs to
+exist as a branch outright.
+** DONE Allow config to override module revision specs
+revision-overrides:
+  - name: "*foo*"
+    revision: v1.0.0
+  - name: "*bar*"
+    use-main-branch: true
+
+Would force all modules that match "*foo*" to use the "v1.0.0" revision instead
+of the revision specified in module.yaml dependency definitions.
+
+Modules matching "*bar*" will use the "main" branch configured in its source
+definition.
+
+This should also work from the command line:
+
+  mmh --revision "*foo*=v1.0.0" --revision "*bar*=!main" build
+
+…where "!KEYWORD" is a special pattern and "main" would be equivalent to
+setting "use-main-branch: true" in a configuration file.
+** DONE Allow "west" key in sources spec to specify a zephyr module's west name
+** DONE Enable removing parameters from YAML Stack data
+It's unfortunate, that this is not possible at the moment, particularly for
+toolchains, but also for modules and the planned revision-overrides. It's
+probably easy to add removers the lists-of-strings and keys-of-dicts, if it's
+just in the first level of the data-structure.
+
+Removals are applied when merging the stacked data-structre and happens just
+before data from a higher level file is merged.
+
+- [X] config.yaml
+- [X] sources.yaml
+
+#+begin_src yaml
+# In config.yaml:
+remove:
+  toolchains:
+    - clang
+    - ti-c2000
+  revision-overrides:
+    - zephyr-kernel
+    - ufw
+  buildconfigs:
+    - minsizerel
+    - relwithdebug
+  buildtools:
+    - make
+
+# In sources.yaml
+remove:
+  modules:
+    - newlib
+    - mcuboot
+#+end_src
+** DONE Get zephyr module dependency from west.yaml from zephyr-kernel repo
+** DONE system: Build many parameter combinations for a system-build
 In normal operation, mmh tries to build  a module's code with as many parameter
 combinations as possible (toolchain, build-cfg, build-tool etc). To do this, it
 resolves dependencies and  generates a CMake top-level setup to  build and test
@@ -85,27 +253,22 @@ UFW's recursive CMake  calling scheme. The UFW library could  be updated accor-
 dingly, because  the CMake code  required for  this is not  particularly pretty
 either. This could be done for UFW 2.0.0,  at which point we could also break a
 couple of things that require inelegant code to implement.
-** TODO Implement version dependency judgements
-** TODO Add options to override dependency versions
-It would be best to be able to put the option more than once and for it to use
-patterns. So --dep-version "PATTERN=VERSIONTHING", for example:
-
-  mmh --dep-version "*=master" build
-
-…to build a module with all dependency versions set to ‘master’.
-** TODO Add a way to define dependencies for third-party modules
-** TODO Flesh out user manual
-** TODO Data read from YAML files should be verified
-If we don't, we need to check tons of conditions at the points the data is
-actually used. Checking data upfront allows us to write much more straight
-forward code.
-** DEFERRED Add an option to specify source directory instead of cwd
+*** DONE mmh system [9/9]
+- [X] zephyr: Pick up ufw's kconfig for build-type.
+- [X] zephyr: Allow users to define more konfig files.
+- [X] general: Allow users to define cmake variables.
+- [X] zephyr: Make toolchain path handling more generic.
+- [X] zephyr: Allow toolchain list entries to be strings.
+- [X] zephyr: Allow modules list to be empty or even undefined.
+- [X] zephyr: Parameters from application should be inherited by build.
+- [X] generic: Gather stats for config/build/install/test similar to
+               module builds.
+- [X] generic: Use mmh.loggedProcess() to call external programs.
 ** DONE Remove Interface Definition
 ** DONE Use slash (/) as a delimiter in module build instances
 ** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
 ** DONE Add YamlStack variant for configuration parsing
 ** DONE Add option to keep running when a build-instance fails
-CLOSED: [2022-05-08 Sun 12:55]
 ** DONE With non-temporary build-roots, invert --preserve
 ** DONE Generate mmh script
 Configure:
@@ -183,7 +346,6 @@ mymod:
 
 This will be more powerful with generation-waypoints in place. See below.
 ** DONE Introduce waypoints that for extension generation
-CLOSED: [2022-05-08 Sun 12:49]
 With third party extensions you get a way of replacing add_subdirectory() calls
 with arbitrary cmake functions or macros. The generation of that looks like
 this:
@@ -227,21 +389,64 @@ cmake-extension-variants:
   # Also, maybe via pattern:
   mymod: ^mymod-.*$
 ** DONE Allow source types other than git; symlinks especially
-CLOSED: [2022-05-08 Sun 12:43]
 Allowing symlinks gives users the ability to inject ongoing development of
 modules into the dependency chain of other modules, making it possible to
 develop modules side by side.
 
 Symlink type was implemented pre-v0.10.
+** CANCELED ‘toolchains’ configuration should be a dict of dicts
+I'm not sure if it's worth fixing this now. Only if it's straight-forward, I
+guess.
+
+This is not happening, because we've allowed module.yaml file to override
+toolchains in the past, and I am not breaking that.
 * Wishlist
-** DONE Zsh completion would be nice
-CLOSED: [2022-05-14 Sat 16:54]
+** TODO Allow for --single-instance with module builds as well
+This should be pretty straight forward, and useful.
+** TODO Module type: nobuild
+To mark modules, that cannot be built stand-alone. This would allow:
+
+% mkdir /tmp/mmh
+% cd /tmp/mmh
+% mmh download-sources
+% for d in */; do (cd "$d" && mmh); done
+
+…to build everything that can be build stand-alone.
 ** DEFERRED Gather statistics while running
+
+The version judgements have to be implemented before this can be done.
+
 *** TODO How many dependency versions had a patch-level mismatch?
 *** TODO How many dependency versions had a minor mismatch?
 *** TODO How many dependency versions had a major mismatch?
+*** TODO How many dependency versions violated a deprecation?
 *** DONE How many build-instances succeeded/failed?
 *** DONE How many build-instances had their test runs succeed/fail?
 *** DONE How much time did individual steps take to execute?
 *** DONE Render statistics nicely at program termination
+** DEFERRED Add an option to specify source directory instead of cwd
+I am not quite sure why I wanted this in the first place.
+** CANCELED Load module snippets via cmdline arg
+eg: zephyr-3.0.yaml etc. Maybe even via global repository.
+
+Not sure if this is all that useful, if we can do:
+
+  mmh --revision "zephyr-kernel=v3.0.0"
+
+…plus inheriting zephyr-module revisions from the kernel's west.yaml file.
+
+And with config-extensions this could become:
+
+  mmh --config zephyr-3.0
+
+…so, this is probably not worth it.
+
+Update: Yes, not worth it.
+
+** DONE Zsh completion would be nice
 ** DONE Forget "tools" — check all dependencies into "deps"
+** DONE Allow printing build stages with --log-to-file
+This is useful for progress in CI.
+** DONE Error out when checkout of dependency revision fails
+** DONE Make non-existant zephyr modules an error?
+

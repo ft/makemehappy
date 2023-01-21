@@ -1,4 +1,5 @@
 import datetime
+import fnmatch
 import math
 import os
 import yaml
@@ -6,6 +7,7 @@ import yaml
 import makemehappy.utilities as mmh
 import makemehappy.build as build
 import makemehappy.yamlstack as ys
+import makemehappy.zephyr as z
 
 from makemehappy.buildroot import BuildRoot
 from makemehappy.toplevel import Toplevel
@@ -113,6 +115,7 @@ class ZephyrExtensions:
 class Trace:
     def __init__(self):
         self.data = []
+        self.westData = None
 
     def has(self, needle):
         return (needle in (entry['name'] for entry in self.data))
@@ -126,6 +129,11 @@ class Trace:
 
     def push(self, entry):
         self.data = [entry] + self.data
+
+    def west(self, kernel = None):
+        if (kernel == None):
+            return self.westData
+        self.westData = z.loadWestYAML(kernel)
 
 class Stack:
     def __init__(self, init):
@@ -155,7 +163,60 @@ def getSource(dep, src):
 
     return tmp
 
+def revisionOverride(cfg, src, mod):
+    lst = cfg.allOverrides()
+    for rover in lst:
+        if ('name' not in rover):
+            continue
+        pattern = rover['name']
+        if (fnmatch.fnmatch(mod, pattern)):
+            if ('preserve' in rover):
+                if (rover['preserve']):
+                    return None
+                continue
+            elif ('revision' in rover):
+                return rover['revision']
+            elif ('use-main-branch' in rover):
+                if (not rover['use-main-branch']):
+                    return None
+                s = src.lookup(mod)
+                m = s['main']
+                if (isinstance(m, str)):
+                    return [ m ]
+                return m
+    return None
+
+def gitRemoteHasBranch(rev):
+    rc = mmh.devnullProcess(['git', 'rev-parse', '--verify', 'origin/' + rev])
+    return (rc == 0)
+
+def fetchCheckout(cfg, log, mod, rev):
+    revision = None
+    if (isinstance(rev, list)):
+        for branch in rev:
+            if (gitRemoteHasBranch(branch)):
+                log.info('Using main branch: {} for module {}'
+                         .format(branch, mod))
+                revision = branch
+                break
+        if (revision == None):
+            log.error("Could not determine main branch: {} for module {}!"
+                      .format(rev, mod))
+            return None
+    else:
+        revision = rev
+
+    rc = mmh.loggedProcess(cfg, log, ['git', 'checkout', revision])
+    if (rc != 0):
+        log.error("Failed to switch to revision {} for module {}!"
+                  .format(revision, mod))
+        return None
+    return revision
+
 class InvalidRepositoryType(Exception):
+    pass
+
+class InvalidDependency(Exception):
     pass
 
 def fetch(cfg, log, src, st, trace):
@@ -163,6 +224,21 @@ def fetch(cfg, log, src, st, trace):
         return trace
 
     for dep in st.data:
+        rover = revisionOverride(cfg, src, dep['name'])
+        if (rover != None):
+            log.info("Revision Override for {} to {}"
+                     .format(dep['name'], rover))
+            dep['revision'] = rover
+        if ('revision' not in dep):
+            log.info('Module {} does not specify a revision'
+                     .format(dep['name']))
+            log.info('Attempting to resolve via zephyr-west')
+            dep['revision'] = z.westRevision(src, trace.west(), dep['name'])
+            if (dep['revision'] == None):
+                log.error('Could not determine version for module {}'
+                          .format(dep['name']))
+                raise(InvalidDependency(dep))
+
         log.info("Fetching revision {} of module {}"
                  .format(dep['revision'], dep['name']))
 
@@ -188,12 +264,11 @@ def fetch(cfg, log, src, st, trace):
             # Check out the requested revision
             olddir = os.getcwd()
             os.chdir(p)
-            rc = mmh.loggedProcess(cfg, log, ['git', 'checkout', dep['revision']])
-            os.chdir(olddir)
-            if (rc != 0):
-                log.error("Failed to switch to revision {} for module {}!"
-                          .format(dep['revision'], dep['name']))
+            rev = fetchCheckout(cfg, log, dep['name'], dep['revision'])
+            if (rev == None):
                 return False
+            dep['revision'] = rev
+            os.chdir(olddir)
         else:
             raise(InvalidRepositoryType(source))
 
@@ -215,6 +290,12 @@ def fetch(cfg, log, src, st, trace):
                 st.push(newdep)
 
         st.delete(dep['name'])
+
+        if (dep['name'] == 'zephyr-kernel'):
+            # After loading the zephyr kernel repository, load its west
+            # specification, in order to be able inherit zephyr-* module
+            # versions later on in the fetching process.
+            trace.west(p)
 
     # And recurse with the new stack and trace; we're done when the new stack
     # is empty.
@@ -533,6 +614,8 @@ def outputMMHYAML(version, fn, data, args):
     data['version'] = version
     data['mode'] = 'module'
     data['parameters'] = {}
+    if (len(args.instances) > 0):
+        data['parameters']['instances'] = args.instances
     if (args.architectures != None):
         data['parameters']['architectures'] = args.architectures
     if (args.buildconfigs != None):
@@ -545,6 +628,8 @@ def outputMMHYAML(version, fn, data, args):
         data['parameters']['cmake'] = args.cmake
     if not data['parameters']:
         data.pop('parameters', None)
+    if (args.all_instances and 'instances' in data):
+        del(data['instances'])
     mmh.dump(fn, data)
 
 def updateMMHYAML(log, root, version, args):
@@ -559,7 +644,7 @@ def updateMMHYAML(log, root, version, args):
         outputMMHYAML(version, fn, data, args)
         return
 
-    if (not mmh.noParameters(args)):
+    if (not mmh.noParameters(args) or args.all_instances):
         log.info('Updating instance config: {}'.format(fn))
         outputMMHYAML(version, fn, data, args)
         return
@@ -612,13 +697,14 @@ class CodeUnderTest:
     def loadSources(self):
         self.log.info("Loading source definitions...")
         self.sources.load()
+        self.sources.merge()
 
     def initRoot(self, version, args):
         self.root = BuildRoot(log = self.log,
                               seed = yaml.dump(self.moduleData),
                               modName = self.name(),
                               dirName = args.directory)
-        if (args.fromyaml == False):
+        if (args.fromyaml == False or args.all_instances == True):
             updateMMHYAML(self.log, self.root.root, version, args)
 
     def cmakeIntoYAML(self):
@@ -714,8 +800,12 @@ class CodeUnderTest:
                                  self.deporder)
         self.toplevel.generateToplevel()
 
+    def listInstances(self):
+        return list(map(build.instanceName,
+                        build.listInstances(self.log, self, self.args)))
+
     def build(self):
-        build.allofthem(self.cfg, self.log, self, self.extensions)
+        build.allofthem(self.cfg, self.log, self, self.extensions, self.args)
 
     def cmake3rdParty(self):
         if (has('cmake-extensions', self.moduleData, dict)):

@@ -10,6 +10,7 @@ _makemehappy_aliasmap=(
     dump      dump-description
     get       download-source
     init      build-tree-init
+    list      list-instances
     reset     reset-setup
     run       run-instance
     result    show-result
@@ -71,6 +72,20 @@ __makemehappy-queries () {
               makemehappy_query_keywords
 }
 
+__makemehappy-module-instances () {
+    local expl
+    local -a instances ignored
+
+    if [[ -n $mmhdir ]]; then
+        ignored=(${line:#${words[CURRENT]}})
+        instances=( ${${(f)"$(command mmh -q -d "$mmhdir" list)"}%%:*} )
+        _wanted module-instances expl 'module instances' \
+                compadd -F ignored "${instances[@]}"
+        return
+    fi
+    _message -e 'list-instances requires --directory'
+}
+
 __makemehappy-system-instances () {
     local expl
     local -a instances ignored
@@ -96,7 +111,18 @@ _makemehappy-build() {
         print "Run complete module building process"
         return
     fi
-    __makemehappy-nothing-else
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '*::: :->args' \
+               '(-h --help)'{-h,--help}'[display help message]' \
+        && ret=0
+
+    if [[ $state == args ]]; then
+        _message -e instance-filter
+    fi
+    return ret
 }
 
 _makemehappy-build-tree-init() {
@@ -148,6 +174,22 @@ _makemehappy-generate-toplevel() {
     __makemehappy-nothing-else
 }
 
+_makemehappy-list-instances() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "List available build instances in module build tree"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-prepare() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Completely prepare module build tree"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
 _makemehappy-reset-setup() {
     if [[ -n ${makemehappy_describe} ]]; then
         print "Reset build-tree meta-data"
@@ -161,7 +203,14 @@ _makemehappy-run-instance() {
         print "(Re)run previously configured build-tree"
         return
     fi
-    __makemehappy-nothing-else
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '*::: :__makemehappy-module-instances' \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-a --all-instances)'{-a,--all-instances}'[Force building all system instances]' \
+        && ret=0
 }
 
 _makemehappy-show-result() {
@@ -250,8 +299,14 @@ _makemehappy() {
     local mode
     local makemehappycommand
     local makemehappy_describe
+    local -i dirindex=${words[(I)-d|--directory]}
+    local mmhdir
 
-    _arguments -C -s -w : \
+    if (( dirindex )); then
+        mmhdir=${words[dirindex + 1]}
+    fi
+
+    _arguments -C : \
                '(-A --architectures)'{-A,--architectures}'[select architectures to use]:architecture:__makemehappy-architectures' \
                '(-B --buildtools)'{-B,--buildtools}'[select build-tools to use]:build-tool:__makemehappy-buildtools' \
                '(-C --buildconfigs)'{-C,--buildconfigs}'[select build-configurations to use]:build-configuration:__makemehappy-buildconfigurations' \
@@ -266,6 +321,8 @@ _makemehappy() {
                '(-p --preserve)'{-p,--preserve}'[preserve build root instead of deleting it]' \
                '(-Q --query)'{-Q,--query}'[query module build information]:mmh query:__makemehappy-queries' \
                '(-q --quiet)'{-q,--quiet}'[disable informational output]' \
+               '*'{-r,--revision}'[specify revision override]:revision override' \
+               '*'{-c,--config}'[specify additional configuration file]:configuration file:_path_files' \
                '(-s --source)'{-s,--source}'[specify additional source definition]:source definition file:_path_files' \
                '(-S --succeed)'{-S,--succeed}'[force successful termination]' \
                '(-T --toolchains)'{-T,--toolchains}'[select toolchains to use]:toolchain:__makemehappy-toolchains' \

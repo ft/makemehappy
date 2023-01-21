@@ -1,20 +1,28 @@
+import copy
 import os
 
+from functools import reduce
+
 import makemehappy.utilities as mmh
+
+def findByName(lst, name):
+    for i, d in enumerate(lst):
+        if ('name' in d and d['name'] == name):
+            return i
+    return None
 
 class YamlStack:
     def __init__(self, log, desc, *lst):
         self.log = log
         self.desc = desc
         self.files = list(lst)
-        self.data = False
+        self.data = None
 
     def pushLayer(self, layer):
         self.data.insert(0, layer)
 
     def push(self, item):
-        self.log.info("{}: {}".format(self.desc, item))
-        self.files = self.files + [item]
+        self.files = [ item ] + self.files
 
     def fileload(self, fn):
         self.log.info("Loading {}: {}".format(self.desc, fn))
@@ -33,60 +41,47 @@ class UnknownModule(Exception):
 class SourceStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
+        self.merged = None
 
-    def load(self):
-        super(SourceStack, self).load()
-        for slice in self.data:
-            if not('modules' in slice):
-                continue
-            for module in slice['modules']:
-                if (not ('type' in slice['modules'][module])):
-                    slice['modules'][module]['type'] = 'git'
+    def merge(self):
+        if (self.data == None):
+            raise(NoSourceData())
+
+        # The top level data structure is a dict. With sources, we only care
+        # about the ‘modules’ and ‘remove’ keys. The merged dict will contain
+        # ‘modules’ only, processing the ‘remove’ key as we move up the layers.
+        self.merged = { 'modules': {} }
+        slices = copy.deepcopy(reversed(self.data))
+        for slice in slices:
+            if ('remove' in slice and 'modules' in slice['remove']):
+                for rem in slice['remove']['modules']:
+                    del(self.merged['modules'][rem])
+            if ('modules' in slice):
+                for mod in slice['modules']:
+                    if (mod in self.merged['modules']):
+                        self.merged['modules'][mod] = {
+                            **self.merged['modules'][mod],
+                            **slice['modules'][mod] }
+                    else:
+                        self.merged['modules'][mod] = slice['modules'][mod]
+
+        for module in self.merged['modules']:
+            if ('type' not in self.merged['modules'][module]):
+                self.merged['modules'][module]['type'] = 'git'
+            if ('main' not in self.merged['modules'][module]):
+                self.merged['modules'][module]['main'] = [ 'main', 'master' ]
 
     def allSources(self):
-        rv = []
-        if (self.data == False):
+        if (self.merged == None):
             raise(NoSourceData())
-
-        for slice in self.data:
-            if not('modules' in slice):
-                continue
-            for module in slice['modules']:
-                if (module in rv):
-                    continue
-                rv.append(module)
-
-        return rv
+        return self.merged['modules'].keys()
 
     def lookup(self, needle):
-        if (self.data == False):
+        if (self.data == None):
             raise(NoSourceData())
-
-        for slice in self.data:
-            if not('modules' in slice):
-                continue
-            if (needle in slice['modules']):
-                return slice['modules'][needle]
-
+        if (needle in self.merged['modules']):
+            return self.merged['modules'][needle]
         raise(UnknownModule(needle))
-
-def queryItem(data, item):
-        rv = []
-        for layer in data:
-            if item in layer:
-                rv.extend(layer[item])
-        rv = list(set(rv))
-        rv.sort()
-        return rv
-
-def queryToolchain(data, item):
-    rv = []
-    for layer in data:
-        if 'toolchains' in layer:
-            rv.extend(list(x[item] for x in layer['toolchains'] if item in x))
-    rv = list(set(mmh.flatten(rv)))
-    rv.sort()
-    return rv
 
 class NoSourceData(Exception):
     pass
@@ -94,36 +89,100 @@ class NoSourceData(Exception):
 class UnknownConfigItem(Exception):
     pass
 
+class UnknownToolchain(Exception):
+    pass
+
 class ConfigStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
+        self.merged = None
+        self.remove = [ 'definition', 'root', 'remove' ]
+        self.mergeLists = [ 'buildtools', 'buildconfigs' ]
+        self.mergeLODbyName = [ 'revision-overrides', 'toolchains' ]
 
-    def lookup(self, needle):
-        if (self.data == False):
+    def merge(self):
+        if (self.data == None):
             raise(NoConfigData())
 
-        for slice in self.data:
-            if needle in slice:
-                return slice[needle]
+        # The top level data structure is a dict. These are predefined types as
+        # lists, so we're populating them here. Toolchains and overrides are
+        # merged by the ‘name’ properties of their dictionary items. The tools
+        # and configs are merged on string values. These lists also support
+        # removal by the top-level ‘remove’ key, using the same matching. With
+        # other top-level keys, the one from the highest priority layer wins.
+        self.merged = { 'buildtools':         [],
+                        'buildconfigs':       [],
+                        'toolchains':         [],
+                        'revision-overrides': [] }
+        slices = list(copy.deepcopy(reversed(self.data)))
+        for slice in slices:
+            if ('remove' in slice):
+                for cat in slice['remove']:
+                    if (cat in self.mergeLists):
+                        self.merged[cat] = list(
+                            filter(lambda x: (x not in slice['remove'][cat]),
+                                   self.merged[cat]))
+                    elif (cat in self.mergeLODbyName):
+                        self.merged[cat] = list(
+                            filter(lambda x: (x['name'] not in slice['remove'][cat]),
+                                   self.merged[cat]))
+            for key in slice:
+                if (key in self.mergeLists):
+                    self.merged[key] = list(set(slice[key] + self.merged[key]))
+                elif (key in self.mergeLODbyName):
+                    # We're reversing here for correct order in revision-
+                    # overrides, since those names can be patterns. With the
+                    # other keys of this type, order does not matter.
+                    for entry in reversed(slice[key]):
+                        idx = findByName(self.merged[key], entry['name'])
+                        if (idx != None):
+                            new = { **self.merged[key][idx], **entry }
+                            del(self.merged[key][idx])
+                        else:
+                            new = entry
+                        self.merged[key].insert(0, new)
+                else:
+                    self.merged[key] = slice[key]
 
+        for rem in self.remove:
+            if (rem in self.merged):
+                del(self.merged[rem])
+
+    def lookup(self, needle):
+        if (self.data == None):
+            raise(NoConfigData())
+        if (needle in self.merged):
+            return self.merged[needle]
         raise(UnknownConfigItem(needle))
 
     def fetchToolchain(self, name):
-        for layer in self.data:
-            if 'toolchains' in layer:
-                for tc in layer['toolchains']:
-                    if (tc['name'] == name):
-                        return tc
-        raise(UnknownConfigItem(name))
+        lst = self.lookup('toolchains')
+        for tc in lst:
+            if (tc['name'] == name):
+                return tc
+        raise(UnknownToolchain(name))
+
+    def queryToolchain(self, key):
+        rv = []
+        for item in self.lookup('toolchains'):
+            if (isinstance(item[key], list)):
+                rv += item[key]
+            else:
+                rv += [ item[key] ]
+        rv.sort()
+        return rv
 
     def allToolchains(self):
-        return queryToolchain(self.data, 'name')
+        return self.queryToolchain('name')
 
     def allArchitectures(self):
-        return queryToolchain(self.data, 'architecture')
+        return self.queryToolchain('architecture')
 
     def allBuildtools(self):
-        return queryItem(self.data, 'buildtools')
+        return self.lookup('buildtools')
 
     def allBuildConfigs(self):
-        return queryItem(self.data, 'buildconfigs')
+        return self.lookup('buildconfigs')
+
+    def allOverrides(self):
+        return self.lookup('revision-overrides')

@@ -1,6 +1,61 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.15 → v0.16 (unreleased):
+
+** Breaking Compatibility:
+
+- The default command is switched to 'run-instance' when mmh is not in system
+  mode and the specified directory (via --directory) already exists. Previously
+  mmh still defaulted to 'build', which breaks with the directory exists.
+- Configuration and source definitions inherit properties from layers with less
+  priority. This means, that you cannot just override a definition. To remove
+  any inherited data, use the new ‘remove’ top-level key.
+
+** New Features
+
+- Merge all yaml-stack layers after loading instead of doing it when required
+  at ‘lookup’ time.
+- Support removing specifications from lower priority files in the yaml stacks
+  at merge-time.
+- Allow adding configuration profiles to the config stack, using --config.
+- Allow adding source definitions to the source stack, using --source.
+- Implement loading west.yml after setting up zephyr-kernel module.
+- Inherit west-based revisions specifications for zephyr modules, that do not
+  specify a revision in a module's dependency list.
+- Add a main-parameter to source definitions, specifying a module's main
+  development branch.
+- Implement revision-overrides by file-glob style patterns. This allows
+  specifying a fixed revision or the use of a module's development branch.
+- Implement revision-overrides by --revision option on the command line.
+- Implement foo/bar/*/baz style instance filters for module builds.
+- Add ‘prepare’ subcommand that completely initialises a build tree, ready to
+  be used by ‘run-instance’.
+- Add ‘list-instances’ command to list module build instances.
+
+** Bugfixes
+
+- Process --query at a time where more information is established.
+
+** Miscellaneous
+
+- Removed a couple of obsolete zephyr modules: zephyr-hal-qmsi,
+  zephyr-hal-unisoc and zephyr-mcumgr.
+
+** Diffstat:
+
+    ROADMAP.org              | 259 +++++++++++++++++++++++++++++++++++----
+    _makemehappy             |  63 +++++++++-
+    data/sources.yaml        |  37 +++++-
+    makemehappy/build.py     | 103 ++++++----------
+    makemehappy/cut.py       | 106 ++++++++++++++--
+    makemehappy/utilities.py |  18 ++-
+    makemehappy/yamlstack.py | 187 ++++++++++++++++++----------
+    makemehappy/zephyr.py    |  37 ++++++
+    mmh.in                   | 210 +++++++++++++++++++++----------
+    9 files changed, 781 insertions(+), 239 deletions(-)
+
+
 * v0.14 → v0.15 (released 2022-12-19):
 
 ** New Features

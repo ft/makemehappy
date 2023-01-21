@@ -27,17 +27,17 @@ log.handlers.append(MMHLogHandler())
 etcdir = '@@ETCDIR@@'
 datadir = '@@DATADIR@@'
 
-cfg = ConfigStack(log, 'Configuration',
-                  mmh.dotFile('config.yaml'),
-                  mmh.xdgFile('config.yaml'),
-                  os.path.join(etcdir,  'config.yaml'),
-                  os.path.join(datadir, 'config.yaml'))
+cfg = ConfigStack(log, 'Configuration')
+src = SourceStack(log, 'Source Definition')
 
-src = SourceStack(log, 'Source Definition',
-                  mmh.dotFile('sources.yaml'),
-                  mmh.xdgFile('sources.yaml'),
-                  os.path.join(etcdir,  'sources.yaml'),
-                  os.path.join(datadir, 'sources.yaml'))
+def mmh_search_in_dirs(stack, name):
+    stack.push(os.path.join(datadir, name))
+    stack.push(os.path.join(etcdir,  name))
+    stack.push(mmh.xdgFile(name))
+    stack.push(mmh.dotFile(name))
+
+mmh_search_in_dirs(cfg, 'config.yaml')
+mmh_search_in_dirs(src, 'sources.yaml')
 
 cmakeParameters = None
 cmakeSeparator = None
@@ -111,6 +111,14 @@ ap.add_argument(
     help = "query aspects about the program")
 
 ap.add_argument(
+    "-c", "--config", default = [], action = "append",
+    help = "add configuration to config-stack")
+
+ap.add_argument(
+    "-r", "--revision", default = [], action = "append",
+    help = "add a revision-override specification")
+
+ap.add_argument(
     "-s", "--source", default = [], action = "append",
     help = "add a module source definition")
 
@@ -136,7 +144,8 @@ subp = ap.add_subparsers(
     dest = 'sub_command', metavar = 'Sub Commands')
 
 # build
-ap_build = subp.add_parser('build', help = 'Build a module')
+ap_build = subp.add_parser('build', help = 'Build a module in many instances')
+ap_build.add_argument('instances', default = [ ], nargs = '*')
 
 # init
 ap_init = subp.add_parser(
@@ -181,12 +190,24 @@ ap_top = subp.add_parser(
 
 ap_top.set_defaults(sub_command = 'generate-toplevel')
 
+# prepare
+ap_prepare = subp.add_parser(
+    'prepare',
+    help = 'Generate toplevel of module build-tree')
+
 # reset-setup
 ap_reset = subp.add_parser(
     'reset-setup', aliases = [ 'reset' ],
     help = 'Reset build-tree meta-data')
 
 ap_reset.set_defaults(sub_command = 'reset-setup')
+
+# list-instances
+ap_list = subp.add_parser(
+    'list-instances', aliases = [ 'list' ],
+    help = 'List instances available in build-tree')
+
+ap_list.set_defaults(sub_command = 'list-instances')
 
 # run-instance
 ap_run = subp.add_parser(
@@ -195,6 +216,9 @@ ap_run = subp.add_parser(
 
 ap_run.set_defaults(sub_command = 'run-instance')
 ap_run.add_argument('instances', nargs = '*')
+ap_run.add_argument(
+    "-a", "--all-instances", action = "store_true",
+    help = "Force building all module instances")
 
 # show-result
 ap_result = subp.add_parser(
@@ -286,25 +310,7 @@ def mmh_exit(code):
     exit(code)
 
 if cmdargs.query is not None:
-    cfg.load()
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    if (os.path.isfile(cmdargs.module) == True):
-        cut.loadModule()
-    q = cmdargs.query
-    result = []
-    if (q == 'toolchains'):
-        result = cut.allToolchains()
-    elif (q == 'architectures'):
-        result = cut.allArchitectures()
-    elif (q == 'buildtools'):
-        result = cut.allBuildtools()
-    elif (q == 'buildconfigs'):
-        result = cut.allBuildConfigs()
-    else:
-        mmh.warn('Unknown query: {}'.format(q))
-        mmh_exit(1)
-    print(" ".join(result))
-    mmh_exit(0)
+    log.disable()
 
 if (isinstance(cmdargs.directory, str)):
     cmdargs.preserve = not(cmdargs.preserve)
@@ -314,6 +320,9 @@ if (cmdargs.verbose):
 
 if (cmdargs.quiet):
     log.disable()
+
+if ('instances' not in cmdargs):
+    cmdargs.instances = []
 
 if ('single_instance' not in cmdargs):
     cmdargs.single_instance = None
@@ -329,11 +338,17 @@ if (cmdargs.version):
     print()
     mmh_exit(0)
 
-for item in cmdargs.source:
-    if (os.path.isfile(item) == False):
-        mmh.warn("Source definition does not exist: {}".format(item))
-        mmh_exit(1)
-    src.push(item)
+def mmh_add_to_stack(lst, stack, desc):
+    for item in lst:
+        if (re.match(r".*\\.yaml$", item) == None):
+            item += '.yaml'
+        if (os.path.isfile(item)):
+            stack.push(item)
+        else:
+            mmh_search_in_dirs(stack, item)
+
+mmh_add_to_stack(cmdargs.config, cfg, "Config")
+mmh_add_to_stack(cmdargs.source, src, "Source")
 
 if cmdargs.log_to_file:
     cmdargs.log_all = True
@@ -356,6 +371,8 @@ cmdargs.cmake = cmakeParameters
 if (cmdargs.sub_command == None):
     if (os.path.isfile('system.yaml')):
         cmdargs.sub_command = 'system'
+    elif (cmdargs.directory != None and os.path.exists(cmdargs.directory)):
+        cmdargs.sub_command = 'run-instance'
     else:
         cmdargs.sub_command = 'build'
     log.info("Starting up using default command ({})".format(cmdargs.sub_command))
@@ -384,6 +401,8 @@ if (cmdargs.sub_command != 'reset-setup' and
                     cmdargs.buildconfigs = p['buildconfigs']
                 if 'buildtools' in p:
                     cmdargs.buildtools = p['buildtools']
+                if not cmdargs.all_instances and 'instances' in p:
+                    cmdargs.instances = p['instances']
                 if 'toolchains' in p:
                     cmdargs.toolchains = p['toolchains']
                 if 'cmake' in p:
@@ -415,19 +434,88 @@ if (cmdargs.sub_command != 'reset-setup' and
 def adjustConfig(cfg, args):
     layer = {}
     adjustments = 0
+    cfg.merge()
     if args.log_all == True:
         layer['log-all'] = not(cfg.lookup('log-all'))
         adjustments = adjustments + 1
     if args.log_to_file == True:
         layer['log-to-file'] = not(cfg.lookup('log-to-file'))
         adjustments = adjustments + 1
+    if (len(args.revision) > 0):
+        layer['revision-overrides'] = []
+        if ('remove' not in layer):
+            layer['remove'] = {}
+        for rev in reversed(args.revision):
+            try:
+                (pat,value) = rev.split('=', 1)
+                if (value == '!main'):
+                    new = { 'name': pat, 'use-main-branch': True }
+                else:
+                    new = { 'name': pat, 'revision': value }
+                layer['revision-overrides'].append(new)
+                if ('revision-overrides' not in layer['remove']):
+                    layer['remove']['revision-overrides'] = []
+                layer['remove']['revision-overrides'].append(pat)
+            except ValueError:
+                log.error("cmdline: Invalid revision-spec: {}"
+                          .format(rev))
+                mmh_exit(1)
+            adjustments = adjustments + 1
     if adjustments > 0:
+        layer['from-cmdline'] = True
         cfg.pushLayer(layer)
+    cfg.merge()
+
+if cmdargs.query is not None:
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+    if (os.path.isfile(cmdargs.module) == True):
+        cut.loadModule()
+    q = cmdargs.query
+    result = []
+    if (q == 'toolchains'):
+        result = cut.allToolchains()
+    elif (q == 'architectures'):
+        result = cut.allArchitectures()
+    elif (q == 'buildtools'):
+        result = cut.allBuildtools()
+    elif (q == 'buildconfigs'):
+        result = cut.allBuildConfigs()
+    else:
+        mmh.warn('Unknown query: {}'.format(q))
+        mmh_exit(1)
+    print(" ".join(result))
+    mmh_exit(0)
 
 def requireModuleDefinition(args):
     if (os.path.isfile(args.module) == False):
         mmh.warn("Module definition does not exist: {}".format(args.module))
         mmh_exit(1)
+
+def do_prepare():
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+    cut.loadModule()
+    cut.cliAdjust(toolchains    = cmdargs.toolchains,
+                  architectures = cmdargs.architectures,
+                  buildconfigs  = cmdargs.buildconfigs,
+                  buildtools    = cmdargs.buildtools)
+    cut.loadSources()
+    cut.initRoot(version, cmdargs)
+    if cmdargs.log_to_file is True and cmdargs.log_file is None:
+        fn = cut.root.name() + '.log'
+        print('Logging to: {}'.format(fn))
+        log.handlers[0].setFile(fn)
+    cut.populateRoot()
+    cut.linkIntoRoot()
+    cut.changeToRoot()
+    cut.loadDependencies()
+    cut.cmakeIntoYAML()
+    cut.generateToplevel()
+    return cut
 
 if (cmdargs.sub_command == "build-tree-init"):
     requireModuleDefinition(cmdargs)
@@ -479,13 +567,21 @@ elif (cmdargs.sub_command == "reset-setup"):
     data = { 'version': version }
     mmh.dump(fn, data)
 
-elif (cmdargs.sub_command == "run-instance"):
-    if (len(cmdargs.instances) >= 1):
-        cfg.load()
-        for d in cmdargs.instances:
-            build.runInstance(cfg, log, cmdargs, d)
-        mmh_exit(0)
+elif (cmdargs.sub_command == "list-instances"):
+    if (cmdargs.directory == None):
+        print("list-instances only works with -d!")
+        mmh_exit(1)
 
+    requireModuleDefinition(cmdargs)
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+    cut.initRoot(version, cmdargs)
+    cut.loadModule()
+    for inst in cut.listInstances():
+        print(inst)
+
+elif (cmdargs.sub_command == "run-instance"):
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
@@ -510,29 +606,12 @@ elif (cmdargs.sub_command == "run-instance"):
                  .format(cut.countFailed(), cut.countBuilds()))
         commandReturnValue = 1
 
-elif (cmdargs.sub_command == "build"):
-    requireModuleDefinition(cmdargs)
+elif (cmdargs.sub_command == "prepare"):
+    do_prepare()
 
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    cut.loadModule()
-    cut.cliAdjust(toolchains    = cmdargs.toolchains,
-                  architectures = cmdargs.architectures,
-                  buildconfigs  = cmdargs.buildconfigs,
-                  buildtools    = cmdargs.buildtools)
-    cut.loadSources()
-    cut.initRoot(version, cmdargs)
-    if cmdargs.log_to_file is True and cmdargs.log_file is None:
-        fn = cut.root.name() + '.log'
-        print('Logging to: {}'.format(fn))
-        log.handlers[0].setFile(fn)
-    cut.populateRoot()
-    cut.linkIntoRoot()
-    cut.changeToRoot()
-    cut.loadDependencies()
-    cut.cmakeIntoYAML()
-    cut.generateToplevel()
+elif (cmdargs.sub_command == "build"):
+    cut = do_prepare()
+
     cut.build()
 
     if (cmdargs.preserve == False):
@@ -589,6 +668,7 @@ elif (cmdargs.sub_command == "show-result"):
 
 elif (cmdargs.sub_command == "show-source"):
     src.load()
+    src.merge()
     names = cmdargs.modules
     if (len(names) == 0):
         names = src.allSources();
@@ -600,7 +680,9 @@ elif (cmdargs.sub_command == "show-source"):
 
 elif (cmdargs.sub_command == "download-source"):
     cfg.load()
+    adjustConfig(cfg, cmdargs)
     src.load()
+    src.merge()
 
     for module in cmdargs.modules:
         meta = src.lookup(module)
@@ -610,7 +692,9 @@ elif (cmdargs.sub_command == "download-source"):
 elif (cmdargs.sub_command == "download-sources"):
     destination = cmdargs.destination
     cfg.load()
+    adjustConfig(cfg, cmdargs)
     src.load()
+    src.merge()
     loaded = {}
     failed = {}
     for source in src.data:

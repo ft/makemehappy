@@ -41,11 +41,12 @@ def matchingVersion(version, data):
     return (data['version'] == version)
 
 def noParameters(args):
-    return (args.architectures == None and
-            args.buildconfigs  == None and
-            args.buildtools    == None and
-            args.toolchains    == None and
-            args.cmake         == None)
+    return (args.architectures  == None and
+            args.buildconfigs   == None and
+            args.buildtools     == None and
+            args.toolchains     == None and
+            args.cmake          == None and
+            len(args.instances) == 0)
 
 def load(file):
     (root,fn) = os.path.split(os.path.realpath(file))
@@ -83,6 +84,13 @@ def loggedProcess(cfg, log, cmd):
         return proc.wait()
     rc = subprocess.run(cmd)
     return rc.returncode
+
+def devnullProcess(cmd):
+    rc = subprocess.run(cmd,
+                        stdout = open(os.devnull, "w"),
+                        stderr = subprocess.STDOUT)
+    return rc.returncode
+
 
 def starPattern(s):
     return '*' in s
