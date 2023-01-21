@@ -4,35 +4,6 @@ from functools import reduce
 
 import makemehappy.utilities as mmh
 
-class YamlStack:
-    def __init__(self, log, desc, *lst):
-        self.log = log
-        self.desc = desc
-        self.files = list(lst)
-        self.data = False
-
-    def pushLayer(self, layer):
-        self.data.insert(0, layer)
-
-    def push(self, item):
-        # This is a little noisy, fileload() will suffice, I think.
-        #self.log.info("{}: {}".format(self.desc, item))
-        self.files = self.files + [item]
-
-    def fileload(self, fn):
-        self.log.info("Loading {}: {}".format(self.desc, fn))
-        return mmh.load(fn)
-
-    def load(self):
-        self.data = list((self.fileload(x) for x in self.files
-                          if os.path.isfile(x)))
-
-class NoSourceData(Exception):
-    pass
-
-class UnknownModule(Exception):
-    pass
-
 def merge(a, b):
     return {**a, **b}
 
@@ -88,6 +59,35 @@ def processRemoveDict(data, layer, needle):
             del(item[pat])
         lst += [ item ]
     return lst
+
+class YamlStack:
+    def __init__(self, log, desc, *lst):
+        self.log = log
+        self.desc = desc
+        self.files = list(lst)
+        self.data = False
+
+    def pushLayer(self, layer):
+        self.data.insert(0, layer)
+
+    def push(self, item):
+        # This is a little noisy, fileload() will suffice, I think.
+        #self.log.info("{}: {}".format(self.desc, item))
+        self.files = self.files + [item]
+
+    def fileload(self, fn):
+        self.log.info("Loading {}: {}".format(self.desc, fn))
+        return mmh.load(fn)
+
+    def load(self):
+        self.data = list((self.fileload(x) for x in self.files
+                          if os.path.isfile(x)))
+
+class NoSourceData(Exception):
+    pass
+
+class UnknownModule(Exception):
+    pass
 
 class SourceStack(YamlStack):
     def __init__(self, log, desc, *lst):
