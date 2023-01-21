@@ -418,21 +418,22 @@ def adjustConfig(cfg, args):
         layer['log-to-file'] = not(cfg.lookup('log-to-file'))
         adjustments = adjustments + 1
     if (len(args.revision) > 0):
-        layer['revision-overrides'] = {}
+        layer['revision-overrides'] = []
         for rev in reversed(args.revision):
             try:
                 (pat,value) = rev.split('=', 1)
-                layer['revision-overrides'][pat] = {}
                 if (value == '!main'):
-                    layer['revision-overrides'][pat]['use-main-branch'] = True
+                    new = { 'name': pat, 'use-main-branch': True }
                 else:
-                    layer['revision-overrides'][pat]['revision'] = value
+                    new = { 'name': pat, 'revision': value }
+                layer['revision-overrides'].append(new)
             except ValueError:
                 log.error("cmdline: Invalid revision-spec: {}"
                           .format(rev))
                 mmh_exit(1)
             adjustments = adjustments + 1
     if adjustments > 0:
+        layer['from-cmdline'] = True
         cfg.pushLayer(layer)
 
 if cmdargs.query is not None:
@@ -451,8 +452,6 @@ if cmdargs.query is not None:
         result = cut.allBuildtools()
     elif (q == 'buildconfigs'):
         result = cut.allBuildConfigs()
-    elif (q == 'overrides'):
-        result = cfg.allOverrides()
     else:
         mmh.warn('Unknown query: {}'.format(q))
         mmh_exit(1)

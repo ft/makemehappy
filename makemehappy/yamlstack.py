@@ -82,7 +82,7 @@ class YamlStack:
     def push(self, item):
         # This is a little noisy, fileload() will suffice, I think.
         #self.log.info("{}: {}".format(self.desc, item))
-        self.files = self.files + [item]
+        self.files = [ item ] + self.files
 
     def fileload(self, fn):
         self.log.info("Loading {}: {}".format(self.desc, fn))
@@ -116,8 +116,7 @@ class SourceStack(YamlStack):
         if (self.data == False):
             raise(NoSourceData())
 
-        for slice in self.data:
-            mmh.pp(rv)
+        for slice in reversed(self.data):
             if ('remove' in slice and 'modules' in slice['remove']):
                 rv = list(
                     filter(lambda x: x not in slice['remove']['modules'], \
@@ -137,7 +136,7 @@ class SourceStack(YamlStack):
             raise(NoSourceData())
 
         data = []
-        for slice in self.data:
+        for slice in reversed(self.data):
             data = processRemoveSources(data, slice, needle)
             if not('modules' in slice):
                 continue
@@ -166,9 +165,9 @@ class UnknownToolchain(Exception):
 class ConfigStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
-        self.mergeDicts = [ 'revision-overrides' ]
+        self.mergeDicts = []
         self.mergeLists = [ 'buildtools', 'buildconfigs' ]
-        self.mergeLODbyName = [ 'toolchains' ]
+        self.mergeLODbyName = [ 'revision-overrides', 'toolchains' ]
 
     def lookup(self, needle):
         if (self.data == False):

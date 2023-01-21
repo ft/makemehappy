@@ -165,25 +165,25 @@ def getSource(dep, src):
 
 def revisionOverride(cfg, src, mod):
     lst = cfg.allOverrides()
-    # TODO: Is this the correct order with respect to layers and multiple
-    #       patterns that could match?
-    for patterns in lst:
-        for pattern in patterns:
-            if (fnmatch.fnmatch(mod, pattern)):
-                if ('preserve' in patterns[pattern]):
-                    if (patterns[pattern]['preserve']):
-                        return None
-                    continue
-                elif ('revision' in patterns[pattern]):
-                    return patterns[pattern]['revision']
-                elif ('use-main-branch' in patterns[pattern]):
-                    if (not patterns[pattern]['use-main-branch']):
-                        return None
-                    s = src.lookup(mod)
-                    m = s['main']
-                    if (isinstance(m, str)):
-                        return [ m ]
-                    return m
+    for rover in lst:
+        if ('name' not in rover):
+            continue
+        pattern = rover['name']
+        if (fnmatch.fnmatch(mod, pattern)):
+            if ('preserve' in rover):
+                if (rover['preserve']):
+                    return None
+                continue
+            elif ('revision' in rover):
+                return rover['revision']
+            elif ('use-main-branch' in rover):
+                if (not rover['use-main-branch']):
+                    return None
+                s = src.lookup(mod)
+                m = s['main']
+                if (isinstance(m, str)):
+                    return [ m ]
+                return m
     return None
 
 def gitRemoteHasBranch(rev):
