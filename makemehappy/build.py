@@ -1,3 +1,4 @@
+import fnmatch
 import os
 import re
 import shutil
@@ -277,12 +278,20 @@ def build(cfg, log, args, stats, ext, root, instance):
      maybeInstall(cfg, log, args, stats, instance))
     os.chdir(root)
 
-def allofthem(cfg, log, mod, ext):
+def allofthem(cfg, log, mod, ext, args):
     olddir = os.getcwd()
     if (mod.moduleType == 'zephyr'):
         instances = generateZephyrInstances(log, mod)
     else:
         instances = generateInstances(log, mod)
+    if (len(args.instances) > 0):
+        filtered = []
+        for pat in args.instances:
+            filtered = filtered \
+                + list(filter(lambda x: fnmatch.fnmatch(instanceName(x), pat),
+                              instances))
+        instances = filtered
+
     log.info('Using {} build-instances:'.format(len(instances)))
     for instance in instances:
         log.info('    {}'.format(instanceName(instance)))
@@ -297,50 +306,3 @@ def findToolchain(tcp, tc):
         if (os.path.exists(candidate)):
             return candidate
     raise(UnknownToolchain(tcp, tc))
-
-def runInstance(cfg, log, args, directory):
-    dirs = os.path.split(directory)
-    m = re.match('([^/]+)/([^/]+)/([^/]+)/([^/]+)', directory)
-    if (m is None):
-        log.warning("Not a build-instance directory: {}".format(directory))
-        return
-    olddir = os.getcwd()
-    root = os.path.join(olddir, args.directory)
-    directory = os.path.join(root, 'build', directory)
-    cleanInstance(log, directory)
-    (toolchain, architecture, buildconfig, buildtool) = m.groups()
-    tc = findToolchain(args.toolchainPath, toolchain)
-    cmakeArgs = []
-    if (args.cmake is not None):
-        cmakeArgs = args.cmake
-    log.info("Moving to build-instance {}".format(directory))
-    os.chdir(directory)
-    # TODO: Leaving this for now. This whole procedure is a little weird, since
-    #       is reimplements a lot of the normal operation of mmh's module build
-    #       facility. Except that zephyr based builds won't work. Soooo, this
-    #       should probably use the normal code paths too.
-    cmd = ['cmake',
-           '-G{}'.format(cmakeBuildtool(buildtool)),
-           '-DCMAKE_TOOLCHAIN_FILE={}'.format(tc),
-           '-DCMAKE_BUILD_TYPE={}'.format(buildconfig),
-           '-DPROJECT_TARGET_CPU={}'.format(architecture)
-           ] + cmakeArgs + [root]
-    rc = mmh.loggedProcess(cfg, log, cmd)
-    if (rc != 0):
-        log.warning("CMake failed for {}".format(directory))
-        log.info("Moving back to {}".format(olddir))
-        os.chdir(olddir)
-        return
-    rc = mmh.loggedProcess(cfg, log, c.compile())
-    if (rc != 0):
-        log.warning("Build-process failed for {}".format(directory))
-        log.info("Moving back to {}".format(olddir))
-        os.chdir(olddir)
-        return
-    num = c.countTests()
-    if (num > 0):
-        rc = mmh.loggedProcess(cfg, log, c.test())
-        if (rc != 0):
-            log.warning("Test-suite failed for {}".format(directory))
-    log.info("Moving back to {}".format(olddir))
-    os.chdir(olddir)

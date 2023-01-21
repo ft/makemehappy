@@ -9,8 +9,6 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** TODO Make module builds allow for "foo/bar/baz/quux" type build specs
-This is similar to what system builds allow. The UI experience is kind of nice.
 ** TODO Add revision-overrides subcommand to inspect active revisions
 For a module, all modules, with or without matched override.
 ** TODO Implement version dependency judgements
@@ -101,10 +99,6 @@ From subdirectories, that have modules with a module.yaml. At the moment, only
 the extensions from ‘ufw’ are considered.
 
 ** TODO Add a way to define dependencies for third-party modules
-** TODO run: Run compilation instances from module-tree
-- [X] All
-- [ ] One
-- [ ] Some
 ** TODO cmake: Invoke CMake to configure a build-tree
 Sometimes when working on the CMake-system  part of a software module, it might
 useful to be able to invoke CMake's configuration step for a certain build tree
@@ -131,6 +125,14 @@ All important parameters are encoded in the build-directory name:
 
 Note that the build directories are encoded differently nowadays.
 ** TODO Flesh out user manual
+** DONE Make module builds allow for "foo/bar/baz/quux" type build specs
+This is similar to what system builds allow. The UI experience is kind of nice.
+** DONE run: Run compilation instances from module-tree
+- [X] All
+- [X] One
+- [X] Some
+
+Implemented by foo/bar/*/baz style instance-filters.
 ** DONE YAML Stacks should be merged after loading, not on every lookup
 The overhead didn't use to be all that bad, but with the additional features,
 it is becoming noticeable.

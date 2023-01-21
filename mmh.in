@@ -144,7 +144,8 @@ subp = ap.add_subparsers(
     dest = 'sub_command', metavar = 'Sub Commands')
 
 # build
-ap_build = subp.add_parser('build', help = 'Build a module')
+ap_build = subp.add_parser('build', help = 'Build a module in many instances')
+ap_build.add_argument('instances', default = [ ], nargs = '*')
 
 # init
 ap_init = subp.add_parser(
@@ -203,6 +204,9 @@ ap_run = subp.add_parser(
 
 ap_run.set_defaults(sub_command = 'run-instance')
 ap_run.add_argument('instances', nargs = '*')
+ap_run.add_argument(
+    "-a", "--all-instances", action = "store_true",
+    help = "Force building all module instances")
 
 # show-result
 ap_result = subp.add_parser(
@@ -305,6 +309,9 @@ if (cmdargs.verbose):
 if (cmdargs.quiet):
     log.disable()
 
+if ('instances' not in cmdargs):
+    cmdargs.instances = []
+
 if ('single_instance' not in cmdargs):
     cmdargs.single_instance = None
 
@@ -380,6 +387,8 @@ if (cmdargs.sub_command != 'reset-setup' and
                     cmdargs.buildconfigs = p['buildconfigs']
                 if 'buildtools' in p:
                     cmdargs.buildtools = p['buildtools']
+                if not cmdargs.all_instances and 'instances' in p:
+                    cmdargs.instances = p['instances']
                 if 'toolchains' in p:
                     cmdargs.toolchains = p['toolchains']
                 if 'cmake' in p:
@@ -521,13 +530,6 @@ elif (cmdargs.sub_command == "reset-setup"):
     mmh.dump(fn, data)
 
 elif (cmdargs.sub_command == "run-instance"):
-    if (len(cmdargs.instances) >= 1):
-        cfg.load()
-        adjustConfig(cfg, cmdargs)
-        for d in cmdargs.instances:
-            build.runInstance(cfg, log, cmdargs, d)
-        mmh_exit(0)
-
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)

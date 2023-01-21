@@ -25,6 +25,7 @@
 - Implement revision-overrides by file-glob style patterns. This allows
   specifying a fixed revision or the use of a module's development branch.
 - Implement revision-overrides by --revision option on the command line.
+- Implement foo/bar/*/baz style instance filters for module builds.
 
 ** Bugfixes
 

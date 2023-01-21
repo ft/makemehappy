@@ -96,7 +96,18 @@ _makemehappy-build() {
         print "Run complete module building process"
         return
     fi
-    __makemehappy-nothing-else
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '*::: :->args' \
+               '(-h --help)'{-h,--help}'[display help message]' \
+        && ret=0
+
+    if [[ $state == args ]]; then
+        _message -e instance-filter
+    fi
+    return ret
 }
 
 _makemehappy-build-tree-init() {
@@ -161,7 +172,19 @@ _makemehappy-run-instance() {
         print "(Re)run previously configured build-tree"
         return
     fi
-    __makemehappy-nothing-else
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '*::: :->args' \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-a --all-instances)'{-a,--all-instances}'[Force building all system instances]' \
+        && ret=0
+
+    if [[ $state == args ]]; then
+        _message -e instance-filter
+    fi
+    return ret
 }
 
 _makemehappy-show-result() {

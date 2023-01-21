@@ -41,11 +41,12 @@ def matchingVersion(version, data):
     return (data['version'] == version)
 
 def noParameters(args):
-    return (args.architectures == None and
-            args.buildconfigs  == None and
-            args.buildtools    == None and
-            args.toolchains    == None and
-            args.cmake         == None)
+    return (args.architectures  == None and
+            args.buildconfigs   == None and
+            args.buildtools     == None and
+            args.toolchains     == None and
+            args.cmake          == None and
+            len(args.instances) == 0)
 
 def load(file):
     (root,fn) = os.path.split(os.path.realpath(file))

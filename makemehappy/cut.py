@@ -614,6 +614,8 @@ def outputMMHYAML(version, fn, data, args):
     data['version'] = version
     data['mode'] = 'module'
     data['parameters'] = {}
+    if (len(args.instances) > 0):
+        data['parameters']['instances'] = args.instances
     if (args.architectures != None):
         data['parameters']['architectures'] = args.architectures
     if (args.buildconfigs != None):
@@ -626,6 +628,8 @@ def outputMMHYAML(version, fn, data, args):
         data['parameters']['cmake'] = args.cmake
     if not data['parameters']:
         data.pop('parameters', None)
+    if (args.all_instances and 'instances' in data):
+        del(data['instances'])
     mmh.dump(fn, data)
 
 def updateMMHYAML(log, root, version, args):
@@ -640,7 +644,7 @@ def updateMMHYAML(log, root, version, args):
         outputMMHYAML(version, fn, data, args)
         return
 
-    if (not mmh.noParameters(args)):
+    if (not mmh.noParameters(args) or args.all_instances):
         log.info('Updating instance config: {}'.format(fn))
         outputMMHYAML(version, fn, data, args)
         return
@@ -700,7 +704,7 @@ class CodeUnderTest:
                               seed = yaml.dump(self.moduleData),
                               modName = self.name(),
                               dirName = args.directory)
-        if (args.fromyaml == False):
+        if (args.fromyaml == False or args.all_instances == True):
             updateMMHYAML(self.log, self.root.root, version, args)
 
     def cmakeIntoYAML(self):
@@ -797,7 +801,7 @@ class CodeUnderTest:
         self.toplevel.generateToplevel()
 
     def build(self):
-        build.allofthem(self.cfg, self.log, self, self.extensions)
+        build.allofthem(self.cfg, self.log, self, self.extensions, self.args)
 
     def cmake3rdParty(self):
         if (has('cmake-extensions', self.moduleData, dict)):
