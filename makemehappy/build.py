@@ -291,6 +291,7 @@ def listInstances(log, mod, args):
                               instances))
         instances = filtered
 
+    instances.sort(key = lambda x: instanceName(x))
     return instances
 
 def allofthem(cfg, log, mod, ext, args):

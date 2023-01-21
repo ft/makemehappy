@@ -574,7 +574,7 @@ elif (cmdargs.sub_command == "list-instances"):
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.initRoot(version, cmdargs)
     cut.loadModule()
-    for inst in sorted(cut.listInstances()):
+    for inst in cut.listInstances():
         print(inst)
 
 elif (cmdargs.sub_command == "run-instance"):
