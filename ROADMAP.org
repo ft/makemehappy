@@ -12,7 +12,10 @@
 ** TODO ‘toolchains’ configuration should be a dict of dicts
 I'm not sure if it's worth fixing this now. Only if it's straight-forward, I
 guess.
-** TODO Enable removing parameters from YAML Stack data
+
+This is not happening, because we've allowed module.yaml file to override
+toolchains in the past, and I am not breaking that.
+** ACTIVE Enable removing parameters from YAML Stack data
 It's unfortunate, that this is not possible at the moment, particularly for
 toolchains, but also for modules and the planned revision-overrides. It's
 probably easy to add removers the lists-of-strings and keys-of-dicts, if it's
@@ -20,6 +23,9 @@ just in the first level of the data-structure.
 
 Removals are applied when merging the stacked data-structre and happens just
 before data from a higher level file is merged.
+
+- [X] config.yaml
+- [ ] sources.yaml
 
 #+begin_src yaml
 # In config.yaml:

@@ -57,6 +57,38 @@ def mergeByName(a, b):
 def mergeLODbyName(data):
     return reduce(mergeByName, data)
 
+def processRemoveList(data, layer, needle):
+    if ('remove' not in layer):
+        return data
+    if (needle not in layer['remove']):
+        return data
+    return list(filter(lambda x: (x not in layer['remove'][needle]), data))
+
+def np(item, rem):
+    return (item['name'] not in rem)
+
+def processRemoveLOD(data, layer, needle):
+    if ('remove' not in layer):
+        return data
+    if (needle not in layer['remove']):
+        return data
+    return list(map(lambda sublist: \
+                    list(filter(lambda item: np(item, layer['remove'][needle]),
+                                sublist)),
+                    data))
+
+def processRemoveDict(data, layer, needle):
+    if ('remove' not in layer):
+        return data
+    if (needle not in layer['remove']):
+        return data
+    lst = []
+    for item in data:
+        for pat in layer['remove'][needle]:
+            del(item[pat])
+        lst += [ item ]
+    return lst
+
 class SourceStack(YamlStack):
     def __init__(self, log, desc, *lst):
         YamlStack.__init__(self, log, desc, *lst)
@@ -129,6 +161,7 @@ class ConfigStack(YamlStack):
         if (needle in self.mergeDicts):
             data = []
             for slice in self.data:
+                data = processRemoveDict(data, slice, needle)
                 if (needle in slice):
                     data += [ slice[needle] ]
 
@@ -140,6 +173,7 @@ class ConfigStack(YamlStack):
         elif (needle in self.mergeLODbyName):
             data = []
             for slice in self.data:
+                data = processRemoveLOD(data, slice, needle)
                 if (needle in slice):
                     data += [ slice[needle] ]
 
@@ -151,6 +185,7 @@ class ConfigStack(YamlStack):
         elif (needle in self.mergeLists):
             lst = []
             for slice in self.data:
+                lst = processRemoveList(lst, slice, needle)
                 if (needle in slice):
                     lst += slice[needle]
             lst = list(set(lst))
