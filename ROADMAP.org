@@ -9,9 +9,6 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** DONE YAML Stacks should be merged after loading, not on every lookup
-The overhead didn't use to be all that bad, but with the additional features,
-it is becoming noticeable.
 ** TODO Make module builds allow for "foo/bar/baz/quux" type build specs
 This is similar to what system builds allow. The UI experience is kind of nice.
 ** TODO Add revision-overrides subcommand to inspect active revisions
@@ -69,10 +66,6 @@ With --thorough:
 - Check if "repository" exists.
 - Check if "main" branch spec can be resolved against remote repository.
 
-:PROPERTIES:
-:ID:       70cbcd25-8887-4036-a5d9-19d8a4075688
-:CREATED:  [2022-06-09 Do 09:45]
-:END:
 ** TODO Allow sources.yaml to specify deprecated module versions
 
 Example:
@@ -107,10 +100,6 @@ kernel-map:
 From subdirectories, that have modules with a module.yaml. At the moment, only
 the extensions from ‘ufw’ are considered.
 
-:PROPERTIES:
-:ID:       2ebbec9c-0a1d-4b11-a03c-7c4e53afe69e
-:CREATED:  [2022-06-21 Di 10:50]
-:END:
 ** TODO Add a way to define dependencies for third-party modules
 ** TODO run: Run compilation instances from module-tree
 - [X] All
@@ -142,10 +131,10 @@ All important parameters are encoded in the build-directory name:
 
 Note that the build directories are encoded differently nowadays.
 ** TODO Flesh out user manual
+** DONE YAML Stacks should be merged after loading, not on every lookup
+The overhead didn't use to be all that bad, but with the additional features,
+it is becoming noticeable.
 ** DONE Config Extensions
-CLOSED: [2023-01-14 Sat 18:09]
-- State "DONE"       from "TODO"       [2023-01-14 Sat 18:09]
-
 Read Configs with --config=foo
 
 Look in datapath, etcpath, homepath, and localpath (current working dir) and
@@ -153,9 +142,6 @@ put them on top of the config stack.
 
 This should also work with the sources stack, via --sources=bar.
 ** DONE Specify "main" branch in sources.yaml
-CLOSED: [2023-01-15 Sun 22:49]
-
-- State "DONE"       from "TODO"       [2023-01-15 Sun 22:49]
 Can be a list of strings or a string.  The default is
 
   [ 'main', 'master' ]
@@ -183,8 +169,6 @@ This should also work from the command line:
 …where "!KEYWORD" is a special pattern and "main" would be equivalent to
 setting "use-main-branch: true" in a configuration file.
 ** DONE Allow "west" key in sources spec to specify a zephyr module's west name
-CLOSED: [2023-01-15 Sun 23:48]
-- State "DONE"       from "TODO"       [2023-01-15 Sun 23:48]
 ** DONE Enable removing parameters from YAML Stack data
 It's unfortunate, that this is not possible at the moment, particularly for
 toolchains, but also for modules and the planned revision-overrides. It's
@@ -219,8 +203,6 @@ remove:
     - mcuboot
 #+end_src
 ** DONE Get zephyr module dependency from west.yaml from zephyr-kernel repo
-CLOSED: [2023-01-15 Sun 22:42]
-- State "DONE"       from "TODO"       [2023-01-15 Sun 22:42]
 ** DONE system: Build many parameter combinations for a system-build
 In normal operation, mmh tries to build  a module's code with as many parameter
 combinations as possible (toolchain, build-cfg, build-tool etc). To do this, it
@@ -270,9 +252,6 @@ dingly, because  the CMake code  required for  this is not  particularly pretty
 either. This could be done for UFW 2.0.0,  at which point we could also break a
 couple of things that require inelegant code to implement.
 *** DONE mmh system [9/9]
-CLOSED: [2023-01-14 Sat 13:07]
-- State "DONE"       from "TODO"       [2023-01-14 Sat 13:07]
-
 - [X] zephyr: Pick up ufw's kconfig for build-type.
 - [X] zephyr: Allow users to define more konfig files.
 - [X] general: Allow users to define cmake variables.
@@ -288,7 +267,6 @@ CLOSED: [2023-01-14 Sat 13:07]
 ** DONE Detect cyclic dependencies in toplevel CMakeLists.txt
 ** DONE Add YamlStack variant for configuration parsing
 ** DONE Add option to keep running when a build-instance fails
-CLOSED: [2022-05-08 Sun 12:55]
 ** DONE With non-temporary build-roots, invert --preserve
 ** DONE Generate mmh script
 Configure:
@@ -366,7 +344,6 @@ mymod:
 
 This will be more powerful with generation-waypoints in place. See below.
 ** DONE Introduce waypoints that for extension generation
-CLOSED: [2022-05-08 Sun 12:49]
 With third party extensions you get a way of replacing add_subdirectory() calls
 with arbitrary cmake functions or macros. The generation of that looks like
 this:
@@ -410,7 +387,6 @@ cmake-extension-variants:
   # Also, maybe via pattern:
   mymod: ^mymod-.*$
 ** DONE Allow source types other than git; symlinks especially
-CLOSED: [2022-05-08 Sun 12:43]
 Allowing symlinks gives users the ability to inject ongoing development of
 modules into the dependency chain of other modules, making it possible to
 develop modules side by side.
@@ -434,10 +410,6 @@ To mark modules, that cannot be built stand-alone. This would allow:
 % for d in */; do (cd "$d" && mmh); done
 
 …to build everything that can be build stand-alone.
-:PROPERTIES:
-:ID:       1920422c-de7b-4854-aa1d-591f4fe3e690
-:CREATED:  [2022-06-08 Mi 15:39]
-:END:
 ** DEFERRED Gather statistics while running
 
 The version judgements have to be implemented before this can be done.
@@ -450,8 +422,9 @@ The version judgements have to be implemented before this can be done.
 *** DONE How many build-instances had their test runs succeed/fail?
 *** DONE How much time did individual steps take to execute?
 *** DONE Render statistics nicely at program termination
-** DEFERRED Load module snippets via cmdline arg
-
+** DEFERRED Add an option to specify source directory instead of cwd
+I am not quite sure why I wanted this in the first place.
+** CANCELED Load module snippets via cmdline arg
 eg: zephyr-3.0.yaml etc. Maybe even via global repository.
 
 Not sure if this is all that useful, if we can do:
@@ -466,37 +439,12 @@ And with config-extensions this could become:
 
 …so, this is probably not worth it.
 
-- State "DEFERRED"   from "NEW"        [2023-01-14 Sat 17:03]
-:PROPERTIES:
-:ID:       f19edeed-5f1f-4ab8-9d72-7c3882ef4696
-:CREATED:  [2022-06-08 Mi 15:40]
-:END:
-** DEFERRED Add an option to specify source directory instead of cwd
-I am not quite sure why I wanted this in the first place.
+Update: Yes, not worth it.
+
 ** DONE Zsh completion would be nice
-CLOSED: [2022-05-14 Sat 16:54]
 ** DONE Forget "tools" — check all dependencies into "deps"
 ** DONE Allow printing build stages with --log-to-file
-CLOSED: [2023-01-14 Sat 12:57]
-
-- State "DONE"       from "NEW"        [2023-01-14 Sat 12:57]
 This is useful for progress in CI.
-:PROPERTIES:
-:ID:       41c60717-2451-4420-ba73-65091d3ee57f
-:CREATED:  [2022-08-03 Mi 20:01]
-:END:
 ** DONE Error out when checkout of dependency revision fails
-CLOSED: [2023-01-14 Sat 13:01]
-:PROPERTIES:
-:ID:       16612c01-d240-496c-aa4d-b653540e3bbd
-:CREATED:  [2022-06-22 Mi 17:41]
-:END:
-- State "DONE"       from "NEW"        [2023-01-14 Sat 13:01]
 ** DONE Make non-existant zephyr modules an error?
-CLOSED: [2023-01-14 Sat 13:02]
-:PROPERTIES:
-:ID:       8f7e4440-5e29-4691-b749-b15bf6bf5f62
-:CREATED:  [2022-07-01 Fr 10:38]
-:END:
-- State "DONE"       from "NEW"        [2023-01-14 Sat 13:02]
 
