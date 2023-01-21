@@ -9,7 +9,7 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** TODO ‘toolchains’ configuration should be a dict of dicts
+** CANCELED ‘toolchains’ configuration should be a dict of dicts
 I'm not sure if it's worth fixing this now. Only if it's straight-forward, I
 guess.
 
