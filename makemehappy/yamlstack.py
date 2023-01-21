@@ -115,6 +115,7 @@ class SourceStack(YamlStack):
                     continue
                 rv.append(module)
 
+        rv.sort()
         return rv
 
     def lookup(self, needle):
