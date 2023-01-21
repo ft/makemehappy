@@ -5,6 +5,9 @@
 
 ** Breaking Compatibility:
 
+- The default command is switched to 'run-instance' when mmh is not in system
+  mode and the specified directory (via --directory) already exists. Previously
+  mmh still defaulted to 'build', which breaks with the directory exists.
 - Configuration and source definitions inherit properties from layers with less
   priority. This means, that you cannot just override a definition. To remove
   any inherited data, use the new ‘remove’ top-level key.

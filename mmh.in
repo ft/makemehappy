@@ -359,6 +359,8 @@ cmdargs.cmake = cmakeParameters
 if (cmdargs.sub_command == None):
     if (os.path.isfile('system.yaml')):
         cmdargs.sub_command = 'system'
+    elif (cmdargs.directory != None and os.path.exists(cmdargs.directory)):
+        cmdargs.sub_command = 'run-instance'
     else:
         cmdargs.sub_command = 'build'
     log.info("Starting up using default command ({})".format(cmdargs.sub_command))
