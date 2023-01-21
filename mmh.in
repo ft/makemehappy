@@ -294,25 +294,7 @@ def mmh_exit(code):
     exit(code)
 
 if cmdargs.query is not None:
-    cfg.load()
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    if (os.path.isfile(cmdargs.module) == True):
-        cut.loadModule()
-    q = cmdargs.query
-    result = []
-    if (q == 'toolchains'):
-        result = cut.allToolchains()
-    elif (q == 'architectures'):
-        result = cut.allArchitectures()
-    elif (q == 'buildtools'):
-        result = cut.allBuildtools()
-    elif (q == 'buildconfigs'):
-        result = cut.allBuildConfigs()
-    else:
-        mmh.warn('Unknown query: {}'.format(q))
-        mmh_exit(1)
-    print(" ".join(result))
-    mmh_exit(0)
+    log.disable()
 
 if (isinstance(cmdargs.directory, str)):
     cmdargs.preserve = not(cmdargs.preserve)
@@ -452,6 +434,30 @@ def adjustConfig(cfg, args):
             adjustments = adjustments + 1
     if adjustments > 0:
         cfg.pushLayer(layer)
+
+if cmdargs.query is not None:
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+    if (os.path.isfile(cmdargs.module) == True):
+        cut.loadModule()
+    q = cmdargs.query
+    result = []
+    if (q == 'toolchains'):
+        result = cut.allToolchains()
+    elif (q == 'architectures'):
+        result = cut.allArchitectures()
+    elif (q == 'buildtools'):
+        result = cut.allBuildtools()
+    elif (q == 'buildconfigs'):
+        result = cut.allBuildConfigs()
+    elif (q == 'overrides'):
+        result = cfg.allOverrides()
+    else:
+        mmh.warn('Unknown query: {}'.format(q))
+        mmh_exit(1)
+    print(" ".join(result))
+    mmh_exit(0)
 
 def requireModuleDefinition(args):
     if (os.path.isfile(args.module) == False):
