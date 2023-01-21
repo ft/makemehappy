@@ -568,6 +568,10 @@ elif (cmdargs.sub_command == "reset-setup"):
     mmh.dump(fn, data)
 
 elif (cmdargs.sub_command == "list-instances"):
+    if (cmdargs.directory == None):
+        print("list-instances only works with -d!")
+        mmh_exit(1)
+
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
