@@ -283,7 +283,7 @@ def listInstances(log, mod, args):
         instances = generateZephyrInstances(log, mod)
     else:
         instances = generateInstances(log, mod)
-    if (len(args.instances) > 0):
+    if (len(args.instances) > 0 and args.sub_command != 'list-instances'):
         filtered = []
         for pat in args.instances:
             filtered = filtered \
