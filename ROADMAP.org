@@ -15,7 +15,7 @@ guess.
 
 This is not happening, because we've allowed module.yaml file to override
 toolchains in the past, and I am not breaking that.
-** ACTIVE Enable removing parameters from YAML Stack data
+** DONE Enable removing parameters from YAML Stack data
 It's unfortunate, that this is not possible at the moment, particularly for
 toolchains, but also for modules and the planned revision-overrides. It's
 probably easy to add removers the lists-of-strings and keys-of-dicts, if it's
@@ -25,7 +25,7 @@ Removals are applied when merging the stacked data-structre and happens just
 before data from a higher level file is merged.
 
 - [X] config.yaml
-- [ ] sources.yaml
+- [X] sources.yaml
 
 #+begin_src yaml
 # In config.yaml:

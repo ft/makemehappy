@@ -60,6 +60,15 @@ def processRemoveDict(data, layer, needle):
         lst += [ item ]
     return lst
 
+def processRemoveSources(data, layer, needle):
+    if ('remove' not in layer):
+        return data
+    if ('modules' not in layer['remove']):
+        return data
+    if (needle not in layer['remove']['modules']):
+        return data
+    return []
+
 class YamlStack:
     def __init__(self, log, desc, *lst):
         self.log = log
@@ -108,6 +117,11 @@ class SourceStack(YamlStack):
             raise(NoSourceData())
 
         for slice in self.data:
+            mmh.pp(rv)
+            if ('remove' in slice and 'modules' in slice['remove']):
+                rv = list(
+                    filter(lambda x: x not in slice['remove']['modules'], \
+                           rv))
             if not('modules' in slice):
                 continue
             for module in slice['modules']:
@@ -124,15 +138,16 @@ class SourceStack(YamlStack):
 
         data = []
         for slice in self.data:
+            data = processRemoveSources(data, slice, needle)
             if not('modules' in slice):
                 continue
             if (needle in slice['modules']):
-                data += [ slice['modules'][needle] ]
+                data += [ { needle: slice['modules'][needle] } ]
 
         if (len(data) == 0):
             raise(UnknownModule(needle))
 
-        data = mergeStack(data)
+        data = mergeStack(map(lambda x: x[needle], data))
 
         if ('main' not in data):
             data['main'] = [ 'main', 'master' ]
