@@ -42,6 +42,11 @@ def generateInstances(log, mod):
     if ('install' in mod.moduleData):
         install = mod.moduleData['install']
 
+    if ('name' in mod.moduleData):
+        name = mod.moduleData['name']
+    else:
+        name = 'NoName'
+
     instances = []
     for tc in chains:
         if not(toolchainViable(mod.moduleData, tc)):
@@ -52,6 +57,7 @@ def generateInstances(log, mod):
                 add = (lambda a:
                     instances.append({'toolchain'   : maybeToolchain(tc),
                                       'architecture': a,
+                                      'name'        : name,
                                       'buildcfg'    : cfg,
                                       'buildtool'   : tool,
                                       'install'     : install,
@@ -106,10 +112,15 @@ def generateZephyrInstances(log, mod):
                             target['modules'] = []
                         if ('application' not in target):
                             target['application'] = None
+                        if ('name' in mod.moduleData):
+                            name = mod.moduleData['name']
+                        else:
+                            name = 'NoName'
                         instances.append(
                             { 'toolchain'   : tc,
                               'board'       : board,
                               'architecture': board,
+                              'name'        : name,
                               'application' : target['application'],
                               'modules'     : target['modules'],
                               'dtc-overlays': target['dtc-overlays'],
@@ -127,11 +138,15 @@ def instanceName(instance):
     if (isinstance(tc, dict)):
         tc = tc['name']
     if (instance['type'] == 'zephyr'):
-        tc = 'zephyr-' + tc
-    return "{}/{}/{}/{}".format(tc,
-                                instance['architecture'],
-                                instance['buildcfg'],
-                                instance['buildtool'])
+        t = 'zephyr'
+    else:
+        t = 'cmake'
+    return "{}/{}/{}/{}/{}/{}".format(t,
+                                      instance['architecture'],
+                                      instance['name'],
+                                      tc,
+                                      instance['buildcfg'],
+                                      instance['buildtool'])
 
 def instanceDirectory(stats, instance):
     stats.build(instance['toolchain'],
@@ -156,11 +171,6 @@ class UnknownModuleType(Exception):
 def findToolchainByExtension(ext, tc):
     return findToolchain(ext.toolchainPath(), tc)
 
-def instanceTag(instance):
-    return ('module/' +
-            instance['type'] + '/' +
-            instanceName(instance))
-
 def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     cmakeArgs = None
     if (args.cmake == None):
@@ -168,7 +178,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     else:
         cmakeArgs = args.cmake
 
-    mmh.maybeShowPhase(log, 'configure', instanceTag(instance), args)
+    mmh.maybeShowPhase(log, 'configure', instanceName(instance), args)
     if (instance['type'] == 'cmake'):
         cmd = c.configureLibrary(
             log          = log,
@@ -210,7 +220,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     return (rc == 0)
 
 def cmakeBuild(cfg, log, args, stats, instance):
-    mmh.maybeShowPhase(log, 'compile', instanceTag(instance), args)
+    mmh.maybeShowPhase(log, 'compile', instanceName(instance), args)
     rc = mmh.loggedProcess(cfg, log, c.compile())
     stats.logBuild(rc)
     return (rc == 0)
@@ -221,7 +231,7 @@ def cmakeTest(cfg, log, args, stats, instance):
     # ly run ctest for real, if tests were registered using add_test().
     num = c.countTests()
     if (num > 0):
-        mmh.maybeShowPhase(log, 'test', instanceTag(instance), args)
+        mmh.maybeShowPhase(log, 'test', instanceName(instance), args)
         rc = mmh.loggedProcess(cfg, log, c.test())
         stats.logTestsuite(num, rc)
         return (rc == 0)
@@ -243,7 +253,7 @@ def maybeInstall(cfg, log, args, stats, instance):
     if (instance['install'] == False):
         return True
 
-    mmh.maybeShowPhase(log, 'install', instanceTag(instance), args)
+    mmh.maybeShowPhase(log, 'install', instanceName(instance), args)
     for component in mmh.get_install_components(log, instance['install']):
         cmd = c.install(component = component)
         rc = mmh.loggedProcess(cfg, log, cmd)
