@@ -401,8 +401,6 @@ guess.
 This is not happening, because we've allowed module.yaml file to override
 toolchains in the past, and I am not breaking that.
 * Wishlist
-** TODO Allow for --single-instance with module builds as well
-This should be pretty straight forward, and useful.
 ** TODO Module type: nobuild
 To mark modules, that cannot be built stand-alone. This would allow:
 
@@ -426,6 +424,11 @@ The version judgements have to be implemented before this can be done.
 *** DONE Render statistics nicely at program termination
 ** DEFERRED Add an option to specify source directory instead of cwd
 I am not quite sure why I wanted this in the first place.
+** DONE Allow for --single-instance with module builds as well
+This should be pretty straight forward, and useful.
+
+Update: Instead, module builds have the focus subcommand, that achieves a
+similar feature-set.
 ** CANCELED Load module snippets via cmdline arg
 eg: zephyr-3.0.yaml etc. Maybe even via global repository.
 

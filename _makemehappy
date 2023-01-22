@@ -8,6 +8,7 @@ typeset -gA _makemehappy_aliasmap
 _makemehappy_aliasmap=(
     deps      fetch-dependencies
     dump      dump-description
+    focus     focus-instance
     get       download-source
     init      build-tree-init
     list      list-instances
@@ -165,6 +166,34 @@ _makemehappy-fetch-dependencies() {
         return
     fi
     __makemehappy-nothing-else
+}
+
+_makemehappy-focus-instance() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Focus a module instance's build-tree"
+        return
+    fi
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '*::: :->args' \
+               '(-l --link-name)'{-l,--link-name}'[specify focus link name]:focus link:_path_files' \
+               '(-n --no-compile-commands)'{-n,--no-compile-commands}'[do not link to compile_commands.json]' \
+               '(-h --help)'{-h,--help}'[display help message]' \
+        && ret=0
+
+    [[ -z $state ]] && return ret
+
+    if [[ -n $mmhdir ]]; then
+        local -a instances ignored
+        ignored=(${line:#${words[CURRENT]}})
+        instances=( ${${(f)"$(command mmh -q -d "$mmhdir" list)"}%%:*} )
+        _wanted module-instances expl 'module instances' \
+                compadd -F ignored "${instances[@]}"
+        return
+    fi
+    _path_files
 }
 
 _makemehappy-generate-toplevel() {
