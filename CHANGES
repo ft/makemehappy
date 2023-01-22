@@ -1,7 +1,31 @@
  User-visible changes in make-me-happy
 =======================================
 
-* v0.15 → v0.16 (unreleased):
+* v0.16 → v0.17 (released 2023-01-22):
+
+** New Features
+
+- New ‘revision-overrides’ sub-command.
+- New ‘focus-instance’ sub-command.
+- New ‘nobuild’ module-type.
+
+** Miscellaneous
+
+- Slight improvements to developer tooling.
+
+** Diffstat:
+
+    ROADMAP.org              | 29 +++++++-------
+    _makemehappy             | 38 +++++++++++++++++++
+    auto-configure           |  4 +-
+    makemehappy/cut.py       | 30 ++++-----------
+    makemehappy/utilities.py | 10 +++++
+    makemehappy/yamlstack.py | 28 ++++++++++----
+    mmh.in                   | 81 +++++++++++++++++++++++++++++++++++++++-
+    7 files changed, 174 insertions(+), 46 deletions(-)
+
+
+* v0.15 → v0.16 (released 2023-01-21):
 
 ** Breaking Compatibility:
 
@@ -14,8 +38,6 @@
 
 ** New Features
 
-- Merge all yaml-stack layers after loading instead of doing it when required
-  at ‘lookup’ time.
 - Support removing specifications from lower priority files in the yaml stacks
   at merge-time.
 - Allow adding configuration profiles to the config stack, using --config.
@@ -39,6 +61,8 @@
 
 ** Miscellaneous
 
+- Merge all yaml-stack layers after loading instead of doing it when required
+  at ‘lookup’ time.
 - Removed a couple of obsolete zephyr modules: zephyr-hal-qmsi,
   zephyr-hal-unisoc and zephyr-mcumgr.
 

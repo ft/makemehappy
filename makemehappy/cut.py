@@ -1,5 +1,4 @@
 import datetime
-import fnmatch
 import math
 import os
 import yaml
@@ -164,27 +163,14 @@ def getSource(dep, src):
     return tmp
 
 def revisionOverride(cfg, src, mod):
-    lst = cfg.allOverrides()
-    for rover in lst:
-        if ('name' not in rover):
-            continue
-        pattern = rover['name']
-        if (fnmatch.fnmatch(mod, pattern)):
-            if ('preserve' in rover):
-                if (rover['preserve']):
-                    return None
-                continue
-            elif ('revision' in rover):
-                return rover['revision']
-            elif ('use-main-branch' in rover):
-                if (not rover['use-main-branch']):
-                    return None
-                s = src.lookup(mod)
-                m = s['main']
-                if (isinstance(m, str)):
-                    return [ m ]
-                return m
-    return None
+    rev = cfg.processOverrides(mod)
+    if (rev == '!main'):
+        s = src.lookup(mod)
+        m = s['main']
+        if (isinstance(m, str)):
+            return [ m ]
+        return m
+    return rev
 
 def gitRemoteHasBranch(rev):
     rc = mmh.devnullProcess(['git', 'rev-parse', '--verify', 'origin/' + rev])

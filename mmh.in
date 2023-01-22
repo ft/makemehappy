@@ -190,6 +190,20 @@ ap_top = subp.add_parser(
 
 ap_top.set_defaults(sub_command = 'generate-toplevel')
 
+# focus-instance
+ap_focus = subp.add_parser(
+    'focus-instance', aliases = [ 'focus' ],
+    help = "Focus a module instance's build-tree")
+
+ap_focus.set_defaults(sub_command = 'focus-instance')
+ap_focus.add_argument('instance', nargs = 1)
+ap_focus.add_argument(
+    "-l", "--link-name", default = 'focus',
+    help = "Change name of created symlink")
+ap_focus.add_argument(
+    "-n", "--no-compile-commands", action = 'store_true',
+    help = "Inhibit symlinking compile_commands.json")
+
 # prepare
 ap_prepare = subp.add_parser(
     'prepare',
@@ -201,6 +215,14 @@ ap_reset = subp.add_parser(
     help = 'Reset build-tree meta-data')
 
 ap_reset.set_defaults(sub_command = 'reset-setup')
+
+# revision-overrides
+ap_revisions = subp.add_parser(
+    'revision-overrides', aliases = [ 'revs' ],
+    help = 'Show and test revision overrides')
+
+ap_revisions.set_defaults(sub_command = 'revision-overrides')
+ap_revisions.add_argument('modules', nargs = '*')
 
 # list-instances
 ap_list = subp.add_parser(
@@ -452,7 +474,13 @@ def adjustConfig(cfg, args):
                     new = { 'name': pat, 'use-main-branch': True }
                 else:
                     new = { 'name': pat, 'revision': value }
+
+                idx = mmh.findByName(layer['revision-overrides'], pat)
+                if (idx != None):
+                    del(layer['revision-overrides'][idx])
+
                 layer['revision-overrides'].append(new)
+
                 if ('revision-overrides' not in layer['remove']):
                     layer['remove']['revision-overrides'] = []
                 layer['remove']['revision-overrides'].append(pat)
@@ -499,6 +527,9 @@ def do_prepare():
     adjustConfig(cfg, cmdargs)
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
     cut.loadModule()
+    if (cut.moduleType == 'nobuild'):
+        log.info("Module type is 'nobuild'. Doing nothing.")
+        mmh_exit(0)
     cut.cliAdjust(toolchains    = cmdargs.toolchains,
                   architectures = cmdargs.architectures,
                   buildconfigs  = cmdargs.buildconfigs,
@@ -576,8 +607,11 @@ elif (cmdargs.sub_command == "list-instances"):
     cfg.load()
     adjustConfig(cfg, cmdargs)
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    cut.initRoot(version, cmdargs)
     cut.loadModule()
+    if (cut.moduleType == 'nobuild'):
+        log.info("Module type is 'nobuild'. Doing nothing.")
+        mmh_exit(0)
+    cut.initRoot(version, cmdargs)
     for inst in cut.listInstances():
         print(inst)
 
@@ -586,8 +620,11 @@ elif (cmdargs.sub_command == "run-instance"):
     cfg.load()
     adjustConfig(cfg, cmdargs)
     cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    cut.initRoot(version, cmdargs)
     cut.loadModule()
+    if (cut.moduleType == 'nobuild'):
+        log.info("Module type is 'nobuild'. Doing nothing.")
+        mmh_exit(0)
+    cut.initRoot(version, cmdargs)
     cut.cliAdjust(toolchains    = cmdargs.toolchains,
                   architectures = cmdargs.architectures,
                   buildconfigs  = cmdargs.buildconfigs,
@@ -605,6 +642,30 @@ elif (cmdargs.sub_command == "run-instance"):
         log.info('{} build(s) out of {} failed.'
                  .format(cut.countFailed(), cut.countBuilds()))
         commandReturnValue = 1
+
+elif (cmdargs.sub_command == "focus-instance"):
+    instance = cmdargs.instance[0]
+    linkname = cmdargs.link_name
+    ccj = 'compile_commands.json'
+    d = cmdargs.directory
+
+    if (cmdargs.directory != None):
+        instance = os.path.join(d, 'build', instance)
+
+    ccjTarget = os.path.join(instance, ccj)
+
+    print("\nCreating Focus for Build Instance:")
+    if (cmdargs.no_compile_commands == False):
+        print(f'  {ccj} -> {ccjTarget}')
+        if (os.path.islink(ccj)):
+            os.remove(ccj)
+        os.symlink(ccjTarget, ccj)
+
+    print(f'  {linkname} -> {instance}')
+    if (os.path.islink(linkname)):
+        os.remove(linkname)
+    os.symlink(instance, linkname)
+    print("")
 
 elif (cmdargs.sub_command == "prepare"):
     do_prepare()
@@ -628,6 +689,22 @@ elif (cmdargs.sub_command == "build"):
 elif (cmdargs.sub_command == "dump-description"):
     data = mmh.load(cmdargs.module)
     mmh.pp(data)
+
+elif (cmdargs.sub_command == "revision-overrides"):
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    if (len(cmdargs.modules) > 0):
+        print("\nEffective revision(s):")
+        for mod in cmdargs.modules:
+            rev = cfg.processOverrides(mod)
+            print(f'  {mod}: {rev}')
+        print("")
+    else:
+        lst = cfg.lookup('revision-overrides')
+        data = { 'revision-overrides': lst }
+        print("")
+        mmh.yp(data)
+        print("")
 
 elif (cmdargs.sub_command == "show-result"):
     input = cmdargs.file[0]

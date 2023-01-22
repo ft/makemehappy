@@ -9,8 +9,6 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** TODO Add revision-overrides subcommand to inspect active revisions
-For a module, all modules, with or without matched override.
 ** TODO Implement version dependency judgements
 
 - Major version mismatch: Error
@@ -125,6 +123,8 @@ All important parameters are encoded in the build-directory name:
 
 Note that the build directories are encoded differently nowadays.
 ** TODO Flesh out user manual
+** DONE Add revision-overrides subcommand to inspect active revisions
+For a module, some modules, with or without matched override.
 ** DONE Make module builds allow for "foo/bar/baz/quux" type build specs
 This is similar to what system builds allow. The UI experience is kind of nice.
 ** DONE run: Run compilation instances from module-tree
@@ -401,17 +401,6 @@ guess.
 This is not happening, because we've allowed module.yaml file to override
 toolchains in the past, and I am not breaking that.
 * Wishlist
-** TODO Allow for --single-instance with module builds as well
-This should be pretty straight forward, and useful.
-** TODO Module type: nobuild
-To mark modules, that cannot be built stand-alone. This would allow:
-
-% mkdir /tmp/mmh
-% cd /tmp/mmh
-% mmh download-sources
-% for d in */; do (cd "$d" && mmh); done
-
-…to build everything that can be build stand-alone.
 ** DEFERRED Gather statistics while running
 
 The version judgements have to be implemented before this can be done.
@@ -426,6 +415,20 @@ The version judgements have to be implemented before this can be done.
 *** DONE Render statistics nicely at program termination
 ** DEFERRED Add an option to specify source directory instead of cwd
 I am not quite sure why I wanted this in the first place.
+** DONE Module type: nobuild
+To mark modules, that cannot be built stand-alone. This would allow:
+
+% mkdir /tmp/mmh
+% cd /tmp/mmh
+% mmh download-sources
+% for d in */; do (cd "$d" && mmh); done
+
+…to build everything that can be build stand-alone.
+** DONE Allow for --single-instance with module builds as well
+This should be pretty straight forward, and useful.
+
+Update: Instead, module builds have the focus subcommand, that achieves a
+similar feature-set.
 ** CANCELED Load module snippets via cmdline arg
 eg: zephyr-3.0.yaml etc. Maybe even via global repository.
 

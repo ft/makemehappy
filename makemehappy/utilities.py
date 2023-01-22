@@ -65,6 +65,9 @@ def dump(file, data):
     with open(file, 'w') as fh:
         yaml.dump(data, fh)
 
+def yp(data):
+    print(yaml.dump(data), end = '')
+
 xppx = pprint.PrettyPrinter(indent = 4)
 
 def pp(thing):
@@ -131,6 +134,13 @@ def maybeMatch(lst, pat):
 
 def patternsToList(lst, pats):
     return flatten([ maybeMatch(lst, x) for x in pats ])
+
+def findByName(lst, name):
+    for i, d in enumerate(lst):
+        #print('DEBUG:', name, i, d)
+        if ('name' in d and d['name'] == name):
+            return i
+    return None
 
 def maybeShowPhase(log, phase, tag, args):
     string = f'{tag}: {phase}'
