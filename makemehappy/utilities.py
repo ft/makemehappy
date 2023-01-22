@@ -65,6 +65,9 @@ def dump(file, data):
     with open(file, 'w') as fh:
         yaml.dump(data, fh)
 
+def yp(data):
+    print(yaml.dump(data), end = '')
+
 xppx = pprint.PrettyPrinter(indent = 4)
 
 def pp(thing):

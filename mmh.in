@@ -202,6 +202,13 @@ ap_reset = subp.add_parser(
 
 ap_reset.set_defaults(sub_command = 'reset-setup')
 
+# revision-overrides
+ap_revisions = subp.add_parser(
+    'revision-overrides', aliases = [ 'revs' ],
+    help = 'Show and test revision overrides')
+
+ap_revisions.set_defaults(sub_command = 'revision-overrides')
+
 # list-instances
 ap_list = subp.add_parser(
     'list-instances', aliases = [ 'list' ],
@@ -628,6 +635,15 @@ elif (cmdargs.sub_command == "build"):
 elif (cmdargs.sub_command == "dump-description"):
     data = mmh.load(cmdargs.module)
     mmh.pp(data)
+
+elif (cmdargs.sub_command == "revision-overrides"):
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
+    lst = cfg.lookup('revision-overrides')
+    data = { 'revision-overrides': lst }
+    print("")
+    mmh.yp(data)
+    print("")
 
 elif (cmdargs.sub_command == "show-result"):
     input = cmdargs.file[0]

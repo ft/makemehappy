@@ -14,6 +14,7 @@ _makemehappy_aliasmap=(
     reset     reset-setup
     run       run-instance
     result    show-result
+    revs      revision-overrides
     show      show-source
     top       generate-toplevel
 )
@@ -193,6 +194,14 @@ _makemehappy-prepare() {
 _makemehappy-reset-setup() {
     if [[ -n ${makemehappy_describe} ]]; then
         print "Reset build-tree meta-data"
+        return
+    fi
+    __makemehappy-nothing-else
+}
+
+_makemehappy-revision-overrides() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Show and test revision overrides"
         return
     fi
     __makemehappy-nothing-else
