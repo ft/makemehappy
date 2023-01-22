@@ -135,6 +135,13 @@ def maybeMatch(lst, pat):
 def patternsToList(lst, pats):
     return flatten([ maybeMatch(lst, x) for x in pats ])
 
+def findByName(lst, name):
+    for i, d in enumerate(lst):
+        #print('DEBUG:', name, i, d)
+        if ('name' in d and d['name'] == name):
+            return i
+    return None
+
 def maybeShowPhase(log, phase, tag, args):
     string = f'{tag}: {phase}'
     log.info(f'Phase: {string}')

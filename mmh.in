@@ -208,6 +208,7 @@ ap_revisions = subp.add_parser(
     help = 'Show and test revision overrides')
 
 ap_revisions.set_defaults(sub_command = 'revision-overrides')
+ap_revisions.add_argument('modules', nargs = '*')
 
 # list-instances
 ap_list = subp.add_parser(
@@ -459,7 +460,13 @@ def adjustConfig(cfg, args):
                     new = { 'name': pat, 'use-main-branch': True }
                 else:
                     new = { 'name': pat, 'revision': value }
+
+                idx = mmh.findByName(layer['revision-overrides'], pat)
+                if (idx != None):
+                    del(layer['revision-overrides'][idx])
+
                 layer['revision-overrides'].append(new)
+
                 if ('revision-overrides' not in layer['remove']):
                     layer['remove']['revision-overrides'] = []
                 layer['remove']['revision-overrides'].append(pat)
@@ -639,11 +646,18 @@ elif (cmdargs.sub_command == "dump-description"):
 elif (cmdargs.sub_command == "revision-overrides"):
     cfg.load()
     adjustConfig(cfg, cmdargs)
-    lst = cfg.lookup('revision-overrides')
-    data = { 'revision-overrides': lst }
-    print("")
-    mmh.yp(data)
-    print("")
+    if (len(cmdargs.modules) > 0):
+        print("\nEffective revision(s):")
+        for mod in cmdargs.modules:
+            rev = cfg.processOverrides(mod)
+            print(f'  {mod}: {rev}')
+        print("")
+    else:
+        lst = cfg.lookup('revision-overrides')
+        data = { 'revision-overrides': lst }
+        print("")
+        mmh.yp(data)
+        print("")
 
 elif (cmdargs.sub_command == "show-result"):
     input = cmdargs.file[0]

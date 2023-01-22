@@ -1,15 +1,10 @@
 import copy
+import fnmatch
 import os
 
 from functools import reduce
 
 import makemehappy.utilities as mmh
-
-def findByName(lst, name):
-    for i, d in enumerate(lst):
-        if ('name' in d and d['name'] == name):
-            return i
-    return None
 
 class YamlStack:
     def __init__(self, log, desc, *lst):
@@ -134,7 +129,7 @@ class ConfigStack(YamlStack):
                     # overrides, since those names can be patterns. With the
                     # other keys of this type, order does not matter.
                     for entry in reversed(slice[key]):
-                        idx = findByName(self.merged[key], entry['name'])
+                        idx = mmh.findByName(self.merged[key], entry['name'])
                         if (idx != None):
                             new = { **self.merged[key][idx], **entry }
                             del(self.merged[key][idx])
@@ -186,3 +181,22 @@ class ConfigStack(YamlStack):
 
     def allOverrides(self):
         return self.lookup('revision-overrides')
+
+    def processOverrides(self, mod):
+        lst = self.allOverrides()
+        for rover in lst:
+            if ('name' not in rover):
+                continue
+            pattern = rover['name']
+            if (fnmatch.fnmatch(mod, pattern)):
+                if ('preserve' in rover):
+                    if (rover['preserve']):
+                        return None
+                    continue
+                elif ('revision' in rover):
+                    return rover['revision']
+                elif ('use-main-branch' in rover):
+                    if (not rover['use-main-branch']):
+                        return None
+                    return '!main'
+        return None

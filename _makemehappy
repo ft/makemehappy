@@ -204,7 +204,7 @@ _makemehappy-revision-overrides() {
         print "Show and test revision overrides"
         return
     fi
-    __makemehappy-nothing-else
+    __makemehappy-modules
 }
 
 _makemehappy-run-instance() {

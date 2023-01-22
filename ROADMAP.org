@@ -9,8 +9,6 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** TODO Add revision-overrides subcommand to inspect active revisions
-For a module, all modules, with or without matched override.
 ** TODO Implement version dependency judgements
 
 - Major version mismatch: Error
@@ -125,6 +123,8 @@ All important parameters are encoded in the build-directory name:
 
 Note that the build directories are encoded differently nowadays.
 ** TODO Flesh out user manual
+** DONE Add revision-overrides subcommand to inspect active revisions
+For a module, some modules, with or without matched override.
 ** DONE Make module builds allow for "foo/bar/baz/quux" type build specs
 This is similar to what system builds allow. The UI experience is kind of nice.
 ** DONE run: Run compilation instances from module-tree
