@@ -5,6 +5,7 @@ import yaml
 
 import makemehappy.utilities as mmh
 import makemehappy.build as build
+import makemehappy.version as v
 import makemehappy.yamlstack as ys
 import makemehappy.zephyr as z
 
@@ -38,6 +39,51 @@ def addExtension(mods, idx, entry, name):
             mods[name] = {}
             mods[name]['root'] = entry['root']
         mods[name][idx] = entry[idx]
+
+class DependencyEvaluation:
+    def __init__(self, cfg, log):
+        self.cfg = cfg
+        self.log = log
+        self.data = {}
+
+    def insertSome(self, lst, origin):
+        for dep in lst:
+            self.insert(dep, origin)
+
+    def insert(self, dep, origin):
+        name = dep['name']
+        revision = None
+        if ('revision' in dep):
+            revision = dep['revision']
+        if (name not in self.data):
+            self.data[name] = {}
+        if (revision not in self.data[name]):
+            self.data[name][revision] = []
+        self.data[name][revision].append(origin)
+
+    def logVersion(self, key, ver, unique):
+        if (unique):
+            t = 'Unique'
+        else:
+            t = 'Ambiguous'
+        if (ver.kind == 'version'):
+            self.log.info(
+                'Dependency: {} dependency: {} {} effective: {}',
+                t, key, ver.string, ver.render())
+        else:
+            self.log.info(
+                'Dependency: {} dependency: {} {}',
+                t, key, ver.string)
+
+    def evaluate(self):
+        for key in self.data:
+            versions = list(map(v.Version, self.data[key].keys()))
+            if (len(versions) == 1):
+                ver = versions[0]
+                self.logVersion(key, ver, True)
+            else:
+                for ver in versions:
+                    self.logVersion(key, ver, False)
 
 class CMakeExtensions:
     def __init__(self, moduleData, trace, order):
@@ -642,6 +688,7 @@ class CodeUnderTest:
     def __init__(self, log, cfg, args, sources, module):
         self.stats = ExecutionStatistics(cfg, log)
         self.stats.checkpoint('module-initialisation')
+        self.depEval = DependencyEvaluation(cfg, log)
         self.log = log
         self.cfg = cfg
         self.args = args
@@ -763,6 +810,12 @@ class CodeUnderTest:
         self.zephyr = ZephyrExtensions(self.moduleData,
                                        self.deptrace,
                                        self.deporder)
+        if ('dependencies' in self.moduleData):
+            self.depEval.insertSome(self.moduleData['dependencies'],
+                                    self.moduleData['name'])
+        for dept in self.deptrace.data:
+            self.depEval.insertSome(dept['dependencies'], dept['name'])
+        self.depEval.evaluate()
 
     def cmakeModules(self):
         if (has('cmake-modules', self.moduleData, str)):

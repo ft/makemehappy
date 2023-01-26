@@ -9,8 +9,7 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** TODO Implement version dependency judgements
-
+** ACTIVE Implement version dependency judgements
 - Major version mismatch: Error
 - Minor version mismatch: Warning
 - Patchlevel mismatch: Informational message
