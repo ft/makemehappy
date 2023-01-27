@@ -68,11 +68,11 @@ class DependencyEvaluation:
             t = 'Ambiguous'
         if (ver.kind == 'version'):
             self.log.info(
-                'Dependency: {} dependency: {} {} effective: {}',
+                '{} dependency: {} {} effective: {}',
                 t, key, ver.string, ver.render())
         else:
             self.log.info(
-                'Dependency: {} dependency: {} {}',
+                '{} dependency: {} {}',
                 t, key, ver.string)
 
     def evaluate(self):
