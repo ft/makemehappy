@@ -3,6 +3,8 @@ import math
 import os
 import yaml
 
+import itertools as it
+
 import makemehappy.utilities as mmh
 import makemehappy.build as build
 import makemehappy.version as v
@@ -62,10 +64,14 @@ class DependencyEvaluation:
         self.data[name][revision].append(origin)
 
     def logVersion(self, key, ver, unique):
+        if (unique and not self.cfg.lookup('log-unique-versions')):
+            return
+
         if (unique):
             t = 'Unique'
         else:
             t = 'Ambiguous'
+
         if (ver.kind == 'version'):
             self.log.info(
                 '{} dependency: {} {} effective: {}',
@@ -75,6 +81,73 @@ class DependencyEvaluation:
                 '{} dependency: {} {}',
                 t, key, ver.string)
 
+    def kinds(self, lst):
+        rv = {}
+        for k in lst:
+            if (k.kind not in rv):
+                rv[k.kind] = []
+            rv[k.kind].append(k)
+        return rv
+
+    def compare(self, key, a, b):
+        result = v.compare(a, b)
+        if (not result.compatible):
+            self.log.info(f'{key}: Incompatible effective versions: {a.render()} vs {b.render()}')
+        if (result.kind == 'same'):
+            # This method is currently used when higher levels detected a
+            # mismatch. If we're here, that means they did something wrong,
+            # or the comparison algorithm in version.py is broken.
+            self.log.info(f'{key}: Bug? {a.string} and {b.string} look the same.')
+            return
+
+        if (result.kind == 'same-ish'):
+            self.log.info(f'{key}: Changed version scheme? {a.string} vs {b.string}')
+        elif (result.kind == 'major'):
+            self.log.info(f'{key}: Major Mismatch: {a.string} vs {b.string}')
+        elif (result.info == 'minor'):
+            self.log.info(f'{key}: Minor Mismatch: {a.string} vs {b.string}')
+        elif (result.info == 'patch'):
+            self.log.info(f'{key}: Patchlevel Mismatch: {a.string} vs {b.string}')
+        else:
+            self.log.info(f'{key}: Other Mismatch ({result.kind}): {a.string} vs {b.string}')
+
+        self.log.info(f'    {a.string} used by:')
+        for origin in self.data[key][a.string]:
+            self.log.info(f'        {origin}')
+
+        self.log.info(f'    {b.string} used by:')
+        for origin in self.data[key][b.string]:
+            self.log.info(f'        {origin}')
+
+    def maybeBetter(self, key, kind):
+        if (kind != 'version'):
+            self.log.info(
+                f"{key}: Using {kind} revision. Better specify a version!")
+            return True
+        return False
+
+    def judge(self, key, lst):
+        compat = self.kinds(lst)
+        if (len(compat) > 1):
+            self.log.info(f"Revisions for {key} are NOT compatible")
+            self.log.info(f'    kinds: {list(compat.keys())}')
+
+        for kind in compat:
+            if (self.maybeBetter(key, kind)):
+                for vers in compat[kind]:
+                    self.log.info(f'    {kind} used by:')
+                    for origin in self.data[key][vers.string]:
+                        self.log.info(f'        {origin} ({vers.string})')
+
+        # Get a list of pairs of all combinations of different versions
+        vps = list(filter(
+            lambda x: x[0] > x[1],
+            it.product(filter(lambda x: x.kind == 'version', lst),
+                       repeat = 2)))
+        # Compare those.
+        for vp in vps:
+            self.compare(key, vp[0], vp[1])
+
     def evaluate(self):
         for key in self.data:
             versions = list(map(v.Version, self.data[key].keys()))
@@ -82,8 +155,9 @@ class DependencyEvaluation:
                 ver = versions[0]
                 self.logVersion(key, ver, True)
             else:
-                for ver in versions:
+                for ver in sorted(versions):
                     self.logVersion(key, ver, False)
+            self.judge(key, versions)
 
 class CMakeExtensions:
     def __init__(self, moduleData, trace, order):
@@ -623,7 +697,6 @@ class ExecutionStatistics:
             else:
                 self.log.warn('Statistics log entry has unknown type: {}'
                               .format(t))
-        #print("DEBUG: {}", self.data)
         maybeInfo(self.cfg, self.log, '')
         time = renderTimedelta(self.data[-1]['time-stamp'] -
                                self.data[0]['time-stamp'])

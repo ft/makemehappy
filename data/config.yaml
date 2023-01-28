@@ -1,5 +1,6 @@
 log-all: false
 log-to-file: false
+log-unique-versions: false
 
 toolchains:
   - name: gnu

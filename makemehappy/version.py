@@ -3,6 +3,70 @@ import re
 class InvalidVersion(Exception):
     pass
 
+def maybeTuple(i, a, b):
+    an = len(a.elements)
+    bn = len(b.elements)
+    if (i < an and i < bn):
+        return (a.elements[i], b.elements[i])
+    elif (i < an):
+        return (a.elements[i], None)
+    elif (i < bn):
+        return (None, b.elements[i])
+    else:
+        return (None, None)
+
+class VersionComparison:
+    def __init__(self):
+        self.kind = None
+        self.compatible = False
+        self.elements = (None, None)
+        self.major = (None, None)
+        self.minor = (None, None)
+        self.patch = (None, None)
+
+    def compare(self, a, b):
+        self.elements = (a.elements, b.elements)
+
+        an = len(a.elements)
+        bn = len(b.elements)
+
+        if (an == bn):
+            self.compatible = True
+
+        for i in range(0, min(an, bn, 3)):
+            if (i == 0):
+                self.major = maybeTuple(i, a, b)
+            elif (i == 1):
+                self.minor = maybeTuple(i, a, b)
+            elif (i == 2):
+                self.patch = maybeTuple(i, a, b)
+
+        for i in range(0, min(an, bn)):
+            if (a.elements[i] != b.elements[i]):
+                if (i == 0):
+                    self.kind = 'major'
+                    break
+                elif (i == 1):
+                    self.kind = 'minor'
+                    break
+                elif (i == 2):
+                    self.kind = 'patch'
+                    break
+                else:
+                    self.kind = 'miniscule'
+                    break
+
+        if (self.kind == None):
+            if (self.compatible):
+                self.kind = 'same'
+            else:
+                self.kind = 'same-ish'
+
+def compare(a, b):
+    result = VersionComparison()
+    result.compare(a, b)
+    return result
+
 class Version:
     def __init__(self, s):
         self.seps = re.compile('[-:/!_]')
@@ -39,6 +103,9 @@ class Version:
             return
 
         self.kind = 'symbol'
+
+    def __lt__(self, other):
+        return (self.string < other.string)
 
     def render(self):
         if (self.kind == 'version'):
