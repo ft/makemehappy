@@ -68,7 +68,7 @@ def compare(a, b):
     return result
 
 class Version:
-    def __init__(self, s):
+    def __init__(self, s, origin = None):
         self.seps = re.compile('[-:/!_]')
         self.dots = re.compile('[.]')
         self.prefix = None
@@ -76,6 +76,7 @@ class Version:
         self.elements = None
         self.kind = None
         self.string = s
+        self.origin = origin
 
         if (s == None):
             return

@@ -42,6 +42,24 @@ def addExtension(mods, idx, entry, name):
             mods[name]['root'] = entry['root']
         mods[name][idx] = entry[idx]
 
+def genOrigins(lst):
+    xs = list(map(lambda x: x['origin'],
+                  filter(lambda x: 'origin' in x and x['origin'] != None,
+                         lst)))
+
+    if (len(xs) == 0):
+        return None
+
+    return xs
+
+def printOrigin(lst):
+    if (lst == None):
+        return ''
+    return f' [{", ".join(lst)}]'
+
+def inherited(lst):
+    return (lst != None and 'inherit' in lst)
+
 class DependencyEvaluation:
     def __init__(self, cfg, log):
         self.cfg = cfg
@@ -55,13 +73,16 @@ class DependencyEvaluation:
     def insert(self, dep, origin):
         name = dep['name']
         revision = None
+        tag = None
         if ('revision' in dep):
             revision = dep['revision']
+        if ('origin' in dep):
+            tag = dep['origin']
         if (name not in self.data):
             self.data[name] = {}
         if (revision not in self.data[name]):
             self.data[name][revision] = []
-        self.data[name][revision].append(origin)
+        self.data[name][revision].append({ 'name': origin, 'origin': tag })
 
     def logVersion(self, key, ver, unique):
         if (unique and not self.cfg.lookup('log-unique-versions')):
@@ -72,14 +93,15 @@ class DependencyEvaluation:
         else:
             t = 'Ambiguous'
 
+        origins = genOrigins(ver.origin)
         if (ver.kind == 'version'):
             self.log.info(
-                '{} dependency: {} {} effective: {}',
-                t, key, ver.string, ver.render())
+                '{} dependency: {} {} effective: {}{}',
+                t, key, ver.string, ver.render(), printOrigin(origins))
         else:
             self.log.info(
-                '{} dependency: {} {}',
-                t, key, ver.string)
+                '{} dependency: {} {}{}',
+                t, key, ver.string, printOrigin(origins))
 
     def kinds(self, lst):
         rv = {}
@@ -112,15 +134,21 @@ class DependencyEvaluation:
             self.log.info(f'{key}: Other Mismatch ({result.kind}): {a.string} vs {b.string}')
 
         self.log.info(f'    {a.string} used by:')
-        for origin in self.data[key][a.string]:
-            self.log.info(f'        {origin}')
+        for origin in a.origin:
+            tag = ''
+            if (origin['origin'] != None):
+                tag = f' [{origin["origin"]}]'
+            self.log.info(f'        {origin["name"]}{tag}')
 
         self.log.info(f'    {b.string} used by:')
-        for origin in self.data[key][b.string]:
-            self.log.info(f'        {origin}')
+        for origin in b.origin:
+            tag = ''
+            if (origin['origin'] != None):
+                tag = f' [{origin["origin"]}]'
+            self.log.info(f'        {origin["name"]}{tag}')
 
-    def maybeBetter(self, key, kind):
-        if (kind != 'version'):
+    def maybeBetter(self, key, kind, origins):
+        if (kind != 'version' and not inherited(origins)):
             self.log.info(
                 f"{key}: Using {kind} revision. Better specify a version!")
             return True
@@ -133,11 +161,17 @@ class DependencyEvaluation:
             self.log.info(f'    kinds: {list(compat.keys())}')
 
         for kind in compat:
-            if (self.maybeBetter(key, kind)):
+            origins = genOrigins(list(it.chain.from_iterable(
+                map(lambda x: x.origin, compat[kind]))))
+            if (self.maybeBetter(key, kind, origins)):
                 for vers in compat[kind]:
+                    origins = genOrigins(vers.origin)
                     self.log.info(f'    {kind} used by:')
                     for origin in self.data[key][vers.string]:
-                        self.log.info(f'        {origin} ({vers.string})')
+                        tag = ''
+                        if (origin['origin'] != None):
+                            tag = f' [{origin["origin"]}]'
+                        self.log.info(f'        {origin["name"]} ({vers.string}){tag}')
 
         # Get a list of pairs of all combinations of different versions
         vps = list(filter(
@@ -149,8 +183,10 @@ class DependencyEvaluation:
             self.compare(key, vp[0], vp[1])
 
     def evaluate(self):
+        self.log.info('Inspecting Dependency Version Tree...')
         for key in self.data:
-            versions = list(map(v.Version, self.data[key].keys()))
+            versions = list(map(lambda x: v.Version(x, self.data[key][x]),
+                                self.data[key].keys()))
             if (len(versions) == 1):
                 ver = versions[0]
                 self.logVersion(key, ver, True)
@@ -158,6 +194,7 @@ class DependencyEvaluation:
                 for ver in sorted(versions):
                     self.logVersion(key, ver, False)
             self.judge(key, versions)
+        self.log.info('Inspecting Dependency Version Tree... done.')
 
 class CMakeExtensions:
     def __init__(self, moduleData, trace, order):
@@ -335,6 +372,7 @@ def fetch(cfg, log, src, st, trace):
             log.info("Revision Override for {} to {}"
                      .format(dep['name'], rover))
             dep['revision'] = rover
+            dep['origin'] = 'override'
         if ('revision' not in dep):
             log.info('Module {} does not specify a revision'
                      .format(dep['name']))
@@ -344,6 +382,7 @@ def fetch(cfg, log, src, st, trace):
                 log.error('Could not determine version for module {}'
                           .format(dep['name']))
                 raise(InvalidDependency(dep))
+            dep['origin'] = 'inherit'
 
         log.info("Fetching revision {} of module {}"
                  .format(dep['revision'], dep['name']))
