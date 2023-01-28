@@ -23,6 +23,25 @@ Possible levels:
 - warning
 - info
 - ignore
+** TODO Add !preserve and !latest to --revision keywords
+
+'!preserve' will serve as the command line version of the same override
+keyword.
+
+'!latest' is a new concept, that will select the newest available tag. In
+config file terms that is:
+
+revision-overrides:
+  - name: foobar
+    select-latest-revision: true
+
+As a variant, '!latest:version-*' will be possible, where 'version-*' is a
+pattern the selected tag has to match. Again, in config file terms, that is:
+
+revision-overrides:
+  - name: foobar
+    select-latest-revision: true
+    select-latest-pattern: "version-*"
 ** TODO Implement YAML linters
 
 All linters should make sure, the used keys are type correct. Unrecognised keys
