@@ -62,9 +62,11 @@ def inherited(lst):
 
 class DependencyEvaluation:
     def __init__(self, cfg, log):
-        self.cfg = cfg
-        self.log = log
         self.data = {}
+        self.journal = []
+
+    def note(self, d):
+        self.journal.append(d)
 
     def insertSome(self, lst, origin):
         for dep in lst:
@@ -85,23 +87,12 @@ class DependencyEvaluation:
         self.data[name][revision].append({ 'name': origin, 'origin': tag })
 
     def logVersion(self, key, ver, unique):
-        if (unique and not self.cfg.lookup('log-unique-versions')):
-            return
-
-        if (unique):
-            t = 'Unique'
-        else:
-            t = 'Ambiguous'
-
-        origins = genOrigins(ver.origin)
-        if (ver.kind == 'version'):
-            self.log.info(
-                '{} dependency: {} {} effective: {}{}',
-                t, key, ver.string, ver.render(), printOrigin(origins))
-        else:
-            self.log.info(
-                '{} dependency: {} {}{}',
-                t, key, ver.string, printOrigin(origins))
+        return { 'kind': ('version:' + ('unique' if unique else 'ambiguous')),
+                 'module': key,
+                 'data': ver,
+                 'version': ver.string,
+                 'effective': ver.render(),
+                 'origins': genOrigins(ver.origin) }
 
     def kinds(self, lst):
         rv = {}
@@ -114,64 +105,69 @@ class DependencyEvaluation:
     def compare(self, key, a, b):
         result = v.compare(a, b)
         if (not result.compatible):
-            self.log.info(f'{key}: Incompatible effective versions: {a.render()} vs {b.render()}')
+            self.note({ 'kind': 'version:incompatible',
+                        'module': key,
+                        'a': a, 'b': b })
         if (result.kind == 'same'):
             # This method is currently used when higher levels detected a
             # mismatch. If we're here, that means they did something wrong,
             # or the comparison algorithm in version.py is broken.
-            self.log.info(f'{key}: Bug? {a.string} and {b.string} look the same.')
+            self.note({ 'kind': 'maybe-bug',
+                        'tag':  'unexpected-same-version',
+                        'meta': 'Versions should not be the same here.',
+                        'module': key,
+                        'a': a, 'b': b })
             return
 
-        if (result.kind == 'same-ish'):
-            self.log.info(f'{key}: Changed version scheme? {a.string} vs {b.string}')
-        elif (result.kind == 'major'):
-            self.log.info(f'{key}: Major Mismatch: {a.string} vs {b.string}')
-        elif (result.info == 'minor'):
-            self.log.info(f'{key}: Minor Mismatch: {a.string} vs {b.string}')
-        elif (result.info == 'patch'):
-            self.log.info(f'{key}: Patchlevel Mismatch: {a.string} vs {b.string}')
-        else:
-            self.log.info(f'{key}: Other Mismatch ({result.kind}): {a.string} vs {b.string}')
+        entry = { 'kind': 'version:' + result.kind,
+                  'module': key,
+                  'result': result,
+                  'a': a, 'b': b,
+                  'a-origins': [],
+                  'b-origins': [] }
 
-        self.log.info(f'    {a.string} used by:')
         for origin in a.origin:
-            tag = ''
-            if (origin['origin'] != None):
-                tag = f' [{origin["origin"]}]'
-            self.log.info(f'        {origin["name"]}{tag}')
+            entry['a-origins'].append({ 'name': origin['name'],
+                                        'tag':  origin['origin'] })
 
-        self.log.info(f'    {b.string} used by:')
         for origin in b.origin:
-            tag = ''
-            if (origin['origin'] != None):
-                tag = f' [{origin["origin"]}]'
-            self.log.info(f'        {origin["name"]}{tag}')
+            entry['b-origins'].append({ 'name': origin['name'],
+                                        'tag':  origin['origin'] })
+
+        self.note(entry)
 
     def maybeBetter(self, key, kind, origins):
+        # Inherited revisions can do whatever they want. We will assume, that
+        # the parent module will know what it is doing.
         if (kind != 'version' and not inherited(origins)):
-            self.log.info(
-                f"{key}: Using {kind} revision. Better specify a version!")
-            return True
-        return False
-
-    def judge(self, key, lst):
+            return { 'kind': 'revision:kind',
+                     'actual': kind,
+                     'module': key,
+                     'inherited': inherited(origins) }
+        return None
+    def judge(self, key, lst, journal):
         compat = self.kinds(lst)
-        if (len(compat) > 1):
-            self.log.info(f"Revisions for {key} are NOT compatible")
-            self.log.info(f'    kinds: {list(compat.keys())}')
+        self.note({ 'kind': ('revision:' + ('incompatible' if (len(compat) > 1)
+                                                           else 'compatible')),
+                    'kinds': list(compat.keys()),
+                    'module': key,
+                    'details': journal })
 
         for kind in compat:
             origins = genOrigins(list(it.chain.from_iterable(
                 map(lambda x: x.origin, compat[kind]))))
-            if (self.maybeBetter(key, kind, origins)):
+            detail = self.maybeBetter(key, kind, origins)
+            if (detail != None):
                 for vers in compat[kind]:
-                    origins = genOrigins(vers.origin)
-                    self.log.info(f'    {kind} used by:')
+                    entry = { 'kind': 'revision:non-recommended',
+                              'detail': detail,
+                              'data': vers,
+                              'module': key,
+                              'origins': [] }
                     for origin in self.data[key][vers.string]:
-                        tag = ''
-                        if (origin['origin'] != None):
-                            tag = f' [{origin["origin"]}]'
-                        self.log.info(f'        {origin["name"]} ({vers.string}){tag}')
+                        entry['origins'].append({ 'name': origin['name'],
+                                                  'tag':  origin['origin'] })
+                    self.note(entry)
 
         # Get a list of pairs of all combinations of different versions
         vps = list(filter(
@@ -183,18 +179,17 @@ class DependencyEvaluation:
             self.compare(key, vp[0], vp[1])
 
     def evaluate(self):
-        self.log.info('Inspecting Dependency Version Tree...')
         for key in self.data:
             versions = list(map(lambda x: v.Version(x, self.data[key][x]),
                                 self.data[key].keys()))
+            j = []
             if (len(versions) == 1):
                 ver = versions[0]
-                self.logVersion(key, ver, True)
+                j.append(self.logVersion(key, ver, True))
             else:
                 for ver in sorted(versions):
-                    self.logVersion(key, ver, False)
-            self.judge(key, versions)
-        self.log.info('Inspecting Dependency Version Tree... done.')
+                    j.append(self.logVersion(key, ver, False))
+            self.judge(key, versions, j)
 
 class CMakeExtensions:
     def __init__(self, moduleData, trace, order):
@@ -928,6 +923,7 @@ class CodeUnderTest:
         for dept in self.deptrace.data:
             self.depEval.insertSome(dept['dependencies'], dept['name'])
         self.depEval.evaluate()
+        mmh.pp(self.depEval.journal)
 
     def cmakeModules(self):
         if (has('cmake-modules', self.moduleData, str)):
