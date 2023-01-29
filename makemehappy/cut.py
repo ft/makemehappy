@@ -1,6 +1,7 @@
 import datetime
 import math
 import os
+import re
 import yaml
 
 import itertools as it
@@ -52,10 +53,16 @@ def genOrigins(lst):
 
     return xs
 
-def printOrigin(lst):
-    if (lst == None):
+def printTag(tag):
+    if (tag == None):
         return ''
-    return f' [{", ".join(lst)}]'
+    if (isinstance(tag, str)):
+        return f' [{tag}]'
+    if (isinstance(tag, list)):
+        if (len(tag) == 0):
+            return ''
+        return f' [{", ".join(tag)}]'
+    return ' ' + str(tag)
 
 def inherited(lst):
     return (lst != None and 'inherit' in lst)
@@ -119,7 +126,7 @@ class DependencyEvaluation:
                         'a': a, 'b': b })
             return
 
-        entry = { 'kind': 'version:' + result.kind,
+        entry = { 'kind': 'version:mismatch:' + result.kind,
                   'module': key,
                   'result': result,
                   'a': a, 'b': b,
@@ -159,7 +166,7 @@ class DependencyEvaluation:
             detail = self.maybeBetter(key, kind, origins)
             if (detail != None):
                 for vers in compat[kind]:
-                    entry = { 'kind': 'revision:non-recommended',
+                    entry = { 'kind': 'revision:discouraged',
                               'detail': detail,
                               'data': vers,
                               'module': key,
@@ -923,7 +930,76 @@ class CodeUnderTest:
         for dept in self.deptrace.data:
             self.depEval.insertSome(dept['dependencies'], dept['name'])
         self.depEval.evaluate()
-        mmh.pp(self.depEval.journal)
+        self.fullDependencyLog()
+
+    def fullDependencyLog(self):
+        self.log.info('Inspecting Dependency Version Tree...')
+        for entry in self.depEval.journal:
+            self.ppDJE(entry)
+        self.log.info('Inspecting Dependency Version Tree... done.')
+
+    def handleMismatch(self, data, kind):
+        self.log.info('{} version mismatch for dependency "{}" detected!'
+                      .format(kind.title(), data['module']))
+        self.log.info(f'  {data["a"].string} used by:')
+        for origin in data['a-origins']:
+            self.log.info(f'    {origin["name"]}{printTag(origin["tag"])}')
+        self.log.info(f'  {data["b"].string} used by:')
+        for origin in data['b-origins']:
+            self.log.info(f'    {origin["name"]}{printTag(origin["tag"])}')
+
+    def ppDJE(self, entry):
+        # Pretty Pring Dependency Journal Entry
+        if ('kind' not in entry):
+            self.log.fatal(f'Broken journal: {entry}')
+            exit(1)
+        elif (m := re.match('version:(unique|ambiguous)', entry['kind'])):
+            k = m.group(1)
+            if (k == 'unique' and not self.cfg.lookup('log-unique-versions')):
+                return
+            if (entry['data'].kind == 'version'):
+                self.log.info('{} dependency: {} {} effective: {}{}'
+                              .format(k.title(),
+                                      entry['module'], entry['version'],
+                                      entry['effective'],
+                                      printTag(entry['origins'])))
+            else:
+                self.log.info('{} dependency: {} {}{}'
+                              .format(m.group(1).title(),
+                                      entry['module'], entry['version'],
+                                      printTag(entry['origins'])))
+        elif (entry['kind'] == 'version:incompatible'):
+            self.log.info('{}: Incompatible versioning scheme: {} vs {}'
+                          .format(entry['module'], entry['a'], entry['b']))
+        elif (entry['kind'] == 'maybe-bug'):
+            self.log.warning(f'BUG? {entry["module"]}: {entry["tag"]}')
+            self.log.warning(f'BUG? {entry["meta"]}')
+        elif (m := re.match('^version:mismatch:(.*)', entry['kind'])):
+            self.handleMismatch(entry, m.group(1))
+        elif (entry['kind'] == 'revision:kind'):
+            # This is handled in revision:incompatible.
+            pass
+        elif (entry['kind'] == 'revision:compatible'):
+            for v in entry['details']:
+                self.ppDJE(v)
+        elif (entry['kind'] == 'revision:incompatible'):
+            self.log.info(f"Revisions for {entry['module']} are NOT compatible:")
+            self.log.info(f'    kinds: [{", ".join(entry["kinds"])}]')
+            for v in entry['details']:
+                self.ppDJE(v)
+        elif (entry['kind'] == 'revision:discouraged'):
+            if entry['detail']['inherited']:
+                return
+            self.log.info(
+                'Dependencies for module "{}" use discouraged revision kind!'
+                .format(entry['module']))
+            self.log.info('  {} {} used by:'.format(entry["detail"]["actual"],
+                                                    entry["data"].string))
+            for origin in entry['origins']:
+                self.log.info('    {}{}'.format(origin["name"],
+                                                printTag(origin["tag"])))
+        else:
+            self.log.warning(f'Unsupported Journal Entry: {entry}')
 
     def cmakeModules(self):
         if (has('cmake-modules', self.moduleData, str)):
