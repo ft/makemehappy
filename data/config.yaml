@@ -2,6 +2,17 @@ log-all: false
 log-to-file: false
 log-unique-versions: false
 
+dependency-summary:
+  # Possible values: fatal, show, ignore
+  major-mismatch:        show
+  minor-mismatch:        show
+  patch-mismatch:        show
+  miniscule-mismatch:    ignore
+  discouraged-revision:  show
+  incompatible-revision: ignore
+  unique-dependency:     ignore
+  ambiguous-dependency:  show
+
 toolchains:
   - name: gnu
     architecture: native

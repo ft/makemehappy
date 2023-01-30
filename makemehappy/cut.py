@@ -817,6 +817,15 @@ class CodeUnderTest:
         self.extensions = None
         self.zephyr = None
         self.toplevel = None
+        self.depKWS = [
+            { 'name': 'major-mismatch',        'user': 'Major Version Mismatch(es)' },
+            { 'name': 'minor-mismatch',        'user': 'Minor Version Mismatch(es)' },
+            { 'name': 'patch-mismatch',        'user': 'Patch Version Mismatch(es)' },
+            { 'name': 'miniscule-mismatch',    'user': 'Miniscule Version Mismatch(es)' },
+            { 'name': 'discouraged-revision',  'user': 'Discouraged Revision(s)' },
+            { 'name': 'incompatible-revision', 'user': 'Incompatible Revision(s)' },
+            { 'name': 'unique-dependency',     'user': 'Unique Dependenc{y,ies}' },
+            { 'name': 'ambiguous-dependency',  'user': 'Ambiguous Dependenc{y,ies}' } ]
 
     def name(self):
         if (isinstance(self.moduleData, dict) and 'name' in self.moduleData):
@@ -931,6 +940,29 @@ class CodeUnderTest:
             self.depEval.insertSome(dept['dependencies'], dept['name'])
         self.depEval.evaluate()
         self.fullDependencyLog()
+
+    def dependencySummary(self):
+        rv = {}
+        for kw in list(map(lambda x: x['name'], self.depKWS)):
+            rv[kw] = 0
+        for l0 in self.depEval.journal:
+            intodetails = False
+            if (l0['kind'] == 'revision:incompatible'):
+                rv['incompatible-revision'] += 1
+                intodetails = True
+            elif (l0['kind'] == 'revision:compatible'):
+                intodetails = True
+            elif (l0['kind'] == 'revision:discouraged'):
+                rv['discouraged-revision'] += 1
+            elif (m := re.match('^version:mismatch:(.*)', l0['kind'])):
+                rv[m.group(1) + '-mismatch'] += 1
+
+            if intodetails:
+                for l1 in l0['details']:
+                    if (m := re.match('version:(unique|ambiguous)', l1['kind'])):
+                        rv[m.group(1) + '-dependency'] += 1
+
+        return rv
 
     def fullDependencyLog(self):
         self.log.info('Inspecting Dependency Version Tree...')
@@ -1114,6 +1146,49 @@ class CodeUnderTest:
     def renderStatistics(self):
         self.stats.checkpoint('finish')
         self.stats.renderStatistics()
+
+    def renderDependencySummary(self):
+        behaviour = self.cfg.lookup('dependency-summary')
+        data = self.dependencySummary()
+
+        final = []
+        for entry in data:
+            fatal = False
+            b = behaviour[entry]
+            tmp = mmh.findByName(self.depKWS, entry)
+            if (tmp == None):
+                continue
+            user = self.depKWS[tmp]['user']
+
+            if (b == 'fatal'):
+                fatal = True
+            elif (b == 'show'):
+                pass
+            else:
+                continue
+
+            if (data[entry] == 0):
+                continue
+
+            final.append({ 'name': entry, 'user': user,
+                           'count': data[entry],
+                           'fatal': fatal })
+
+        if (len(final) > 0):
+            maybeInfo(self.cfg, self.log, 'Dependency Evaluation Summary:')
+            maybeInfo(self.cfg, self.log, '')
+
+        for entry in final:
+            maybeInfo(self.cfg, self.log,
+                      '  - {} {}{}'
+                      .format(entry['count'],
+                              entry['user'],
+                              printTag('exit:fatal'
+                                       if entry['fatal']
+                                       else None)))
+
+        if (len(final) > 0):
+            maybeInfo(self.cfg, self.log, '')
 
     def wasSuccessful(self):
         return self.stats.wasSuccessful()

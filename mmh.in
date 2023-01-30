@@ -636,6 +636,7 @@ elif (cmdargs.sub_command == "run-instance"):
     cut.build()
 
     cut.renderStatistics()
+    cut.renderDependencySummary()
     if cut.wasSuccessful():
         log.info('All {} builds succeeded.'.format(cut.countBuilds()))
     else:
@@ -679,6 +680,7 @@ elif (cmdargs.sub_command == "build"):
         cut.cleanupRoot()
 
     cut.renderStatistics()
+    cut.renderDependencySummary()
     if cut.wasSuccessful():
         log.info('All {} builds succeeded.'.format(cut.countBuilds()))
     else:
