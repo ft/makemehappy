@@ -81,15 +81,15 @@ With --thorough:
 - Check if "main" branch spec can be resolved against remote repository.
 
 ** TODO Allow sources.yaml to specify deprecated module versions
-
 Example:
 
 modules:
   ufw:
-    deprecate: [ v23.32.99, v100.1.0 ]
+    deprecated: [ v23.32.99, v100.1.0 ]  # Deprecate some versions.
+    deprecated: true                     # Deprecate the whole module.
+    alternative: ufw-ng                  # Alternative to this module.
 
 Violating deprecations should be warnings by default.
-
 ** TODO Allow third-party zephyr modules to have a makemehappy.yaml file
 This can be used to automatically match module versions with zephyr-kernel
 versions.
