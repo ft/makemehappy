@@ -68,7 +68,8 @@ def inherited(lst):
     return (lst != None and 'inherit' in lst)
 
 class DependencyEvaluation:
-    def __init__(self, cfg, log):
+    def __init__(self, sources):
+        self.sources = sources
         self.data = {}
         self.journal = []
 
@@ -91,7 +92,17 @@ class DependencyEvaluation:
             self.data[name] = {}
         if (revision not in self.data[name]):
             self.data[name][revision] = []
-        self.data[name][revision].append({ 'name': origin, 'origin': tag })
+        src = self.sources.lookup(name)
+        new = { 'name': origin, 'origin': tag }
+        if ('deprecate' in src):
+            if (isinstance(src['deprecate'], bool)):
+                new['package-deprecated'] = src['deprecate']
+            elif (isinstance(src['deprecate'], list) and
+                  revision in src['deprecate']):
+                new['revision-deprecated'] = True
+            elif (revision == src['deprecate']):
+                new['revision-deprecated'] = True
+        self.data[name][revision].append(new)
 
     def logVersion(self, key, ver, unique):
         return { 'kind': ('version:' + ('unique' if unique else 'ambiguous')),
@@ -187,8 +198,10 @@ class DependencyEvaluation:
 
     def evaluate(self):
         for key in self.data:
-            versions = list(map(lambda x: v.Version(x, self.data[key][x]),
-                                self.data[key].keys()))
+            versions = list(
+                filter(lambda x: not x.string.startswith('!'),
+                       map(lambda x: v.Version(x, self.data[key][x]),
+                           self.data[key].keys())))
             j = []
             if (len(versions) == 1):
                 ver = versions[0]
@@ -808,7 +821,7 @@ class CodeUnderTest:
     def __init__(self, log, cfg, args, sources, module):
         self.stats = ExecutionStatistics(cfg, log)
         self.stats.checkpoint('module-initialisation')
-        self.depEval = DependencyEvaluation(cfg, log)
+        self.depEval = DependencyEvaluation(sources)
         self.log = log
         self.cfg = cfg
         self.args = args
