@@ -351,7 +351,11 @@ def fetchCheckout(cfg, log, mod, rev):
     else:
         revision = rev
 
-    rc = mmh.loggedProcess(cfg, log, ['git', 'checkout', revision])
+    rc = mmh.loggedProcess(cfg, log, ['git',
+                                      '-c', 'advice.detachedHead=false',
+                                      'checkout', '--quiet',
+                                      revision])
+
     if (rc != 0):
         log.error("Failed to switch to revision {} for module {}!"
                   .format(revision, mod))
@@ -403,7 +407,9 @@ def fetch(cfg, log, src, st, trace):
             log.info("Symlinking dependency: {} to {}" .format(dep['name'], url))
             os.symlink(url, p)
         elif (source['type'] == 'git'):
-            rc = mmh.loggedProcess(cfg, log, ['git', 'clone', url, p])
+            rc = mmh.loggedProcess(cfg, log, ['git',
+                                              '-c', 'advice.detachedHead=false',
+                                              'clone', '--quiet', url, p])
             if (rc != 0):
                 log.error("Failed to clone code for module {}!"
                           .format(dep['name']))
