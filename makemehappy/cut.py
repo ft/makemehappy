@@ -1085,6 +1085,21 @@ class CodeUnderTest:
             for origin in entry['origins']:
                 self.log.info('    {}{}'.format(origin["name"],
                                                 printTag(origin["tag"])))
+        elif (entry['kind'] == 'deprecated:module'):
+            self.log.info(
+                'Detected use of deprecated module "{}"! Used by:'
+                .format(entry['module']))
+            for origin in entry['from']:
+                self.log.info('    {}'.format(origin))
+        elif (entry['kind'] == 'deprecated:revision'):
+            self.log.info(
+                'Detected use of deprecated revision for module "{}"!:'
+                .format(entry['module']))
+            self.log.info('  Revision: {}{}'
+                          .format(entry['version'], printTag(entry['tags'])))
+            self.log.info('  Used by:')
+            for origin in entry['from']:
+                self.log.info('    {}'.format(origin))
         else:
             self.log.warning(f'Unsupported Journal Entry: {entry}')
 
