@@ -858,6 +858,7 @@ class CodeUnderTest:
         self.stats = ExecutionStatistics(cfg, log)
         self.stats.checkpoint('module-initialisation')
         self.depEval = DependencyEvaluation(sources)
+        self.depSuccess = True
         self.log = log
         self.cfg = cfg
         self.args = args
@@ -1233,7 +1234,7 @@ class CodeUnderTest:
         self.stats.checkpoint('finish')
         self.stats.renderStatistics()
 
-    def renderDependencySummary(self):
+    def renderDependencySummary(self, withSeparator):
         behaviour = self.cfg.lookup('dependency-summary')
         data = self.dependencySummary()
 
@@ -1254,12 +1255,17 @@ class CodeUnderTest:
             if (data[entry] == 0):
                 continue
 
+            if (b == 'error' and self.cfg.lookup('fatal-dependencies')):
+                self.depSuccess = False
+
             final.append({ 'name': entry, 'user': user,
                            'singular': sing, 'plural': plur,
                            'count': data[entry],
                            'level': b })
 
         if (len(final) > 0):
+            if (withSeparator):
+                maybeInfo(self.cfg, self.log, '')
             maybeInfo(self.cfg, self.log, 'Dependency Evaluation Summary:')
             maybeInfo(self.cfg, self.log, '')
 
@@ -1274,6 +1280,9 @@ class CodeUnderTest:
 
         if (len(final) > 0):
             maybeInfo(self.cfg, self.log, '')
+
+    def dependenciesOkay(self):
+        return self.depSuccess
 
     def wasSuccessful(self):
         return self.stats.wasSuccessful()

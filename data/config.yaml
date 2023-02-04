@@ -1,19 +1,20 @@
 log-all: false
 log-to-file: false
 log-unique-versions: false
+fatal-dependencies: true
 
 dependency-summary:
-  # Possible values: error, warning, note, ignore
+  # Possible values: error, warning, info, ignore
   major-mismatch:        warning
   minor-mismatch:        warning
-  patch-mismatch:        note
+  patch-mismatch:        info
   miniscule-mismatch:    ignore
-  discouraged-revision:  note
+  discouraged-revision:  info
   incompatible-revision: ignore
   deprecated-module:     warning
   deprecated-revision:   warning
   unique-dependency:     ignore
-  ambiguous-dependency:  note
+  ambiguous-dependency:  info
 
 toolchains:
   - name: gnu

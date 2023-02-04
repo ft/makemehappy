@@ -127,6 +127,10 @@ ap.add_argument(
     help = "force successful termination")
 
 ap.add_argument(
+    "-E", "--ignore-dep-errors", action = "store_true",
+    help = "ignore errors in dependency evaluation")
+
+ap.add_argument(
     "-F", "--force", action = "store_true",
     help = "force using MakeMeHappy.yaml")
 
@@ -463,6 +467,9 @@ def adjustConfig(cfg, args):
     if args.log_to_file == True:
         layer['log-to-file'] = not(cfg.lookup('log-to-file'))
         adjustments = adjustments + 1
+    if args.ignore_dep_errors == True:
+        layer['fatal-dependencies'] = not(cfg.lookup('fatal-dependencies'))
+        adjustments = adjustments + 1
     if (len(args.revision) > 0):
         layer['revision-overrides'] = []
         if ('remove' not in layer):
@@ -547,6 +554,11 @@ def do_prepare():
     cut.cmakeIntoYAML()
     cut.generateToplevel()
     return cut
+
+def printMatches(lst, pattern):
+    for line in lst:
+        if (re.match(pattern, line)):
+            print(line, end = '')
 
 if (cmdargs.sub_command == "build-tree-init"):
     requireModuleDefinition(cmdargs)
@@ -636,12 +648,20 @@ elif (cmdargs.sub_command == "run-instance"):
     cut.build()
 
     cut.renderStatistics()
-    cut.renderDependencySummary()
-    if cut.wasSuccessful():
+    cut.renderDependencySummary(False)
+    buildSuccess = cut.wasSuccessful()
+    depSuccess = cut.dependenciesOkay()
+
+    if buildSuccess:
         log.info('All {} builds succeeded.'.format(cut.countBuilds()))
     else:
         log.info('{} build(s) out of {} failed.'
                  .format(cut.countFailed(), cut.countBuilds()))
+
+    if (not depSuccess):
+        log.info('Dependency Evaluation contained errors!')
+
+    if (not (buildSuccess and depSuccess)):
         commandReturnValue = 1
 
 elif (cmdargs.sub_command == "focus-instance"):
@@ -669,23 +689,34 @@ elif (cmdargs.sub_command == "focus-instance"):
     print("")
 
 elif (cmdargs.sub_command == "prepare"):
-    do_prepare()
+    cut = do_prepare()
+    cut.renderDependencySummary(True)
+    depSuccess = cut.dependenciesOkay()
+    if (not depSuccess):
+        log.info('Dependency Evaluation contained errors!')
+        commandReturnValue = 1
 
 elif (cmdargs.sub_command == "build"):
     cut = do_prepare()
-
     cut.build()
-
     if (cmdargs.preserve == False):
         cut.cleanupRoot()
 
     cut.renderStatistics()
-    cut.renderDependencySummary()
-    if cut.wasSuccessful():
+    cut.renderDependencySummary(False)
+    buildSuccess = cut.wasSuccessful()
+    depSuccess = cut.dependenciesOkay()
+
+    if buildSuccess:
         log.info('All {} builds succeeded.'.format(cut.countBuilds()))
     else:
         log.info('{} build(s) out of {} failed.'
                  .format(cut.countFailed(), cut.countBuilds()))
+
+    if (not depSuccess):
+        log.info('Dependency Evaluation contained errors!')
+
+    if (not (buildSuccess and depSuccess)):
         commandReturnValue = 1
 
 elif (cmdargs.sub_command == "dump-description"):
@@ -709,6 +740,8 @@ elif (cmdargs.sub_command == "revision-overrides"):
         print("")
 
 elif (cmdargs.sub_command == "show-result"):
+    cfg.load()
+    adjustConfig(cfg, cmdargs)
     input = cmdargs.file[0]
     table = []
     marker = re.compile(
@@ -716,6 +749,7 @@ elif (cmdargs.sub_command == "show-result"):
     strip = re.compile(
         r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+[A-Z]+:\s+MakeMeHappy:\s')
     success = re.compile(r'All \d+ builds succeeded.')
+    deperror = re.compile(r'Dependency Evaluation contained errors!')
     for line in open(input):
         if (re.match(marker, line)):
             entry = re.sub(strip, '', line)
@@ -727,22 +761,30 @@ elif (cmdargs.sub_command == "show-result"):
             stripped = re.sub(strip, '', line)
             print(stripped, end='')
 
+    if (len(table) < 2):
+        if (cmdargs.quiet_result == False):
+            print('Could not find result table in log: {}'.format(input))
+        mmh_exit(1)
+
+    lst = table[-2:]
+
     if (cmdargs.quiet_result == False):
         if (cmdargs.short_result == False):
             for line in table:
                 print(line, end='')
         else:
-            print(table[-1], end='')
+            printMatches(lst, success)
+            if (cfg.lookup('fatal-dependencies')):
+                printMatches(lst, deperror)
 
-    if (len(table) > 0):
-        final = table[-1]
-        if (re.match(success, final)):
-            commandReturnValue = 0
-        else:
-            commandReturnValue = 1
+    buildSuccess = any(map(lambda x: re.match(success, x), lst))
+    depSuccess = True
+    if (cfg.lookup('fatal-dependencies')):
+        depSuccess = not any(map(lambda x: re.match(deperror, x), lst))
+
+    if (buildSuccess and depSuccess):
+        commandReturnValue = 0
     else:
-        if (cmdargs.quiet_result == False):
-            print('Could not find result table in log: {}'.format(input))
         commandReturnValue = 1
 
 elif (cmdargs.sub_command == "show-source"):
