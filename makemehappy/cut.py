@@ -390,6 +390,23 @@ def gitRemoteHasBranch(rev):
     rc = mmh.devnullProcess(['git', 'rev-parse', '--verify', 'origin/' + rev])
     return (rc == 0)
 
+def gitDetectRevision(log, path):
+    (stdout, stderr, rc) = mmh.stdoutProcess(
+        ['git', '-C', path,
+         'describe', '--always', '--abbrev=12', '--exact-match'])
+    if (rc == 0):
+        return stdout
+    (stdout, stderr, rc) = mmh.stdoutProcess(
+        ['git', '-C', path, 'rev-parse', '--abbrev-ref', 'HEAD'])
+    if (rc == 0 and stdout != 'HEAD'):
+        return stdout
+    (stdout, stderr, rc) = mmh.stdoutProcess(
+        ['git', '-C', path, 'rev-parse', 'HEAD'])
+    if (rc == 0):
+        return stdout
+    log.info("Could not determine repository state: {}".format(stderr))
+    return None
+
 def fetchCheckout(cfg, log, mod, rev):
     revision = None
     if (isinstance(rev, list)):
@@ -458,9 +475,13 @@ def fetch(cfg, log, src, st, trace):
         newmod = os.path.join(p, 'module.yaml')
         if (os.path.exists(p)):
             log.info("Module directory exists. Skipping initialisation.")
+            dep['revision'] = gitDetectRevision(log, p)
+            log.info(f'Current repository state: {dep["revision"]}')
         elif (source['type'] == 'symlink'):
             log.info("Symlinking dependency: {} to {}" .format(dep['name'], url))
             os.symlink(url, p)
+            dep['revision'] = gitDetectRevision(log, p)
+            log.info(f'Current repository state: {dep["revision"]}')
         elif (source['type'] == 'git'):
             rc = mmh.loggedProcess(cfg, log, ['git',
                                               '-c', 'advice.detachedHead=false',
