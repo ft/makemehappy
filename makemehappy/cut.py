@@ -475,13 +475,9 @@ def fetch(cfg, log, src, st, trace):
         newmod = os.path.join(p, 'module.yaml')
         if (os.path.exists(p)):
             log.info("Module directory exists. Skipping initialisation.")
-            dep['revision'] = gitDetectRevision(log, p)
-            log.info(f'Current repository state: {dep["revision"]}')
         elif (source['type'] == 'symlink'):
             log.info("Symlinking dependency: {} to {}" .format(dep['name'], url))
             os.symlink(url, p)
-            dep['revision'] = gitDetectRevision(log, p)
-            log.info(f'Current repository state: {dep["revision"]}')
         elif (source['type'] == 'git'):
             rc = mmh.loggedProcess(cfg, log, ['git',
                                               '-c', 'advice.detachedHead=false',
@@ -500,6 +496,17 @@ def fetch(cfg, log, src, st, trace):
             os.chdir(olddir)
         else:
             raise(InvalidRepositoryType(source))
+
+        if (isinstance(dep['revision'], list)):
+            for branch in dep['revision']:
+                if (gitRemoteHasBranch(branch)):
+                    log.info('Using main branch: {} for module {}'
+                            .format(branch, dep['name']))
+                    dep['revision'] = branch
+                    break
+
+        dep['detected'] = gitDetectRevision(log, p)
+        log.info(f'Current repository state for {dep["name"]}: {dep["detected"]}')
 
         newmodata = None
         if (os.path.isfile(newmod)):
