@@ -479,6 +479,8 @@ def adjustConfig(cfg, args):
                 (pat,value) = rev.split('=', 1)
                 if (value == '!main'):
                     new = { 'name': pat, 'use-main-branch': True }
+                elif (value == '!preserve'):
+                    new = { 'name': pat, 'preserve': True }
                 else:
                     new = { 'name': pat, 'revision': value }
 
