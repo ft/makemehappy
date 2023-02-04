@@ -9,20 +9,6 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** ACTIVE Implement version dependency judgements
-- Major version mismatch: Error
-- Minor version mismatch: Warning
-- Patchlevel mismatch: Informational message
-- Module specifies a deprecated version: Warning
-
-Severity Levels should be configurable via command line and config.yaml stack.
-
-Possible levels:
-
-- error
-- warning
-- info
-- ignore
 ** TODO Add !preserve and !latest to --revision keywords
 
 '!preserve' will serve as the command line version of the same override
@@ -80,16 +66,6 @@ With --thorough:
 - Check if "repository" exists.
 - Check if "main" branch spec can be resolved against remote repository.
 
-** TODO Allow sources.yaml to specify deprecated module versions
-Example:
-
-modules:
-  ufw:
-    deprecated: [ v23.32.99, v100.1.0 ]  # Deprecate some versions.
-    deprecated: true                     # Deprecate the whole module.
-    alternative: ufw-ng                  # Alternative to this module.
-
-Violating deprecations should be warnings by default.
 ** TODO Allow third-party zephyr modules to have a makemehappy.yaml file
 This can be used to automatically match module versions with zephyr-kernel
 versions.
@@ -141,6 +117,30 @@ All important parameters are encoded in the build-directory name:
 
 Note that the build directories are encoded differently nowadays.
 ** TODO Flesh out user manual
+** DONE Allow sources.yaml to specify deprecated module versions
+Example:
+
+modules:
+  ufw:
+    deprecated: [ v23.32.99, v100.1.0 ]  # Deprecate some versions.
+    deprecated: true                     # Deprecate the whole module.
+    alternative: ufw-ng                  # Alternative to this module.
+
+Violating deprecations should be warnings by default.
+** DONE Implement version dependency judgements
+- Major version mismatch: Error
+- Minor version mismatch: Warning
+- Patchlevel mismatch: Informational message
+- Module specifies a deprecated version: Warning
+
+Severity Levels should be configurable via command line and config.yaml stack.
+
+Possible levels:
+
+- error
+- warning
+- info
+- ignore
 ** DONE Add revision-overrides subcommand to inspect active revisions
 For a module, some modules, with or without matched override.
 ** DONE Make module builds allow for "foo/bar/baz/quux" type build specs
@@ -419,20 +419,17 @@ guess.
 This is not happening, because we've allowed module.yaml file to override
 toolchains in the past, and I am not breaking that.
 * Wishlist
-** DEFERRED Gather statistics while running
-
-The version judgements have to be implemented before this can be done.
-
-*** TODO How many dependency versions had a patch-level mismatch?
-*** TODO How many dependency versions had a minor mismatch?
-*** TODO How many dependency versions had a major mismatch?
-*** TODO How many dependency versions violated a deprecation?
+** DEFERRED Add an option to specify source directory instead of cwd
+I am not quite sure why I wanted this in the first place.
+** DONE Gather statistics while running
+*** DONE How many dependency versions had a patch-level mismatch?
+*** DONE How many dependency versions had a minor mismatch?
+*** DONE How many dependency versions had a major mismatch?
+*** DONE How many dependency versions violated a deprecation?
 *** DONE How many build-instances succeeded/failed?
 *** DONE How many build-instances had their test runs succeed/fail?
 *** DONE How much time did individual steps take to execute?
 *** DONE Render statistics nicely at program termination
-** DEFERRED Add an option to specify source directory instead of cwd
-I am not quite sure why I wanted this in the first place.
 ** DONE Module type: nobuild
 To mark modules, that cannot be built stand-alone. This would allow:
 

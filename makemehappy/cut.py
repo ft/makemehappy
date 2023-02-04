@@ -109,6 +109,8 @@ class DependencyEvaluation:
         if ('deprecate' in src):
             if (isinstance(src['deprecate'], bool)):
                 meta['module-deprecated'] = src['deprecate']
+                if ('alternative' in src):
+                    meta['module-alternative'] = src['alternative']
             elif (isinstance(src['deprecate'], list) and
                   revision in src['deprecate']):
                 meta['revision-deprecated'] = True
@@ -124,8 +126,12 @@ class DependencyEvaluation:
                  'origins': genOrigins(ver.origin) }
 
     def deprecatedModule(self, key, meta, data):
+        alt = None
+        if ('module-alternative' in meta):
+            alt = meta['module-alternative']
         return { 'kind': 'deprecated:module',
                  'module': key,
+                 'alternative': alt,
                  'from': genNames(data) }
 
     def deprecatedRevision(self, key, revision, meta, data):
@@ -1108,6 +1114,9 @@ class CodeUnderTest:
                 .format(entry['module']))
             for origin in entry['from']:
                 self.log.info('    {}'.format(origin))
+            if (entry['alternative'] != None):
+                self.log.info('  Possible alternative: {}'
+                            .format(entry['alternative']))
         elif (entry['kind'] == 'deprecated:revision'):
             self.log.info(
                 'Detected use of deprecated revision for module "{}"!:'
