@@ -873,16 +873,26 @@ class CodeUnderTest:
         self.zephyr = None
         self.toplevel = None
         self.depKWS = [
-            { 'name': 'major-mismatch',        'user': 'Major Version Mismatch(es)' },
-            { 'name': 'minor-mismatch',        'user': 'Minor Version Mismatch(es)' },
-            { 'name': 'patch-mismatch',        'user': 'Patch Version Mismatch(es)' },
-            { 'name': 'miniscule-mismatch',    'user': 'Miniscule Version Mismatch(es)' },
-            { 'name': 'discouraged-revision',  'user': 'Discouraged Revision(s)' },
-            { 'name': 'incompatible-revision', 'user': 'Incompatible Revision(s)' },
-            { 'name': 'deprecated-module',     'user': 'Deprecated Module(s)' },
-            { 'name': 'deprecated-revision',   'user': 'Deprecated Revision(s)' },
-            { 'name': 'unique-dependency',     'user': 'Unique Dependenc{y,ies}' },
-            { 'name': 'ambiguous-dependency',  'user': 'Ambiguous Dependenc{y,ies}' } ]
+            { 'name': 'major-mismatch',        'user': 'Major Version',
+              'singular': 'Mismatch',          'plural': 'Mismatches' },
+            { 'name': 'minor-mismatch',        'user': 'Minor Version',
+              'singular': 'Mismatch',          'plural': 'Mismatches' },
+            { 'name': 'patch-mismatch',        'user': 'Patch Version',
+              'singular': 'Mismatch',          'plural': 'Mismatches' },
+            { 'name': 'miniscule-mismatch',    'user': 'Miniscule Version',
+              'singular': 'Mismatch',          'plural': 'Mismatches' },
+            { 'name': 'deprecated-module',     'user': 'Deprecated',
+              'singular': 'Module',            'plural': 'Modules' },
+            { 'name': 'deprecated-revision',   'user': 'Deprecated',
+              'singular': 'Revision',          'plural': 'Revisions' },
+            { 'name': 'discouraged-revision',  'user': 'Discouraged',
+              'singular': 'Revision',          'plural': 'Revisions' },
+            { 'name': 'incompatible-revision', 'user': 'Incompatible',
+              'singular': 'Revision',          'plural': 'Revisions' },
+            { 'name': 'unique-dependency',     'user': 'Unique',
+              'singular': 'Dependency',        'plural': 'Dependencies' },
+            { 'name': 'ambiguous-dependency',  'user': 'Ambiguous',
+              'singular': 'Dependency',        'plural': 'Dependencies' } ]
 
     def name(self):
         if (isinstance(self.moduleData, dict) and 'name' in self.moduleData):
@@ -1235,6 +1245,8 @@ class CodeUnderTest:
             if (tmp == None):
                 continue
             user = self.depKWS[tmp]['user']
+            sing = self.depKWS[tmp]['singular']
+            plur = self.depKWS[tmp]['plural']
 
             if (b == 'fatal'):
                 fatal = True
@@ -1247,6 +1259,7 @@ class CodeUnderTest:
                 continue
 
             final.append({ 'name': entry, 'user': user,
+                           'singular': sing, 'plural': plur,
                            'count': data[entry],
                            'fatal': fatal })
 
@@ -1256,9 +1269,11 @@ class CodeUnderTest:
 
         for entry in final:
             maybeInfo(self.cfg, self.log,
-                      '  - {} {}{}'
+                      '  - {} {} {}{}'
                       .format(entry['count'],
                               entry['user'],
+                              entry['singular'] if (entry['count'] == 1)
+                                                else entry['plural'],
                               printTag('exit:fatal'
                                        if entry['fatal']
                                        else None)))
