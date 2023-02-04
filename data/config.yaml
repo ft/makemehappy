@@ -10,6 +10,8 @@ dependency-summary:
   miniscule-mismatch:    ignore
   discouraged-revision:  show
   incompatible-revision: ignore
+  deprecated-module:     show
+  deprecated-revision:   show
   unique-dependency:     ignore
   ambiguous-dependency:  show
 

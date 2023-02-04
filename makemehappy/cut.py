@@ -879,6 +879,8 @@ class CodeUnderTest:
             { 'name': 'miniscule-mismatch',    'user': 'Miniscule Version Mismatch(es)' },
             { 'name': 'discouraged-revision',  'user': 'Discouraged Revision(s)' },
             { 'name': 'incompatible-revision', 'user': 'Incompatible Revision(s)' },
+            { 'name': 'deprecated-module',     'user': 'Deprecated Module(s)' },
+            { 'name': 'deprecated-revision',   'user': 'Deprecated Revision(s)' },
             { 'name': 'unique-dependency',     'user': 'Unique Dependenc{y,ies}' },
             { 'name': 'ambiguous-dependency',  'user': 'Ambiguous Dependenc{y,ies}' } ]
 
@@ -1016,6 +1018,10 @@ class CodeUnderTest:
                 for l1 in l0['details']:
                     if (m := re.match('version:(unique|ambiguous)', l1['kind'])):
                         rv[m.group(1) + '-dependency'] += 1
+                    elif (l1['kind'] == 'deprecated:revision'):
+                        rv['deprecated-revision'] += 1
+                    elif (l1['kind'] == 'deprecated:module'):
+                        rv['deprecated-module'] += 1
 
         return rv
 
