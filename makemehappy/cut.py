@@ -1248,11 +1248,7 @@ class CodeUnderTest:
             sing = self.depKWS[tmp]['singular']
             plur = self.depKWS[tmp]['plural']
 
-            if (b == 'fatal'):
-                fatal = True
-            elif (b == 'show'):
-                pass
-            else:
+            if (b == 'ignore'):
                 continue
 
             if (data[entry] == 0):
@@ -1261,7 +1257,7 @@ class CodeUnderTest:
             final.append({ 'name': entry, 'user': user,
                            'singular': sing, 'plural': plur,
                            'count': data[entry],
-                           'fatal': fatal })
+                           'level': b })
 
         if (len(final) > 0):
             maybeInfo(self.cfg, self.log, 'Dependency Evaluation Summary:')
@@ -1269,14 +1265,12 @@ class CodeUnderTest:
 
         for entry in final:
             maybeInfo(self.cfg, self.log,
-                      '  - {} {} {}{}'
-                      .format(entry['count'],
+                      '  {:8} {:2} {} {}'
+                      .format(entry['level'] + ':',
+                              entry['count'],
                               entry['user'],
                               entry['singular'] if (entry['count'] == 1)
-                                                else entry['plural'],
-                              printTag('exit:fatal'
-                                       if entry['fatal']
-                                       else None)))
+                                                else entry['plural']))
 
         if (len(final) > 0):
             maybeInfo(self.cfg, self.log, '')

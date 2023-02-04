@@ -3,17 +3,17 @@ log-to-file: false
 log-unique-versions: false
 
 dependency-summary:
-  # Possible values: fatal, show, ignore
-  major-mismatch:        show
-  minor-mismatch:        show
-  patch-mismatch:        show
+  # Possible values: error, warning, note, ignore
+  major-mismatch:        warning
+  minor-mismatch:        warning
+  patch-mismatch:        note
   miniscule-mismatch:    ignore
-  discouraged-revision:  show
+  discouraged-revision:  note
   incompatible-revision: ignore
-  deprecated-module:     show
-  deprecated-revision:   show
+  deprecated-module:     warning
+  deprecated-revision:   warning
   unique-dependency:     ignore
-  ambiguous-dependency:  show
+  ambiguous-dependency:  note
 
 toolchains:
   - name: gnu
