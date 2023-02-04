@@ -43,6 +43,10 @@ def addExtension(mods, idx, entry, name):
             mods[name]['root'] = entry['root']
         mods[name][idx] = entry[idx]
 
+def genNames(lst):
+    return list(map(lambda x: x['name'],
+                    filter(lambda x: 'name' in x, lst)))
+
 def genOrigins(lst):
     xs = list(map(lambda x: x['origin'],
                   filter(lambda x: 'origin' in x and x['origin'] != None,
@@ -94,15 +98,22 @@ class DependencyEvaluation:
             self.data[name][revision] = []
         src = self.sources.lookup(name)
         new = { 'name': origin, 'origin': tag }
+        self.data[name][revision].append(new)
+        midx = mmh.findByKey(self.data[name][revision], '!meta')
+        if (midx != None):
+            meta = self.data[name][revision][midx]
+        else:
+            new = { '!meta': True }
+            self.data[name][revision].append(new)
+            meta = self.data[name][revision][-1]
         if ('deprecate' in src):
             if (isinstance(src['deprecate'], bool)):
-                new['package-deprecated'] = src['deprecate']
+                meta['module-deprecated'] = src['deprecate']
             elif (isinstance(src['deprecate'], list) and
                   revision in src['deprecate']):
-                new['revision-deprecated'] = True
+                meta['revision-deprecated'] = True
             elif (revision == src['deprecate']):
-                new['revision-deprecated'] = True
-        self.data[name][revision].append(new)
+                meta['revision-deprecated'] = True
 
     def logVersion(self, key, ver, unique):
         return { 'kind': ('version:' + ('unique' if unique else 'ambiguous')),
@@ -111,6 +122,20 @@ class DependencyEvaluation:
                  'version': ver.string,
                  'effective': ver.render(),
                  'origins': genOrigins(ver.origin) }
+
+    def deprecatedModule(self, key, meta, data):
+        return { 'kind': 'deprecated:module',
+                 'module': key,
+                 'from': genNames(data) }
+
+    def deprecatedRevision(self, key, revision, meta, data):
+        return { 'kind': 'deprecated:revision',
+                 'module': key,
+                 'data': revision,
+                 'version': revision.string,
+                 'effective': revision.render(),
+                 'from': genNames(data),
+                 'tags': genOrigins(revision.origin) }
 
     def kinds(self, lst):
         rv = {}
@@ -163,6 +188,7 @@ class DependencyEvaluation:
                      'module': key,
                      'inherited': inherited(origins) }
         return None
+
     def judge(self, key, lst, journal):
         compat = self.kinds(lst)
         self.note({ 'kind': ('revision:' + ('incompatible' if (len(compat) > 1)
@@ -183,6 +209,8 @@ class DependencyEvaluation:
                               'module': key,
                               'origins': [] }
                     for origin in self.data[key][vers.string]:
+                        if ('name' not in origin):
+                            continue
                         entry['origins'].append({ 'name': origin['name'],
                                                   'tag':  origin['origin'] })
                     self.note(entry)
@@ -209,6 +237,14 @@ class DependencyEvaluation:
             else:
                 for ver in sorted(versions):
                     j.append(self.logVersion(key, ver, False))
+            for ver in sorted(versions):
+                here = self.data[key][ver.string]
+                midx = mmh.findByKey(here, '!meta')
+                meta = here[midx]
+                if (mmh.trueKey(meta, 'module-deprecated')):
+                    j.append(self.deprecatedModule(key, meta, here))
+                if (mmh.trueKey(meta, 'revision-deprecated')):
+                    j.append(self.deprecatedRevision(key, ver, meta, here))
             self.judge(key, versions, j)
 
 class CMakeExtensions:

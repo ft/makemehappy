@@ -135,6 +135,15 @@ def maybeMatch(lst, pat):
 def patternsToList(lst, pats):
     return flatten([ maybeMatch(lst, x) for x in pats ])
 
+def trueKey(d, k):
+    return (k in d and d[k])
+
+def findByKey(lst, key):
+    for i, d in enumerate(lst):
+        if (trueKey(d, key)):
+            return i
+    return None
+
 def findByName(lst, name):
     for i, d in enumerate(lst):
         #print('DEBUG:', name, i, d)
