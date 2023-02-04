@@ -1015,6 +1015,8 @@ class CodeUnderTest:
         self.stats.checkpoint('load-dependencies')
         self.depstack = Stack(self.dependencies())
         self.deptrace = Trace()
+        mmh.maybeShowPhase(self.log, 'load-dependencies', 'mmh/preparation',
+                           self.args)
         rc = fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
 
         if (rc == False):
