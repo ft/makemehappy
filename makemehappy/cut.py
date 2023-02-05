@@ -176,10 +176,14 @@ class DependencyEvaluation:
                   'b-origins': [] }
 
         for origin in a.origin:
+            if ('!meta' in origin):
+                continue
             entry['a-origins'].append({ 'name': origin['name'],
                                         'tag':  origin['origin'] })
 
         for origin in b.origin:
+            if ('!meta' in origin):
+                continue
             entry['b-origins'].append({ 'name': origin['name'],
                                         'tag':  origin['origin'] })
 
