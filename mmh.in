@@ -479,6 +479,11 @@ def adjustConfig(cfg, args):
                 (pat,value) = rev.split('=', 1)
                 if (value == '!main'):
                     new = { 'name': pat, 'use-main-branch': True }
+                elif (value == '!latest'):
+                    new = { 'name': pat, 'use-latest-revision': True }
+                elif (m := re.match('^!latest:(.*)', value)):
+                    new = { 'name': pat, 'use-latest-revision': True,
+                            'use-latest-revision-pattern': m.group(1) }
                 elif (value == '!preserve'):
                     new = { 'name': pat, 'preserve': True }
                 else:

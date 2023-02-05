@@ -380,9 +380,19 @@ def getSource(dep, src):
 
     return tmp
 
+def gitLatestTag(path, pattern):
+    (stdout, stderr, rc) = mmh.stdoutProcess(
+        ['git', '-C', path,
+         'describe', '--always', '--abbrev=12', '--match=' + pattern])
+    if (rc != 0):
+        return None
+    return re.sub('-\d+-g?[0-9a-fA-F]+$', '', stdout)
+
 def revisionOverride(cfg, src, mod):
     rev = cfg.processOverrides(mod)
-    if (rev == '!main'):
+    if (isinstance(rev, tuple)):
+        rev = rev[0]
+    if (rev == '!main' or rev == '!latest'):
         s = src.lookup(mod)
         m = s['main']
         if (isinstance(m, str)):
@@ -411,6 +421,18 @@ def gitDetectRevision(log, path):
     log.info("Could not determine repository state: {}".format(stderr))
     return None
 
+def gitCheckout(cfg, log, revision):
+    rc = mmh.loggedProcess(cfg, log, ['git',
+                                      '-c', 'advice.detachedHead=false',
+                                      'checkout', '--quiet',
+                                      revision])
+
+    if (rc != 0):
+        log.error("Failed to switch to revision {} for module {}!"
+                  .format(revision, mod))
+        return None
+    return revision
+
 def fetchCheckout(cfg, log, mod, rev):
     revision = None
     if (isinstance(rev, list)):
@@ -427,16 +449,7 @@ def fetchCheckout(cfg, log, mod, rev):
     else:
         revision = rev
 
-    rc = mmh.loggedProcess(cfg, log, ['git',
-                                      '-c', 'advice.detachedHead=false',
-                                      'checkout', '--quiet',
-                                      revision])
-
-    if (rc != 0):
-        log.error("Failed to switch to revision {} for module {}!"
-                  .format(revision, mod))
-        return None
-    return revision
+    return gitCheckout(cfg, log, revision)
 
 class InvalidRepositoryType(Exception):
     pass
@@ -498,6 +511,16 @@ def fetch(cfg, log, src, st, trace):
             if (rev == None):
                 return False
             dep['revision'] = rev
+            rev = cfg.processOverrides(dep['name'])
+            if (isinstance(rev, tuple) and rev[0] == '!latest'):
+                latest = gitLatestTag('.', rev[1])
+                if (latest != None):
+                    log.info('Moving to latest tag for {}: {}',
+                            dep['name'], latest)
+                    latest = gitCheckout(cfg, log, latest)
+                    if (latest == None):
+                        raise(InvalidDependency(dep))
+                    dep['revision'] = latest
             os.chdir(olddir)
             detectrev = False
         else:

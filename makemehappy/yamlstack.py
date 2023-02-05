@@ -201,6 +201,13 @@ class ConfigStack(YamlStack):
                     continue
                 elif ('revision' in rover):
                     return rover['revision']
+                elif ('use-latest-revision' in rover):
+                    if (not rover['use-latest-revision']):
+                        return None
+                    pattern = '*'
+                    if ('use-latest-revision-pattern' in rover):
+                        pattern = rover['use-latest-revision-pattern']
+                    return ('!latest', pattern)
                 elif ('use-main-branch' in rover):
                     if (not rover['use-main-branch']):
                         return None
