@@ -9,21 +9,6 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** TODO Implement version dependency judgements
-
-- Major version mismatch: Error
-- Minor version mismatch: Warning
-- Patchlevel mismatch: Informational message
-- Module specifies a deprecated version: Warning
-
-Severity Levels should be configurable via command line and config.yaml stack.
-
-Possible levels:
-
-- error
-- warning
-- info
-- ignore
 ** TODO Implement YAML linters
 
 All linters should make sure, the used keys are type correct. Unrecognised keys
@@ -61,16 +46,6 @@ With --thorough:
 
 - Check if "repository" exists.
 - Check if "main" branch spec can be resolved against remote repository.
-
-** TODO Allow sources.yaml to specify deprecated module versions
-
-Example:
-
-modules:
-  ufw:
-    deprecate: [ v23.32.99, v100.1.0 ]
-
-Violating deprecations should be warnings by default.
 
 ** TODO Allow third-party zephyr modules to have a makemehappy.yaml file
 This can be used to automatically match module versions with zephyr-kernel
@@ -123,6 +98,58 @@ All important parameters are encoded in the build-directory name:
 
 Note that the build directories are encoded differently nowadays.
 ** TODO Flesh out user manual
+** DONE Allow --config and --source to reference local files
+mmh --config foobar
+
+References foobar.yaml in the config-directory stack. The same is true for
+--source.
+
+mmh --config foobar.yaml
+
+Adds a local file (not looked up in the config-directory stack) to the file
+stack. Same for --source.
+** DONE Add !preserve and !latest to --revision keywords
+'!preserve' will serve as the command line version of the same override
+keyword.
+
+'!latest' is a new concept, that will select the newest available tag. In
+config file terms that is:
+
+revision-overrides:
+  - name: foobar
+    use-latest-revision: true
+
+As a variant, '!latest:version-*' will be possible, where 'version-*' is a
+pattern the selected tag has to match. Again, in config file terms, that is:
+
+revision-overrides:
+  - name: foobar
+    use-latest-revision: true
+    use-latest-pattern: "version-*"
+** DONE Allow sources.yaml to specify deprecated module versions
+Example:
+
+modules:
+  ufw:
+    deprecated: [ v23.32.99, v100.1.0 ]  # Deprecate some versions.
+    deprecated: true                     # Deprecate the whole module.
+    alternative: ufw-ng                  # Alternative to this module.
+
+Violating deprecations should be warnings by default.
+** DONE Implement version dependency judgements
+- Major version mismatch: Error
+- Minor version mismatch: Warning
+- Patchlevel mismatch: Informational message
+- Module specifies a deprecated version: Warning
+
+Severity Levels should be configurable via command line and config.yaml stack.
+
+Possible levels:
+
+- error
+- warning
+- info
+- ignore
 ** DONE Add revision-overrides subcommand to inspect active revisions
 For a module, some modules, with or without matched override.
 ** DONE Make module builds allow for "foo/bar/baz/quux" type build specs
@@ -401,20 +428,50 @@ guess.
 This is not happening, because we've allowed module.yaml file to override
 toolchains in the past, and I am not breaking that.
 * Wishlist
-** DEFERRED Gather statistics while running
+** DEFERRED Add an option to specify source directory instead of cwd
+For example, with chip-remote:
 
-The version judgements have to be implemented before this can be done.
+mmh -C firmware -d native-fw system -s build zephyr/native_posix_64/chip-remote/host/debug
 
-*** TODO How many dependency versions had a patch-level mismatch?
-*** TODO How many dependency versions had a minor mismatch?
-*** TODO How many dependency versions had a major mismatch?
-*** TODO How many dependency versions violated a deprecation?
+This introduces the concept of the startup directory (SD) and the working di-
+rectory (WD). The former is the working directory at the time of startup. The
+latter is the directory specified by the -C option. Right now, both of these
+values are always the same. If this would be introduced, we would need to spe-
+cify how the different parts of the system that reference files and directo-
+ries work with respect to these semantics being split up. Only relative paths
+are important here, of course. absolute file names are — well — absolute.
+
+Top Level Options
+
+- --directory: SD
+- --module: WD
+- --log-file: SD
+- --config: SD
+- --source: SD
+
+Subcommand Options: focus
+
+- --link-name: SD
+- Also, the compile_commands.json link should reference SD.
+
+Subcommand Options: run-instance
+
+- When a build-instance is referenced by directory name, SD is the base.
+
+Subcommand Options: system db
+
+- --location: SD
+
+Not quite sure if this is worth it.
+** DONE Gather statistics while running
+*** DONE How many dependency versions had a patch-level mismatch?
+*** DONE How many dependency versions had a minor mismatch?
+*** DONE How many dependency versions had a major mismatch?
+*** DONE How many dependency versions violated a deprecation?
 *** DONE How many build-instances succeeded/failed?
 *** DONE How many build-instances had their test runs succeed/fail?
 *** DONE How much time did individual steps take to execute?
 *** DONE Render statistics nicely at program termination
-** DEFERRED Add an option to specify source directory instead of cwd
-I am not quite sure why I wanted this in the first place.
 ** DONE Module type: nobuild
 To mark modules, that cannot be built stand-alone. This would allow:
 
@@ -452,4 +509,3 @@ Update: Yes, not worth it.
 This is useful for progress in CI.
 ** DONE Error out when checkout of dependency revision fails
 ** DONE Make non-existant zephyr modules an error?
-

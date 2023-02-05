@@ -1,10 +1,14 @@
 import datetime
 import math
 import os
+import re
 import yaml
+
+import itertools as it
 
 import makemehappy.utilities as mmh
 import makemehappy.build as build
+import makemehappy.version as v
 import makemehappy.yamlstack as ys
 import makemehappy.zephyr as z
 
@@ -38,6 +42,220 @@ def addExtension(mods, idx, entry, name):
             mods[name] = {}
             mods[name]['root'] = entry['root']
         mods[name][idx] = entry[idx]
+
+def genNames(lst):
+    return list(map(lambda x: x['name'],
+                    filter(lambda x: 'name' in x, lst)))
+
+def genOrigins(lst):
+    xs = list(map(lambda x: x['origin'],
+                  filter(lambda x: 'origin' in x and x['origin'] != None,
+                         lst)))
+
+    if (len(xs) == 0):
+        return None
+
+    return xs
+
+def printTag(tag):
+    if (tag == None):
+        return ''
+    if (isinstance(tag, str)):
+        return f' [{tag}]'
+    if (isinstance(tag, list)):
+        if (len(tag) == 0):
+            return ''
+        return f' [{", ".join(tag)}]'
+    return ' ' + str(tag)
+
+def inherited(lst):
+    return (lst != None and 'inherit' in lst)
+
+class DependencyEvaluation:
+    def __init__(self, sources):
+        self.sources = sources
+        self.data = {}
+        self.journal = []
+
+    def note(self, d):
+        self.journal.append(d)
+
+    def insertSome(self, lst, origin):
+        for dep in lst:
+            self.insert(dep, origin)
+
+    def insert(self, dep, origin):
+        name = dep['name']
+        revision = None
+        tag = None
+        if ('revision' in dep):
+            revision = dep['revision']
+        if ('origin' in dep):
+            tag = dep['origin']
+        if (name not in self.data):
+            self.data[name] = {}
+        if (revision not in self.data[name]):
+            self.data[name][revision] = []
+        src = self.sources.lookup(name)
+        new = { 'name': origin, 'origin': tag }
+        self.data[name][revision].append(new)
+        midx = mmh.findByKey(self.data[name][revision], '!meta')
+        if (midx != None):
+            meta = self.data[name][revision][midx]
+        else:
+            new = { '!meta': True }
+            self.data[name][revision].append(new)
+            meta = self.data[name][revision][-1]
+        if ('deprecate' in src):
+            if (isinstance(src['deprecate'], bool)):
+                meta['module-deprecated'] = src['deprecate']
+                if ('alternative' in src):
+                    meta['module-alternative'] = src['alternative']
+            elif (isinstance(src['deprecate'], list) and
+                  revision in src['deprecate']):
+                meta['revision-deprecated'] = True
+            elif (revision == src['deprecate']):
+                meta['revision-deprecated'] = True
+
+    def logVersion(self, key, ver, unique):
+        return { 'kind': ('version:' + ('unique' if unique else 'ambiguous')),
+                 'module': key,
+                 'data': ver,
+                 'version': ver.string,
+                 'effective': ver.render(),
+                 'origins': genOrigins(ver.origin) }
+
+    def deprecatedModule(self, key, meta, data):
+        alt = None
+        if ('module-alternative' in meta):
+            alt = meta['module-alternative']
+        return { 'kind': 'deprecated:module',
+                 'module': key,
+                 'alternative': alt,
+                 'from': genNames(data) }
+
+    def deprecatedRevision(self, key, revision, meta, data):
+        return { 'kind': 'deprecated:revision',
+                 'module': key,
+                 'data': revision,
+                 'version': revision.string,
+                 'effective': revision.render(),
+                 'from': genNames(data),
+                 'tags': genOrigins(revision.origin) }
+
+    def kinds(self, lst):
+        rv = {}
+        for k in lst:
+            if (k.kind not in rv):
+                rv[k.kind] = []
+            rv[k.kind].append(k)
+        return rv
+
+    def compare(self, key, a, b):
+        result = v.compare(a, b)
+        if (not result.compatible):
+            self.note({ 'kind': 'version:incompatible',
+                        'module': key,
+                        'a': a, 'b': b })
+        if (result.kind == 'same'):
+            # This method is currently used when higher levels detected a
+            # mismatch. If we're here, that means they did something wrong,
+            # or the comparison algorithm in version.py is broken.
+            self.note({ 'kind': 'maybe-bug',
+                        'tag':  'unexpected-same-version',
+                        'meta': 'Versions should not be the same here.',
+                        'module': key,
+                        'a': a, 'b': b })
+            return
+
+        entry = { 'kind': 'version:mismatch:' + result.kind,
+                  'module': key,
+                  'result': result,
+                  'a': a, 'b': b,
+                  'a-origins': [],
+                  'b-origins': [] }
+
+        for origin in a.origin:
+            if ('!meta' in origin):
+                continue
+            entry['a-origins'].append({ 'name': origin['name'],
+                                        'tag':  origin['origin'] })
+
+        for origin in b.origin:
+            if ('!meta' in origin):
+                continue
+            entry['b-origins'].append({ 'name': origin['name'],
+                                        'tag':  origin['origin'] })
+
+        self.note(entry)
+
+    def maybeBetter(self, key, kind, origins):
+        # Inherited revisions can do whatever they want. We will assume, that
+        # the parent module will know what it is doing.
+        if (kind != 'version' and not inherited(origins)):
+            return { 'kind': 'revision:kind',
+                     'actual': kind,
+                     'module': key,
+                     'inherited': inherited(origins) }
+        return None
+
+    def judge(self, key, lst, journal):
+        compat = self.kinds(lst)
+        self.note({ 'kind': ('revision:' + ('incompatible' if (len(compat) > 1)
+                                                           else 'compatible')),
+                    'kinds': list(compat.keys()),
+                    'module': key,
+                    'details': journal })
+
+        for kind in compat:
+            origins = genOrigins(list(it.chain.from_iterable(
+                map(lambda x: x.origin, compat[kind]))))
+            detail = self.maybeBetter(key, kind, origins)
+            if (detail != None):
+                for vers in compat[kind]:
+                    entry = { 'kind': 'revision:discouraged',
+                              'detail': detail,
+                              'data': vers,
+                              'module': key,
+                              'origins': [] }
+                    for origin in self.data[key][vers.string]:
+                        if ('name' not in origin):
+                            continue
+                        entry['origins'].append({ 'name': origin['name'],
+                                                  'tag':  origin['origin'] })
+                    self.note(entry)
+
+        # Get a list of pairs of all combinations of different versions
+        vps = list(filter(
+            lambda x: x[0] > x[1],
+            it.product(filter(lambda x: x.kind == 'version', lst),
+                       repeat = 2)))
+        # Compare those.
+        for vp in vps:
+            self.compare(key, vp[0], vp[1])
+
+    def evaluate(self):
+        for key in self.data:
+            versions = list(
+                filter(lambda x: not x.string.startswith('!'),
+                       map(lambda x: v.Version(x, self.data[key][x]),
+                           self.data[key].keys())))
+            j = []
+            if (len(versions) == 1):
+                ver = versions[0]
+                j.append(self.logVersion(key, ver, True))
+            else:
+                for ver in sorted(versions):
+                    j.append(self.logVersion(key, ver, False))
+            for ver in sorted(versions):
+                here = self.data[key][ver.string]
+                midx = mmh.findByKey(here, '!meta')
+                meta = here[midx]
+                if (mmh.trueKey(meta, 'module-deprecated')):
+                    j.append(self.deprecatedModule(key, meta, here))
+                if (mmh.trueKey(meta, 'revision-deprecated')):
+                    j.append(self.deprecatedRevision(key, ver, meta, here))
+            self.judge(key, versions, j)
 
 class CMakeExtensions:
     def __init__(self, moduleData, trace, order):
@@ -162,9 +380,19 @@ def getSource(dep, src):
 
     return tmp
 
+def gitLatestTag(path, pattern):
+    (stdout, stderr, rc) = mmh.stdoutProcess(
+        ['git', '-C', path,
+         'describe', '--always', '--abbrev=12', '--match=' + pattern])
+    if (rc != 0):
+        return None
+    return re.sub('-\d+-g?[0-9a-fA-F]+$', '', stdout)
+
 def revisionOverride(cfg, src, mod):
     rev = cfg.processOverrides(mod)
-    if (rev == '!main'):
+    if (isinstance(rev, tuple)):
+        rev = rev[0]
+    if (rev == '!main' or rev == '!latest'):
         s = src.lookup(mod)
         m = s['main']
         if (isinstance(m, str)):
@@ -175,6 +403,35 @@ def revisionOverride(cfg, src, mod):
 def gitRemoteHasBranch(rev):
     rc = mmh.devnullProcess(['git', 'rev-parse', '--verify', 'origin/' + rev])
     return (rc == 0)
+
+def gitDetectRevision(log, path):
+    (stdout, stderr, rc) = mmh.stdoutProcess(
+        ['git', '-C', path,
+         'describe', '--always', '--abbrev=12', '--exact-match'])
+    if (rc == 0):
+        return stdout
+    (stdout, stderr, rc) = mmh.stdoutProcess(
+        ['git', '-C', path, 'rev-parse', '--abbrev-ref', 'HEAD'])
+    if (rc == 0 and stdout != 'HEAD'):
+        return stdout
+    (stdout, stderr, rc) = mmh.stdoutProcess(
+        ['git', '-C', path, 'rev-parse', 'HEAD'])
+    if (rc == 0):
+        return stdout
+    log.info("Could not determine repository state: {}".format(stderr))
+    return None
+
+def gitCheckout(cfg, log, revision):
+    rc = mmh.loggedProcess(cfg, log, ['git',
+                                      '-c', 'advice.detachedHead=false',
+                                      'checkout', '--quiet',
+                                      revision])
+
+    if (rc != 0):
+        log.error("Failed to switch to revision {} for module {}!"
+                  .format(revision, mod))
+        return None
+    return revision
 
 def fetchCheckout(cfg, log, mod, rev):
     revision = None
@@ -192,12 +449,7 @@ def fetchCheckout(cfg, log, mod, rev):
     else:
         revision = rev
 
-    rc = mmh.loggedProcess(cfg, log, ['git', 'checkout', revision])
-    if (rc != 0):
-        log.error("Failed to switch to revision {} for module {}!"
-                  .format(revision, mod))
-        return None
-    return revision
+    return gitCheckout(cfg, log, revision)
 
 class InvalidRepositoryType(Exception):
     pass
@@ -215,6 +467,7 @@ def fetch(cfg, log, src, st, trace):
             log.info("Revision Override for {} to {}"
                      .format(dep['name'], rover))
             dep['revision'] = rover
+            dep['origin'] = 'override'
         if ('revision' not in dep):
             log.info('Module {} does not specify a revision'
                      .format(dep['name']))
@@ -224,6 +477,7 @@ def fetch(cfg, log, src, st, trace):
                 log.error('Could not determine version for module {}'
                           .format(dep['name']))
                 raise(InvalidDependency(dep))
+            dep['origin'] = 'inherit'
 
         log.info("Fetching revision {} of module {}"
                  .format(dep['revision'], dep['name']))
@@ -236,13 +490,16 @@ def fetch(cfg, log, src, st, trace):
         url = source['repository']
         p = os.path.join('deps', dep['name'])
         newmod = os.path.join(p, 'module.yaml')
+        detectrev = True
         if (os.path.exists(p)):
             log.info("Module directory exists. Skipping initialisation.")
         elif (source['type'] == 'symlink'):
             log.info("Symlinking dependency: {} to {}" .format(dep['name'], url))
             os.symlink(url, p)
         elif (source['type'] == 'git'):
-            rc = mmh.loggedProcess(cfg, log, ['git', 'clone', url, p])
+            rc = mmh.loggedProcess(cfg, log, ['git',
+                                              '-c', 'advice.detachedHead=false',
+                                              'clone', '--quiet', url, p])
             if (rc != 0):
                 log.error("Failed to clone code for module {}!"
                           .format(dep['name']))
@@ -254,9 +511,34 @@ def fetch(cfg, log, src, st, trace):
             if (rev == None):
                 return False
             dep['revision'] = rev
+            rev = cfg.processOverrides(dep['name'])
+            if (isinstance(rev, tuple) and rev[0] == '!latest'):
+                latest = gitLatestTag('.', rev[1])
+                if (latest != None):
+                    log.info('Moving to latest tag for {}: {}',
+                            dep['name'], latest)
+                    latest = gitCheckout(cfg, log, latest)
+                    if (latest == None):
+                        raise(InvalidDependency(dep))
+                    dep['revision'] = latest
             os.chdir(olddir)
+            detectrev = False
         else:
             raise(InvalidRepositoryType(source))
+
+        if (isinstance(dep['revision'], list)):
+            for branch in dep['revision']:
+                if (gitRemoteHasBranch(branch)):
+                    log.info('Using main branch: {} for module {}'
+                            .format(branch, dep['name']))
+                    dep['revision'] = branch
+                    break
+
+        if (detectrev):
+            dep['detected'] = gitDetectRevision(log, p)
+            log.info(f'Current repository state for {dep["name"]}: {dep["detected"]}')
+        else:
+            dep['detected'] = None
 
         newmodata = None
         if (os.path.isfile(newmod)):
@@ -577,7 +859,6 @@ class ExecutionStatistics:
             else:
                 self.log.warn('Statistics log entry has unknown type: {}'
                               .format(t))
-        #print("DEBUG: {}", self.data)
         maybeInfo(self.cfg, self.log, '')
         time = renderTimedelta(self.data[-1]['time-stamp'] -
                                self.data[0]['time-stamp'])
@@ -642,6 +923,8 @@ class CodeUnderTest:
     def __init__(self, log, cfg, args, sources, module):
         self.stats = ExecutionStatistics(cfg, log)
         self.stats.checkpoint('module-initialisation')
+        self.depEval = DependencyEvaluation(sources)
+        self.depSuccess = True
         self.log = log
         self.cfg = cfg
         self.args = args
@@ -656,6 +939,27 @@ class CodeUnderTest:
         self.extensions = None
         self.zephyr = None
         self.toplevel = None
+        self.depKWS = [
+            { 'name': 'major-mismatch',        'user': 'Major Version',
+              'singular': 'Mismatch',          'plural': 'Mismatches' },
+            { 'name': 'minor-mismatch',        'user': 'Minor Version',
+              'singular': 'Mismatch',          'plural': 'Mismatches' },
+            { 'name': 'patch-mismatch',        'user': 'Patch Version',
+              'singular': 'Mismatch',          'plural': 'Mismatches' },
+            { 'name': 'miniscule-mismatch',    'user': 'Miniscule Version',
+              'singular': 'Mismatch',          'plural': 'Mismatches' },
+            { 'name': 'deprecated-module',     'user': 'Deprecated',
+              'singular': 'Module',            'plural': 'Modules' },
+            { 'name': 'deprecated-revision',   'user': 'Deprecated',
+              'singular': 'Revision',          'plural': 'Revisions' },
+            { 'name': 'discouraged-revision',  'user': 'Discouraged',
+              'singular': 'Revision',          'plural': 'Revisions' },
+            { 'name': 'incompatible-revision', 'user': 'Incompatible',
+              'singular': 'Revision',          'plural': 'Revisions' },
+            { 'name': 'unique-dependency',     'user': 'Unique',
+              'singular': 'Dependency',        'plural': 'Dependencies' },
+            { 'name': 'ambiguous-dependency',  'user': 'Ambiguous',
+              'singular': 'Dependency',        'plural': 'Dependencies' } ]
 
     def name(self):
         if (isinstance(self.moduleData, dict) and 'name' in self.moduleData):
@@ -750,6 +1054,8 @@ class CodeUnderTest:
         self.stats.checkpoint('load-dependencies')
         self.depstack = Stack(self.dependencies())
         self.deptrace = Trace()
+        mmh.maybeShowPhase(self.log, 'load-dependencies', 'mmh/preparation',
+                           self.args)
         rc = fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
 
         if (rc == False):
@@ -763,6 +1069,127 @@ class CodeUnderTest:
         self.zephyr = ZephyrExtensions(self.moduleData,
                                        self.deptrace,
                                        self.deporder)
+        if ('dependencies' in self.moduleData):
+            self.depEval.insertSome(self.moduleData['dependencies'],
+                                    self.moduleData['name'])
+        for dept in self.deptrace.data:
+            self.depEval.insertSome(dept['dependencies'], dept['name'])
+        self.depEval.evaluate()
+        self.fullDependencyLog()
+
+    def dependencySummary(self):
+        rv = {}
+        for kw in list(map(lambda x: x['name'], self.depKWS)):
+            rv[kw] = 0
+        for l0 in self.depEval.journal:
+            intodetails = False
+            if (l0['kind'] == 'revision:incompatible'):
+                rv['incompatible-revision'] += 1
+                intodetails = True
+            elif (l0['kind'] == 'revision:compatible'):
+                intodetails = True
+            elif (l0['kind'] == 'revision:discouraged'):
+                rv['discouraged-revision'] += 1
+            elif (m := re.match('^version:mismatch:(.*)', l0['kind'])):
+                rv[m.group(1) + '-mismatch'] += 1
+
+            if intodetails:
+                for l1 in l0['details']:
+                    if (m := re.match('version:(unique|ambiguous)', l1['kind'])):
+                        rv[m.group(1) + '-dependency'] += 1
+                    elif (l1['kind'] == 'deprecated:revision'):
+                        rv['deprecated-revision'] += 1
+                    elif (l1['kind'] == 'deprecated:module'):
+                        rv['deprecated-module'] += 1
+
+        return rv
+
+    def fullDependencyLog(self):
+        self.log.info('Inspecting Dependency Version Tree...')
+        for entry in self.depEval.journal:
+            self.ppDJE(entry)
+        self.log.info('Inspecting Dependency Version Tree... done.')
+
+    def handleMismatch(self, data, kind):
+        self.log.info('{} version mismatch for dependency "{}" detected!'
+                      .format(kind.title(), data['module']))
+        self.log.info(f'  {data["a"].string} used by:')
+        for origin in data['a-origins']:
+            self.log.info(f'    {origin["name"]}{printTag(origin["tag"])}')
+        self.log.info(f'  {data["b"].string} used by:')
+        for origin in data['b-origins']:
+            self.log.info(f'    {origin["name"]}{printTag(origin["tag"])}')
+
+    def ppDJE(self, entry):
+        # Pretty Pring Dependency Journal Entry
+        if ('kind' not in entry):
+            self.log.fatal(f'Broken journal: {entry}')
+            exit(1)
+        elif (m := re.match('version:(unique|ambiguous)', entry['kind'])):
+            k = m.group(1)
+            if (k == 'unique' and not self.cfg.lookup('log-unique-versions')):
+                return
+            if (entry['data'].kind == 'version'):
+                self.log.info('{} dependency: {} {} effective: {}{}'
+                              .format(k.title(),
+                                      entry['module'], entry['version'],
+                                      entry['effective'],
+                                      printTag(entry['origins'])))
+            else:
+                self.log.info('{} dependency: {} {}{}'
+                              .format(m.group(1).title(),
+                                      entry['module'], entry['version'],
+                                      printTag(entry['origins'])))
+        elif (entry['kind'] == 'version:incompatible'):
+            self.log.info('{}: Incompatible versioning scheme: {} vs {}'
+                          .format(entry['module'], entry['a'], entry['b']))
+        elif (entry['kind'] == 'maybe-bug'):
+            self.log.warning(f'BUG? {entry["module"]}: {entry["tag"]}')
+            self.log.warning(f'BUG? {entry["meta"]}')
+        elif (m := re.match('^version:mismatch:(.*)', entry['kind'])):
+            self.handleMismatch(entry, m.group(1))
+        elif (entry['kind'] == 'revision:kind'):
+            # This is handled in revision:incompatible.
+            pass
+        elif (entry['kind'] == 'revision:compatible'):
+            for v in entry['details']:
+                self.ppDJE(v)
+        elif (entry['kind'] == 'revision:incompatible'):
+            self.log.info(f"Revisions for {entry['module']} are NOT compatible:")
+            self.log.info(f'    kinds: [{", ".join(entry["kinds"])}]')
+            for v in entry['details']:
+                self.ppDJE(v)
+        elif (entry['kind'] == 'revision:discouraged'):
+            if entry['detail']['inherited']:
+                return
+            self.log.info(
+                'Dependencies for module "{}" use discouraged revision kind!'
+                .format(entry['module']))
+            self.log.info('  {} {} used by:'.format(entry["detail"]["actual"],
+                                                    entry["data"].string))
+            for origin in entry['origins']:
+                self.log.info('    {}{}'.format(origin["name"],
+                                                printTag(origin["tag"])))
+        elif (entry['kind'] == 'deprecated:module'):
+            self.log.info(
+                'Detected use of deprecated module "{}"! Used by:'
+                .format(entry['module']))
+            for origin in entry['from']:
+                self.log.info('    {}'.format(origin))
+            if (entry['alternative'] != None):
+                self.log.info('  Possible alternative: {}'
+                            .format(entry['alternative']))
+        elif (entry['kind'] == 'deprecated:revision'):
+            self.log.info(
+                'Detected use of deprecated revision for module "{}"!:'
+                .format(entry['module']))
+            self.log.info('  Revision: {}{}'
+                          .format(entry['version'], printTag(entry['tags'])))
+            self.log.info('  Used by:')
+            for origin in entry['from']:
+                self.log.info('    {}'.format(origin))
+        else:
+            self.log.warning(f'Unsupported Journal Entry: {entry}')
 
     def cmakeModules(self):
         if (has('cmake-modules', self.moduleData, str)):
@@ -877,6 +1304,56 @@ class CodeUnderTest:
     def renderStatistics(self):
         self.stats.checkpoint('finish')
         self.stats.renderStatistics()
+
+    def renderDependencySummary(self, withSeparator):
+        behaviour = self.cfg.lookup('dependency-summary')
+        data = self.dependencySummary()
+
+        final = []
+        for entry in data:
+            fatal = False
+            b = behaviour[entry]
+            tmp = mmh.findByName(self.depKWS, entry)
+            if (tmp == None):
+                continue
+            user = self.depKWS[tmp]['user']
+            sing = self.depKWS[tmp]['singular']
+            plur = self.depKWS[tmp]['plural']
+
+            if (b == 'ignore'):
+                continue
+
+            if (data[entry] == 0):
+                continue
+
+            if (b == 'error' and self.cfg.lookup('fatal-dependencies')):
+                self.depSuccess = False
+
+            final.append({ 'name': entry, 'user': user,
+                           'singular': sing, 'plural': plur,
+                           'count': data[entry],
+                           'level': b })
+
+        if (len(final) > 0):
+            if (withSeparator):
+                maybeInfo(self.cfg, self.log, '')
+            maybeInfo(self.cfg, self.log, 'Dependency Evaluation Summary:')
+            maybeInfo(self.cfg, self.log, '')
+
+        for entry in final:
+            maybeInfo(self.cfg, self.log,
+                      '  {:8} {:2} {} {}'
+                      .format(entry['level'] + ':',
+                              entry['count'],
+                              entry['user'],
+                              entry['singular'] if (entry['count'] == 1)
+                                                else entry['plural']))
+
+        if (len(final) > 0):
+            maybeInfo(self.cfg, self.log, '')
+
+    def dependenciesOkay(self):
+        return self.depSuccess
 
     def wasSuccessful(self):
         return self.stats.wasSuccessful()

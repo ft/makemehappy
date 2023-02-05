@@ -94,6 +94,16 @@ def devnullProcess(cmd):
                         stderr = subprocess.STDOUT)
     return rc.returncode
 
+def toString(data):
+    return data.decode('utf-8').strip()
+
+def stdoutProcess(cmd):
+    proc = subprocess.Popen(cmd,
+                            stdout = subprocess.PIPE,
+                            stderr = subprocess.PIPE)
+    return (toString(proc.stdout.read()),
+            toString(proc.stderr.read()),
+            proc.wait())
 
 def starPattern(s):
     return '*' in s
@@ -134,6 +144,15 @@ def maybeMatch(lst, pat):
 
 def patternsToList(lst, pats):
     return flatten([ maybeMatch(lst, x) for x in pats ])
+
+def trueKey(d, k):
+    return (k in d and d[k])
+
+def findByKey(lst, key):
+    for i, d in enumerate(lst):
+        if (trueKey(d, key)):
+            return i
+    return None
 
 def findByName(lst, name):
     for i, d in enumerate(lst):

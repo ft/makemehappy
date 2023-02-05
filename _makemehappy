@@ -358,6 +358,7 @@ _makemehappy() {
                '(-m --module)'{-m,--module}'[specify module definition file]:module definition file:_path_files' \
                '(-p --preserve)'{-p,--preserve}'[preserve build root instead of deleting it]' \
                '(-Q --query)'{-Q,--query}'[query module build information]:mmh query:__makemehappy-queries' \
+               '(-E --ignore-dep-errors)'{-E,--ignore-dep-errors}'[ignore errors in dependency evaluation]' \
                '(-q --quiet)'{-q,--quiet}'[disable informational output]' \
                '*'{-r,--revision}'[specify revision override]:revision override' \
                '*'{-c,--config}'[specify additional configuration file]:configuration file:_path_files' \

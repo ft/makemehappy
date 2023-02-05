@@ -93,6 +93,7 @@ class ConfigStack(YamlStack):
         self.merged = None
         self.remove = [ 'definition', 'root', 'remove' ]
         self.mergeLists = [ 'buildtools', 'buildconfigs' ]
+        self.mergeDicts = [ 'dependency-summary' ]
         self.mergeLODbyName = [ 'revision-overrides', 'toolchains' ]
 
     def merge(self):
@@ -121,6 +122,7 @@ class ConfigStack(YamlStack):
                         self.merged[cat] = list(
                             filter(lambda x: (x['name'] not in slice['remove'][cat]),
                                    self.merged[cat]))
+
             for key in slice:
                 if (key in self.mergeLists):
                     self.merged[key] = list(set(slice[key] + self.merged[key]))
@@ -136,6 +138,10 @@ class ConfigStack(YamlStack):
                         else:
                             new = entry
                         self.merged[key].insert(0, new)
+                elif (key in self.mergeDicts):
+                    if (key not in self.merged):
+                        self.merged[key] = {}
+                    self.merged[key] = { **self.merged[key], **slice[key] }
                 else:
                     self.merged[key] = slice[key]
 
@@ -195,6 +201,13 @@ class ConfigStack(YamlStack):
                     continue
                 elif ('revision' in rover):
                     return rover['revision']
+                elif ('use-latest-revision' in rover):
+                    if (not rover['use-latest-revision']):
+                        return None
+                    pattern = '*'
+                    if ('use-latest-revision-pattern' in rover):
+                        pattern = rover['use-latest-revision-pattern']
+                    return ('!latest', pattern)
                 elif ('use-main-branch' in rover):
                     if (not rover['use-main-branch']):
                         return None
