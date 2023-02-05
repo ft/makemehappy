@@ -1,6 +1,37 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.17 → v0.18 (released 2023-02-05):
+
+** New Features
+
+- Add dependency tree analysis
+- Add module version and module deprecation
+- Add '!preserve' to work in --revision
+- Add '!latest' and '!latest:PATTERN' to refer to latest tag in --revision
+
+** Bugfixes
+
+- Fix behaviour of --config and --source for files in working directory
+
+** Miscellaneous
+
+- Make git command calls more quiet
+- Dependency resolution is now a phase for --show-phases
+
+** Diffstat:
+
+    ROADMAP.org              | 124 +++++++---
+    _makemehappy             |   1 +
+    data/config.yaml         |  15 ++
+    makemehappy/cut.py       | 495 ++++++++++++++++++++++++++++++++++++++-
+    makemehappy/utilities.py |  19 ++
+    makemehappy/version.py   | 117 +++++++++
+    makemehappy/yamlstack.py |  13 +
+    mmh.in                   |  96 ++++++--
+    8 files changed, 818 insertions(+), 62 deletions(-)
+
+
 * v0.16 → v0.17 (released 2023-01-22):
 
 ** New Features
