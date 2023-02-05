@@ -364,17 +364,24 @@ if (cmdargs.version):
     print()
     mmh_exit(0)
 
+earlyExit = False
 def mmh_add_to_stack(lst, stack, desc):
+    global earlyExit
     for item in lst:
-        if (re.match(r".*\\.yaml$", item) == None):
-            item += '.yaml'
-        if (os.path.isfile(item)):
-            stack.push(item)
+        if (re.search(r'\.ya?ml$', item) != None):
+            if (os.path.isfile(item)):
+                stack.push(item)
+            else:
+                print(f'No such file: {item}')
+                earlyExit = True
         else:
-            mmh_search_in_dirs(stack, item)
+            mmh_search_in_dirs(stack, item + '.yaml')
 
 mmh_add_to_stack(cmdargs.config, cfg, "Config")
 mmh_add_to_stack(cmdargs.source, src, "Source")
+
+if (earlyExit):
+    mmh_exit(1)
 
 if cmdargs.log_to_file:
     cmdargs.log_all = True
