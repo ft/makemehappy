@@ -419,7 +419,40 @@ This is not happening, because we've allowed module.yaml file to override
 toolchains in the past, and I am not breaking that.
 * Wishlist
 ** DEFERRED Add an option to specify source directory instead of cwd
-I am not quite sure why I wanted this in the first place.
+For example, with chip-remote:
+
+mmh -C firmware -d native-fw system -s build zephyr/native_posix_64/chip-remote/host/debug
+
+This introduces the concept of the startup directory (SD) and the working di-
+rectory (WD). The former is the working directory at the time of startup. The
+latter is the directory specified by the -C option. Right now, both of these
+values are always the same. If this would be introduced, we would need to spe-
+cify how the different parts of the system that reference files and directo-
+ries work with respect to these semantics being split up. Only relative paths
+are important here, of course. absolute file names are — well — absolute.
+
+Top Level Options
+
+- --directory: SD
+- --module: WD
+- --log-file: SD
+- --config: SD
+- --source: SD
+
+Subcommand Options: focus
+
+- --link-name: SD
+- Also, the compile_commands.json link should reference SD.
+
+Subcommand Options: run-instance
+
+- When a build-instance is referenced by directory name, SD is the base.
+
+Subcommand Options: system db
+
+- --location: SD
+
+Not quite sure if this is worth it.
 ** DONE Gather statistics while running
 *** DONE How many dependency versions had a patch-level mismatch?
 *** DONE How many dependency versions had a minor mismatch?
@@ -466,4 +499,3 @@ Update: Yes, not worth it.
 This is useful for progress in CI.
 ** DONE Error out when checkout of dependency revision fails
 ** DONE Make non-existant zephyr modules an error?
-
