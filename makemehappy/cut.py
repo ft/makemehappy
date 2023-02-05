@@ -473,6 +473,7 @@ def fetch(cfg, log, src, st, trace):
         url = source['repository']
         p = os.path.join('deps', dep['name'])
         newmod = os.path.join(p, 'module.yaml')
+        detectrev = True
         if (os.path.exists(p)):
             log.info("Module directory exists. Skipping initialisation.")
         elif (source['type'] == 'symlink'):
@@ -494,6 +495,7 @@ def fetch(cfg, log, src, st, trace):
                 return False
             dep['revision'] = rev
             os.chdir(olddir)
+            detectrev = False
         else:
             raise(InvalidRepositoryType(source))
 
@@ -505,8 +507,11 @@ def fetch(cfg, log, src, st, trace):
                     dep['revision'] = branch
                     break
 
-        dep['detected'] = gitDetectRevision(log, p)
-        log.info(f'Current repository state for {dep["name"]}: {dep["detected"]}')
+        if (detectrev):
+            dep['detected'] = gitDetectRevision(log, p)
+            log.info(f'Current repository state for {dep["name"]}: {dep["detected"]}')
+        else:
+            dep['detected'] = None
 
         newmodata = None
         if (os.path.isfile(newmod)):
