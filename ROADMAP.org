@@ -9,6 +9,16 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
+** TODO Allow --config and --source to reference local files
+mmh --config foobar
+
+References foobar.yaml in the config-directory stack. The same is true for
+--source.
+
+mmh --config foobar.yaml
+
+Adds a local file (not looked up in the config-directory stack) to the file
+stack. Same for --source.
 ** TODO Implement YAML linters
 
 All linters should make sure, the used keys are type correct. Unrecognised keys
