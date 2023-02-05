@@ -1,3 +1,10 @@
+makemehappy (0.18-1) unstable; urgency=medium
+
+  * [400fcebd] New upstream release
+  * [f1da4408] Bump debian standards version to 4.6.2
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Sun, 05 Feb 2023 16:34:32 +0100
+
 makemehappy (0.17-1) unstable; urgency=medium
 
   * [69652263] New upstream release
