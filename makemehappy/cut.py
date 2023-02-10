@@ -421,7 +421,7 @@ def gitDetectRevision(log, path):
     log.info("Could not determine repository state: {}".format(stderr))
     return None
 
-def gitCheckout(cfg, log, revision):
+def gitCheckout(cfg, log, mod, revision):
     rc = mmh.loggedProcess(cfg, log, ['git',
                                       '-c', 'advice.detachedHead=false',
                                       'checkout', '--quiet',
@@ -449,7 +449,7 @@ def fetchCheckout(cfg, log, mod, rev):
     else:
         revision = rev
 
-    return gitCheckout(cfg, log, revision)
+    return gitCheckout(cfg, log, mod, revision)
 
 class InvalidRepositoryType(Exception):
     pass
@@ -517,7 +517,7 @@ def fetch(cfg, log, src, st, trace):
                 if (latest != None):
                     log.info('Moving to latest tag for {}: {}',
                             dep['name'], latest)
-                    latest = gitCheckout(cfg, log, latest)
+                    latest = gitCheckout(cfg, log, dep['name'], latest)
                     if (latest == None):
                         raise(InvalidDependency(dep))
                     dep['revision'] = latest
