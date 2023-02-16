@@ -1,6 +1,23 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.18 → v0.19 (released 2023-02-16):
+
+** New Features
+
+- Add nanopb module to sources.
+
+** Bugfixes
+
+- Fix diagnostic when module revision cannot be checked out.
+
+** Diffstat:
+
+    data/sources.yaml  | 2 ++
+    makemehappy/cut.py | 6 +++---
+    2 files changed, 5 insertions(+), 3 deletions(-)
+
+
 * v0.17 → v0.18 (released 2023-02-05):
 
 ** New Features
