@@ -11,6 +11,8 @@ modules:
       repository: https://github.com/FreeRTOS/FreeRTOS.git
     libtap:
       repository: https://github.com/zorgnax/libtap.git
+    nanopb:
+      repository: https://github.com/nanopb/nanopb.git
     st-cmsis-device-f0:
       repository: https://github.com/STMicroelectronics/cmsis_device_f0.git
     st-cmsis-device-f1:
