@@ -543,31 +543,38 @@ def requireModuleDefinition(args):
         mmh_exit(1)
 
 def do_prepare():
-    requireModuleDefinition(cmdargs)
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    cut.loadModule()
-    if (cut.moduleType == 'nobuild'):
-        log.info("Module type is 'nobuild'. Doing nothing.")
-        mmh_exit(0)
-    cut.cliAdjust(toolchains    = cmdargs.toolchains,
-                  architectures = cmdargs.architectures,
-                  buildconfigs  = cmdargs.buildconfigs,
-                  buildtools    = cmdargs.buildtools)
-    cut.loadSources()
-    cut.initRoot(version, cmdargs)
-    if cmdargs.log_to_file is True and cmdargs.log_file is None:
-        fn = cut.root.name() + '.log'
-        print('Logging to: {}'.format(fn))
-        log.handlers[0].setFile(fn)
-    cut.populateRoot()
-    cut.linkIntoRoot()
-    cut.changeToRoot()
-    cut.loadDependencies()
-    cut.cmakeIntoYAML()
-    cut.generateToplevel()
-    return cut
+    try:
+        requireModuleDefinition(cmdargs)
+        cfg.load()
+        adjustConfig(cfg, cmdargs)
+        cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
+        cut.loadModule()
+        if (cut.moduleType == 'nobuild'):
+            log.info("Module type is 'nobuild'. Doing nothing.")
+            mmh_exit(0)
+        cut.cliAdjust(toolchains    = cmdargs.toolchains,
+                    architectures = cmdargs.architectures,
+                    buildconfigs  = cmdargs.buildconfigs,
+                    buildtools    = cmdargs.buildtools)
+        cut.loadSources()
+        cut.initRoot(version, cmdargs)
+        if cmdargs.log_to_file is True and cmdargs.log_file is None:
+            fn = cut.root.name() + '.log'
+            print('Logging to: {}'.format(fn))
+            log.handlers[0].setFile(fn)
+        cut.populateRoot()
+        cut.linkIntoRoot()
+        cut.changeToRoot()
+        cut.loadDependencies()
+        cut.cmakeIntoYAML()
+        cut.generateToplevel()
+        return cut
+    except Exception as e:
+        if (len(e.args) > 0):
+            log.error(f'{type(e).__name__}: {e}')
+        else:
+            log.error(f'{type(e).__name__}')
+        mmh_exit(1)
 
 def printMatches(lst, pattern):
     for line in lst:
