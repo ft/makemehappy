@@ -840,7 +840,8 @@ elif (cmdargs.sub_command == "download-source"):
     for module in cmdargs.modules:
         meta = src.lookup(module)
         source = meta['repository']
-        mmh.loggedProcess(cfg, log, ['git', 'clone', source, module])
+        mmh.loggedProcess(cfg, log, ['git', '-c', 'advice.detachedHead=false',
+                                     'clone', '--quiet', source, module])
 
 elif (cmdargs.sub_command == "download-sources"):
     destination = cmdargs.destination
@@ -862,7 +863,9 @@ elif (cmdargs.sub_command == "download-sources"):
             dd = os.path.join(destination, module)
             repo = source['modules'][module]['repository']
             log.info("Downloading module {} from {}...", module, repo)
-            rc = mmh.loggedProcess(cfg, log, ['git', 'clone', repo, dd])
+            rc = mmh.loggedProcess(cfg, log,
+                                   ['git',  '-c', 'advice.detachedHead=false',
+                                    'clone', '--quiet', repo, dd])
             if (rc == 0):
                 log.info("Downloading module {} was successful.", module)
             else:
