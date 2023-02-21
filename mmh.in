@@ -762,7 +762,10 @@ elif (cmdargs.sub_command == "show-result"):
         r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+[A-Z]+:\s+MakeMeHappy:\s+Build\s+Summary:$')
     strip = re.compile(
         r'\[\d+-\d+-\d+\s+\d+:\d+:\d+.\d+\]\s+[A-Z]+:\s+MakeMeHappy:\s')
-    success = re.compile(r'All \d+ builds succeeded.')
+    s = 'All \d+ builds succeeded\.'
+    f = '\d+ build\(s\) out of \d+ failed\.'
+    success = re.compile(s)
+    outcome = re.compile('(' + s + '|' + f + ')')
     deperror = re.compile(r'Dependency Evaluation contained errors!')
     for line in open(input):
         if (re.match(marker, line)):
@@ -787,7 +790,7 @@ elif (cmdargs.sub_command == "show-result"):
             for line in table:
                 print(line, end='')
         else:
-            printMatches(lst, success)
+            printMatches(lst, outcome)
             if (cfg.lookup('fatal-dependencies')):
                 printMatches(lst, deperror)
 
