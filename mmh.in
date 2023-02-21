@@ -777,7 +777,10 @@ elif (cmdargs.sub_command == "show-result"):
     outcome = re.compile('(' + s + '|' + f + ')')
     deperror = re.compile(r'Dependency Evaluation contained errors!')
     error = re.compile('^ERROR: ')
+    nobuild = re.compile('Module type is \'nobuild\'\. Doing nothing\.')
+    lastline = None
     for line in open(input):
+        lastline = line
         if (re.match(marker, line)):
             entry = re.sub(strip, '', line)
             table = [ entry ]
@@ -787,6 +790,11 @@ elif (cmdargs.sub_command == "show-result"):
         if (cmdargs.full_result and len(table) == 0):
             stripped = re.sub(strip, '', line)
             print(stripped, end='')
+
+    lastline = re.sub(strip, '', lastline)
+    if (re.match(nobuild, lastline)):
+        print(lastline, end = '')
+        mmh_exit(0)
 
     if (len(table) < 2):
         if (cmdargs.quiet_result == False):
