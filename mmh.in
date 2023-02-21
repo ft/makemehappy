@@ -553,9 +553,9 @@ def do_prepare():
             log.info("Module type is 'nobuild'. Doing nothing.")
             mmh_exit(0)
         cut.cliAdjust(toolchains    = cmdargs.toolchains,
-                    architectures = cmdargs.architectures,
-                    buildconfigs  = cmdargs.buildconfigs,
-                    buildtools    = cmdargs.buildtools)
+                      architectures = cmdargs.architectures,
+                      buildconfigs  = cmdargs.buildconfigs,
+                      buildtools    = cmdargs.buildtools)
         cut.loadSources()
         cut.initRoot(version, cmdargs)
         if cmdargs.log_to_file is True and cmdargs.log_file is None:
