@@ -259,7 +259,7 @@ ap_result.add_argument(
 ap_result.add_argument(
     "-q", "--quiet", action = "store_true",
     dest = 'quiet_result',
-    help = "Do not show and result output.")
+    help = "Do not show any result output.")
 ap_result.add_argument(
     "-s", "--short", action = "store_true",
     dest = 'short_result',
