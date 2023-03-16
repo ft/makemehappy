@@ -75,7 +75,7 @@ def pp(thing):
 
 def logOutput(log, pipe):
     for line in iter(pipe.readline, b''):
-        log.info(line.decode().strip())
+        log.info(line.decode(errors = 'backslashreplace').strip())
 
 def loggedProcess(cfg, log, cmd):
     log.info("Running command: {}".format(cmd))
