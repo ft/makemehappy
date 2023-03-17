@@ -259,6 +259,10 @@ ap_result.add_argument(
     dest = 'full_result',
     help = "Replay full log with log-prefix stripped.")
 ap_result.add_argument(
+    "-p", "--paged", action = "store_true",
+    dest = 'use_pager',
+    help = "Use pager to view result.")
+ap_result.add_argument(
     "-q", "--quiet", action = "store_true",
     dest = 'quiet_result',
     help = "Do not show any result output.")
@@ -348,6 +352,9 @@ if (cmdargs.verbose):
 
 if (cmdargs.quiet):
     log.disable()
+
+if ('use_pager' not in cmdargs):
+    cmdargs.use_pager = False
 
 if ('instances' not in cmdargs):
     cmdargs.instances = []

@@ -263,6 +263,7 @@ _makemehappy-show-result() {
                '(-f --full)'{-f,--full}'[Replay full log with log-prefix stripped]' \
                '(-h --help)'{-h,--help}'[display help message]' \
                '(-s --short)'{-s,--short}'[Do not show and result output]' \
+               '(-p --paged)'{-p,--paged}'[Use pager to view result]' \
                '(-q --quiet)'{-q,--quiet}'[Only show final short-form result]' \
                '*:: :_path_files' \
         && ret=0

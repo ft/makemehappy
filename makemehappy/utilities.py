@@ -73,6 +73,14 @@ xppx = pprint.PrettyPrinter(indent = 4)
 def pp(thing):
     xppx.pprint(thing)
 
+def pager(thunk):
+    proc = subprocess.Popen(['less'],
+                            stdin = subprocess.PIPE,
+                            encoding = 'utf-8')
+    with proc.stdin as sys.stdout:
+        thunk()
+    proc.wait()
+
 def logOutput(log, pipe):
     for line in iter(pipe.readline, b''):
         log.info(line.decode(errors = 'backslashreplace').strip())
