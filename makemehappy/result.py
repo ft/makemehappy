@@ -1,4 +1,16 @@
+import bz2
+import gzip
+import lzma
 import re
+
+def multiOpen(fn: str):
+    if (fn.endswith('.xz') or fn.endswith('.lzma')):
+        return lzma.open(fn, mode = 'rt')
+    if (fn.endswith('.bz2')):
+        return bz2.open(fn, mode = 'rt')
+    if (fn.endswith('.gz') or fn.endswith('.z')):
+        return gzip.open(fn, mode = 'rt')
+    return open(fn)
 
 def printMatches(lst, pattern):
     for line in lst:
@@ -25,7 +37,7 @@ def show(cfg, args):
     table = []
     lastline = None
 
-    for line in open(input):
+    for line in multiOpen(input):
         lastline = line
         if (re.match(marker, line)):
             entry = re.sub(strip, '', line)
@@ -46,7 +58,7 @@ def show(cfg, args):
         if (args.quiet_result == False):
             print('Could not find result table in log: {}'.format(input))
             print('Scanning for ERROR markers:')
-            for line in open(input):
+            for line in multiOpen(input):
                 entry = re.sub(stripSome, '', line)
                 if (re.match(error, entry)):
                     print(entry, end = '')
