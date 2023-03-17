@@ -32,15 +32,6 @@ datadir = '@@DATADIR@@'
 cfg = ConfigStack(log, 'Configuration')
 src = SourceStack(log, 'Source Definition')
 
-def mmh_search_in_dirs(stack, name):
-    stack.push(os.path.join(datadir, name))
-    stack.push(os.path.join(etcdir,  name))
-    stack.push(mmh.xdgFile(name))
-    stack.push(mmh.dotFile(name))
-
-mmh_search_in_dirs(cfg, 'config.yaml')
-mmh_search_in_dirs(src, 'sources.yaml')
-
 cmakeParameters = None
 cmakeSeparator = None
 try:
@@ -115,6 +106,11 @@ ap.add_argument(
 ap.add_argument(
     "-c", "--config", default = [], action = "append",
     help = "add configuration to config-stack")
+
+ap.add_argument(
+    "-U", "--disable-user-directory",
+    default = False, action = "store_true",
+    help = "disable use of files in user-configuration directory")
 
 ap.add_argument(
     "-r", "--revision", default = [], action = "append",
@@ -335,6 +331,16 @@ sys_clean.add_argument('instances', default = [ ], nargs = '*')
 cmdargs = ap.parse_args()
 #print(cmdargs)
 #print(cmdargs.sub_command)
+
+def mmh_search_in_dirs(stack, name):
+    stack.push(os.path.join(datadir, name))
+    stack.push(os.path.join(etcdir,  name))
+    if (cmdargs.disable_user_directory == False):
+      stack.push(mmh.xdgFile(name))
+      stack.push(mmh.dotFile(name))
+
+mmh_search_in_dirs(cfg, 'config.yaml')
+mmh_search_in_dirs(src, 'sources.yaml')
 
 def mmh_exit(code):
     if cmdargs.succeed:
