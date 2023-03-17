@@ -486,6 +486,9 @@ def adjustConfig(cfg, args):
     if args.ignore_dep_errors == True:
         layer['fatal-dependencies'] = not(cfg.lookup('fatal-dependencies'))
         adjustments = adjustments + 1
+    if args.use_pager == True:
+        layer['page-output'] = not(cfg.lookup('page-output'))
+        adjustments = adjustments + 1
     if (len(args.revision) > 0):
         layer['revision-overrides'] = []
         if ('remove' not in layer):

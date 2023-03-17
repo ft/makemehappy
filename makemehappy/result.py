@@ -95,8 +95,8 @@ class Result:
 def show(cfg, args):
     result = Result(cfg, args)
 
-    if (args.use_pager):
-        mmh.pager(result.run)
+    if (cfg.lookup('page-output')):
+        mmh.pager(cfg, result.run)
     else:
         result.run()
 

@@ -3,6 +3,10 @@ log-to-file: false
 log-unique-versions: false
 fatal-dependencies: true
 
+pager-from-env: false
+page-output: false
+pager: less -MSR
+
 dependency-summary:
   # Possible values: error, warning, info, ignore
   major-mismatch:        warning
