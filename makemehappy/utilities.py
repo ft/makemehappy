@@ -5,6 +5,7 @@ import os
 import pprint
 import re
 import subprocess
+import shlex
 import sys
 import yaml
 
@@ -73,9 +74,25 @@ xppx = pprint.PrettyPrinter(indent = 4)
 def pp(thing):
     xppx.pprint(thing)
 
+def selectPager(cfg):
+    if (cfg.lookup('pager-from-env') and 'PAGER' in os.environ):
+        pager = os.environ['PAGER']
+    else:
+        pager = cfg.lookup('pager')
+
+    return shlex.split(pager)
+
+def pager(cfg, thunk):
+    proc = subprocess.Popen(selectPager(cfg),
+                            stdin = subprocess.PIPE,
+                            encoding = 'utf-8')
+    with proc.stdin as sys.stdout:
+        thunk()
+    proc.wait()
+
 def logOutput(log, pipe):
     for line in iter(pipe.readline, b''):
-        log.info(line.decode().strip())
+        log.info(line.decode(errors = 'backslashreplace').strip())
 
 def loggedProcess(cfg, log, cmd):
     log.info("Running command: {}".format(cmd))

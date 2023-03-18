@@ -1,6 +1,37 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.19 → v0.20 (released 2023-03-18):
+
+** New Features
+
+- show-result: Improve behaviour with build failures.
+- show-result: Support nobuild type modules.
+- show-result: Support reading compressed log files (gzip, bzip2, lzma).
+- show-result: Add support for viewing output in a pager.
+- download-*: Use silent git execution as well.
+- download-*: Check out main development branch after clone explicitly.
+- download-source: Add --release option to put downloaded module into
+  its latest release state after cloning.
+- Allow disabling user-configuration directories.
+
+** Bugfixes
+
+- Fix main branch with a number of zephyr modules.
+- Do not throw an exception if a build process emits invalid utf-8.
+
+** Diffstat:
+
+    ROADMAP.org              |   3 +
+    _makemehappy             |  11 ++-
+    data/config.yaml         |   4 +
+    data/sources.yaml        |   5 +
+    makemehappy/result.py    | 103 ++++++++++++++++++++
+    makemehappy/utilities.py |  19 +++-
+    mmh.in                   | 206 +++++++++++++++++++++------------------
+    7 files changed, 255 insertions(+), 96 deletions(-)
+
+
 * v0.18 → v0.19 (released 2023-02-16):
 
 ** New Features

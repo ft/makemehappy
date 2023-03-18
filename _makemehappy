@@ -140,7 +140,14 @@ _makemehappy-download-source() {
         print "Download sources for specified sources"
         return
     fi
-    __makemehappy-modules
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '*::: :__makemehappy-modules' \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-r --release)'{-r,--release}'[use latest release tag after cloning]' \
+        && ret=0
 }
 
 _makemehappy-download-sources() {
@@ -263,6 +270,7 @@ _makemehappy-show-result() {
                '(-f --full)'{-f,--full}'[Replay full log with log-prefix stripped]' \
                '(-h --help)'{-h,--help}'[display help message]' \
                '(-s --short)'{-s,--short}'[Do not show and result output]' \
+               '(-p --paged)'{-p,--paged}'[Use pager to view result]' \
                '(-q --quiet)'{-q,--quiet}'[Only show final short-form result]' \
                '*:: :_path_files' \
         && ret=0
@@ -365,6 +373,7 @@ _makemehappy() {
                '(-s --source)'{-s,--source}'[specify additional source definition]:source definition file:_path_files' \
                '(-S --succeed)'{-S,--succeed}'[force successful termination]' \
                '(-T --toolchains)'{-T,--toolchains}'[select toolchains to use]:toolchain:__makemehappy-toolchains' \
+               '(-U --disable-user-directory)'{-U,--disable-user-directory}'[disable use of files in user-configuration directory]' \
                '(-v --verbose)'{-v,--verbose}'[request verbose logging]' \
                '(-V --version)'{-V,--version}'[report makemehappy version]' \
                '*:: :->subcommand_or_options' && ret=0

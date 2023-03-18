@@ -90,6 +90,7 @@ modules:
       west: hal_cypress
     zephyr-hal-espressif:
       repository: https://github.com/zephyrproject-rtos/hal_espressif.git
+      main: zephyr
       west: hal_espressif
     zephyr-hal-infineon:
       repository: https://github.com/zephyrproject-rtos/hal_infineon.git
@@ -151,12 +152,15 @@ modules:
       west: libmetal
     zephyr-littlefs:
       repository: https://github.com/zephyrproject-rtos/littlefs.git
+      main: zephyr
       west: littlefs
     zephyr-mbedtls:
       repository: https://github.com/zephyrproject-rtos/mbedtls.git
+      main: zephyr
       west: mbedtls
     zephyr-nanopb:
       repository: https://github.com/zephyrproject-rtos/nanopb.git
+      main: zephyr
       west: nanopb
     zephyr-openamp:
       repository: https://github.com/zephyrproject-rtos/open-amp.git
@@ -172,6 +176,7 @@ modules:
       west: zscilib
     zephyr-tinycbor:
       repository: https://github.com/zephyrproject-rtos/tinycbor.git
+      main: zephyr
       west: tinycbor
     zephyr-tinycrypt:
       repository: https://github.com/zephyrproject-rtos/tinycrypt.git
