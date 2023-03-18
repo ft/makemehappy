@@ -9,6 +9,7 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
+** TODO Add --latest to download-source
 ** TODO Implement YAML linters
 
 All linters should make sure, the used keys are type correct. Unrecognised keys

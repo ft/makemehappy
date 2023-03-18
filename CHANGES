@@ -1,6 +1,28 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.19 → v0.20 (unreleased):
+
+** New Features
+
+- show-result: Improve behaviour with build failures.
+- show-result: Support nobuild type modules.
+- show-result: Support reading compressed log files (gzip, bzip2, lzma).
+- show-result: Add support for viewing output in a pager.
+- download-*: Use silent git execution as well.
+- download-*: Check out main development branch after clone explicitly.
+- Allow disabling user-configuration directories.
+
+** Bugfixes
+
+- Fix main branch with a number of zephyr modules.
+- Do not throw an exception if a build process emits invalid utf-8.
+
+** Diffstat:
+
+  TBD
+
+
 * v0.18 → v0.19 (released 2023-02-16):
 
 ** New Features
