@@ -1,7 +1,7 @@
  User-visible changes in make-me-happy
 =======================================
 
-* v0.19 → v0.20 (unreleased):
+* v0.19 → v0.20 (released 2023-03-18):
 
 ** New Features
 
@@ -22,7 +22,14 @@
 
 ** Diffstat:
 
-  TBD
+    ROADMAP.org              |   3 +
+    _makemehappy             |  11 ++-
+    data/config.yaml         |   4 +
+    data/sources.yaml        |   5 +
+    makemehappy/result.py    | 103 ++++++++++++++++++++
+    makemehappy/utilities.py |  19 +++-
+    mmh.in                   | 206 +++++++++++++++++++++------------------
+    7 files changed, 255 insertions(+), 96 deletions(-)
 
 
 * v0.18 → v0.19 (released 2023-02-16):
