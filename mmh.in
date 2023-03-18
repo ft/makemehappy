@@ -15,6 +15,8 @@ from logbook import Logger
 from makemehappy.buildroot import BuildRoot
 from makemehappy.cut import CodeUnderTest
 from makemehappy.cut import fetchCheckout
+from makemehappy.cut import gitLatestTag
+from makemehappy.cut import gitCheckout
 from makemehappy.yamlstack import ConfigStack, SourceStack
 from makemehappy.loghandler import MMHLogHandler
 
@@ -162,6 +164,12 @@ ap_download = subp.add_parser(
     help = 'Download sources for a module')
 
 ap_download.set_defaults(sub_command = 'download-source')
+ap_download.add_argument(
+    "-r", "--release",
+    dest = 'use_release',
+    default = False,
+    action = 'store_true',
+    help = "Use latest release tag after cloning")
 ap_download.add_argument('modules', nargs = '+')
 
 # download-sources
@@ -804,6 +812,21 @@ elif (cmdargs.sub_command == "download-source"):
         olddir = os.getcwd()
         os.chdir(module)
         fetchCheckout(cfg, log, module, meta['main'])
+        if (cmdargs.use_release):
+            pat = '*'
+            if ('release-pattern' in meta):
+                pat = meta['release-pattern']
+            tag = gitLatestTag('.', pat)
+            if (tag == None):
+                log.fatal('Unable to find latest release tag for module {}'
+                          .format(module))
+                mmh_exit(1)
+
+            latest = gitCheckout(cfg, log, module, tag)
+            if (latest == None):
+                log.fatal('Error checking out tag {} for module {}'
+                          .format(tag, module))
+                mmh_exit(1)
         os.chdir(olddir)
 
 elif (cmdargs.sub_command == "download-sources"):

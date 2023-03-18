@@ -11,6 +11,8 @@
 - show-result: Add support for viewing output in a pager.
 - download-*: Use silent git execution as well.
 - download-*: Check out main development branch after clone explicitly.
+- download-source: Add --release option to put downloaded module into
+  its latest release state after cloning.
 - Allow disabling user-configuration directories.
 
 ** Bugfixes

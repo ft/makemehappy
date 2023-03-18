@@ -9,7 +9,8 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** TODO Add --latest to download-source
+** TODO Make revision overrides use release-pattern from sources
+…as the default for its use-latest-revision-pattern parameter.
 ** TODO Implement YAML linters
 
 All linters should make sure, the used keys are type correct. Unrecognised keys
@@ -99,6 +100,7 @@ All important parameters are encoded in the build-directory name:
 
 Note that the build directories are encoded differently nowadays.
 ** TODO Flesh out user manual
+** DONE Add --release to download-source
 ** DONE Allow --config and --source to reference local files
 mmh --config foobar
 
