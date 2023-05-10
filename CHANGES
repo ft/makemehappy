@@ -1,6 +1,22 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.20 → v0.21 (released 2023-05-11):
+
+** New Features
+
+- download-sources: Print simple download progress with ‘--show-phases’.
+- toplevel module-build, cmake: Generate variable setters before calling
+  ‘ufw_toplevel()’ with zephyr based builds, allowing setting things like
+  ‘SHIELD’ before the zephyr kernel build-system is initialised.
+
+** Diffstat:
+
+    makemehappy/toplevel.py | 6 +++++-
+    mmh.in                  | 1 +
+    2 files changed, 6 insertions(+), 1 deletion(-)
+
+
 * v0.19 → v0.20 (released 2023-03-18):
 
 ** New Features
