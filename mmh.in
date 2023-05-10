@@ -849,6 +849,7 @@ elif (cmdargs.sub_command == "download-sources"):
             dd = os.path.join(destination, module)
             repo = source['modules'][module]['repository']
             log.info("Downloading module {} from {}...", module, repo)
+            mmh.maybeShowPhase(log, f'{module}', 'download-sources', cmdargs)
             rc = mmh.loggedProcess(cfg, log,
                                    ['git',  '-c', 'advice.detachedHead=false',
                                     'clone', '--quiet', repo, dd])
