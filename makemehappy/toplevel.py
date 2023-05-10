@@ -64,6 +64,8 @@ class Toplevel:
     def generateCMakeModulePath(self, fh, moddirs):
         for p in moddirs:
             print("list(APPEND CMAKE_MODULE_PATH \"{}\")".format(p), file = fh)
+
+    def generateZephyrInit(self, fh):
         if (self.moduleType == 'zephyr'):
             print('include(SetupUFW)', file = fh)
             print('ufw_toplevel(ROOT ${CMAKE_SOURCE_DIR}/deps/ufw)', file = fh)
@@ -142,13 +144,15 @@ enable_language(ASM)''',
         with open(self.filename, 'w') as fh:
             self.generateHeader(fh)
             self.generateCMakeModulePath(fh, self.modulePath)
-            self.generateTestHeader(fh)
 
             var = getMergedDict(self.trace.data, 'variables', self.variables)
             self.generateVariables(fh, var)
 
             defaults = getMergedDict(self.trace.data, 'defaults', self.defaults)
             self.generateDefaults(fh, defaults)
+
+            self.generateZephyrInit(fh)
+            self.generateTestHeader(fh)
 
             if (self.moduleType == 'zephyr'):
                 self.generateZephyr(fh,
