@@ -165,6 +165,12 @@ ap_download = subp.add_parser(
 
 ap_download.set_defaults(sub_command = 'download-source')
 ap_download.add_argument(
+    "-b", "--bare",
+    dest = 'clone_bare',
+    default = False,
+    action = 'store_true',
+    help = "Create bare git repository when downloading source")
+ap_download.add_argument(
     "-r", "--release",
     dest = 'use_release',
     default = False,
@@ -176,7 +182,12 @@ ap_download.add_argument('modules', nargs = '+')
 ap_sources = subp.add_parser(
     'download-sources',
     help = 'Download sources for ALL module')
-
+ap_sources.add_argument(
+    "-b", "--bare",
+    dest = 'clone_bare',
+    default = False,
+    action = 'store_true',
+    help = "Create bare git repository when downloading source")
 ap_sources.add_argument('destination', nargs = '?', default = '.')
 
 # dump-description
@@ -807,8 +818,11 @@ elif (cmdargs.sub_command == "download-source"):
     for module in cmdargs.modules:
         meta = src.lookup(module)
         source = meta['repository']
-        mmh.loggedProcess(cfg, log, ['git', '-c', 'advice.detachedHead=false',
-                                     'clone', '--quiet', source, module])
+        cmd = ['git', '-c', 'advice.detachedHead=false', 'clone', '--quiet' ]
+        if (cmdargs.clone_bare):
+            cmd.append('--bare')
+        cmd += [ source, module ]
+        mmh.loggedProcess(cfg, log, cmd)
         olddir = os.getcwd()
         os.chdir(module)
         fetchCheckout(cfg, log, module, meta['main'])
@@ -850,9 +864,13 @@ elif (cmdargs.sub_command == "download-sources"):
             repo = source['modules'][module]['repository']
             log.info("Downloading module {} from {}...", module, repo)
             mmh.maybeShowPhase(log, f'{module}', 'download-sources', cmdargs)
-            rc = mmh.loggedProcess(cfg, log,
-                                   ['git',  '-c', 'advice.detachedHead=false',
-                                    'clone', '--quiet', repo, dd])
+
+            cmd = ['git', '-c', 'advice.detachedHead=false', 'clone', '--quiet' ]
+            if (cmdargs.clone_bare):
+                cmd.append('--bare')
+            cmd += [ repo, dd ]
+
+            rc = mmh.loggedProcess(cfg, log, cmd)
             if (rc == 0):
                 log.info("Downloading module {} was successful.", module)
             else:
