@@ -419,8 +419,13 @@ if (earlyExit):
 
 if cmdargs.log_to_file:
     cmdargs.log_all = True
-    if cmdargs.log_file is not None:
-        log.handlers[0].setFile(cmdargs.log_file)
+    if cmdargs.log_file is None:
+        if cmdargs.directory is None:
+            cmdargs.log_file = 'build.log'
+        else:
+            cmdargs.log_file = cmdargs.directory + ".log"
+    print(f'Logging to: {cmdargs.log_file}')
+    log.handlers[0].setFile(cmdargs.log_file)
 else:
     log.handlers[0].setFile(False)
 
@@ -595,10 +600,6 @@ def do_prepare():
                       buildtools    = cmdargs.buildtools)
         cut.loadSources()
         cut.initRoot(version, cmdargs)
-        if cmdargs.log_to_file is True and cmdargs.log_file is None:
-            fn = cut.root.name() + '.log'
-            print('Logging to: {}'.format(fn))
-            log.handlers[0].setFile(fn)
         cut.populateRoot()
         cut.linkIntoRoot()
         cut.changeToRoot()
@@ -919,10 +920,6 @@ elif (cmdargs.sub_command == "system"):
     adjustConfig(cfg, cmdargs)
     try:
         system = ms.System(log, version, cfg, cmdargs);
-        if cmdargs.log_to_file is True and cmdargs.log_file is None:
-            fn = system.buildRoot() + '.log'
-            print('Logging to: {}'.format(fn))
-            log.handlers[0].setFile(fn)
         system.load()
 
         if (cmdargs.system == 'build'):
