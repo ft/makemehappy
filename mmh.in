@@ -512,16 +512,16 @@ def adjustConfig(cfg, args):
     adjustments = 0
     cfg.merge()
     if args.log_all == True:
-        layer['log-all'] = not(cfg.lookup('log-all'))
+        layer['log-all'] = not cfg.lookup('log-all')
         adjustments = adjustments + 1
     if args.log_to_file == True:
-        layer['log-to-file'] = not(cfg.lookup('log-to-file'))
+        layer['log-to-file'] = not cfg.lookup('log-to-file')
         adjustments = adjustments + 1
     if args.ignore_dep_errors == True:
-        layer['fatal-dependencies'] = not(cfg.lookup('fatal-dependencies'))
+        layer['fatal-dependencies'] = not cfg.lookup('fatal-dependencies')
         adjustments = adjustments + 1
     if args.use_pager == True:
-        layer['page-output'] = not(cfg.lookup('page-output'))
+        layer['page-output'] = not cfg.lookup('page-output')
         adjustments = adjustments + 1
     if (len(args.revision) > 0):
         layer['revision-overrides'] = []
@@ -529,7 +529,7 @@ def adjustConfig(cfg, args):
             layer['remove'] = {}
         for rev in reversed(args.revision):
             try:
-                (pat,value) = rev.split('=', 1)
+                (pat, value) = rev.split('=', 1)
                 if (value == '!main'):
                     new = { 'name': pat, 'use-main-branch': True }
                 elif (value == '!latest'):
@@ -543,8 +543,8 @@ def adjustConfig(cfg, args):
                     new = { 'name': pat, 'revision': value }
 
                 idx = mmh.findByName(layer['revision-overrides'], pat)
-                if (idx != None):
-                    del(layer['revision-overrides'][idx])
+                if (idx is not None):
+                    del layer['revision-overrides'][idx]
 
                 layer['revision-overrides'].append(new)
 
@@ -660,7 +660,7 @@ elif (cmdargs.sub_command == "generate-toplevel"):
     cut.generateToplevel()
 
 elif (cmdargs.sub_command == "reset-setup"):
-    if (cmdargs.directory == None):
+    if cmdargs.directory is None:
         print("reset-argument only works with -d!")
         mmh_exit(1)
 
@@ -669,7 +669,7 @@ elif (cmdargs.sub_command == "reset-setup"):
     mmh.dump(fn, data)
 
 elif (cmdargs.sub_command == "list-instances"):
-    if (cmdargs.directory == None):
+    if cmdargs.directory is None:
         print("list-instances only works with -d!")
         mmh_exit(1)
 
@@ -728,7 +728,7 @@ elif (cmdargs.sub_command == "focus-instance"):
     ccj = 'compile_commands.json'
     d = cmdargs.directory
 
-    if (cmdargs.directory != None):
+    if cmdargs.directory is not None:
         instance = os.path.join(d, 'build', instance)
 
     ccjTarget = os.path.join(instance, ccj)
@@ -836,13 +836,13 @@ elif (cmdargs.sub_command == "download-source"):
             if ('release-pattern' in meta):
                 pat = meta['release-pattern']
             tag = gitLatestTag('.', pat)
-            if (tag == None):
+            if tag is None:
                 log.fatal('Unable to find latest release tag for module {}'
                           .format(module))
                 mmh_exit(1)
 
             latest = gitCheckout(cfg, log, module, tag)
-            if (latest == None):
+            if latest is None:
                 log.fatal('Error checking out tag {} for module {}'
                           .format(tag, module))
                 mmh_exit(1)
@@ -857,7 +857,7 @@ elif (cmdargs.sub_command == "download-sources"):
     loaded = {}
     failed = {}
     for source in src.data:
-        if not('modules' in source):
+        if 'modules' not in source:
             continue
         for module in source['modules']:
             if (module in loaded):
@@ -870,7 +870,8 @@ elif (cmdargs.sub_command == "download-sources"):
             log.info("Downloading module {} from {}...", module, repo)
             mmh.maybeShowPhase(log, f'{module}', 'download-sources', cmdargs)
 
-            cmd = ['git', '-c', 'advice.detachedHead=false', 'clone', '--quiet' ]
+            cmd = ['git', '-c', 'advice.detachedHead=false',
+                   'clone', '--quiet' ]
             if (cmdargs.clone_bare):
                 cmd.append('--bare')
             cmd += [ repo, dd ]
@@ -911,13 +912,13 @@ elif (cmdargs.sub_command == "download-sources"):
                       failed[fail]['source'])
 
 elif (cmdargs.sub_command == "system"):
-    if ((not 'system' in cmdargs) or (cmdargs.system == None)):
+    if (('system' not in cmdargs) or (cmdargs.system is None)):
         cmdargs.system = 'build'
 
-    if (cmdargs.directory == None):
+    if (cmdargs.directory is None):
         cmdargs.directory = 'build'
 
-    if (not 'instances' in cmdargs):
+    if ('instances' not in cmdargs):
         cmdargs.instances = [ ]
 
     cfg.load()
