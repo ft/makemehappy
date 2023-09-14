@@ -5,14 +5,11 @@ import os
 import re
 import sys
 
-import makemehappy.build as build
 import makemehappy.utilities as mmh
 import makemehappy.result as result
 import makemehappy.system as ms
-import makemehappy.toplevel as top
 
 from logbook import Logger
-from makemehappy.buildroot import BuildRoot
 from makemehappy.cut import CodeUnderTest
 from makemehappy.cut import fetchCheckout
 from makemehappy.cut import gitLatestTag
@@ -41,7 +38,7 @@ try:
     if (cmakeSeparator == len(sys.argv)):
         cmakeParameters = []
     else:
-        cmakeParameters = sys.argv[cmakeSeparator+1:]
+        cmakeParameters = sys.argv[cmakeSeparator + 1:]
     sys.argv = sys.argv[0:cmakeSeparator]
 except ValueError:
     cmakeParameters = None
@@ -56,14 +53,14 @@ ap.add_argument(
 
 ap.add_argument(
     "-m", "--module", default = "module.yaml",
-    help = "specify the file that contains the"
-         + " module description (defaults to module.yaml)")
+    help = "specify the file that contains the" +
+           " module description (defaults to module.yaml)")
 
 ap.add_argument(
     "-p", "--preserve", action = "store_true",
-    help = "preserve build root instead of deleting it."
-         + " In combination with -d, delete build root"
-         + " before termination.")
+    help = "preserve build root instead of deleting it." +
+           " In combination with -d, delete build root"  +
+           " before termination.")
 
 ap.add_argument(
     "-q", "--quiet", action = "store_true",
@@ -348,15 +345,15 @@ sys_clean.add_argument('instances', default = [ ], nargs = '*')
 
 
 cmdargs = ap.parse_args()
-#print(cmdargs)
-#print(cmdargs.sub_command)
+# print(cmdargs)
+# print(cmdargs.sub_command)
 
 def mmh_search_in_dirs(stack, name):
     stack.push(os.path.join(datadir, name))
     stack.push(os.path.join(etcdir,  name))
     if (cmdargs.disable_user_directory == False):
-      stack.push(mmh.xdgFile(name))
-      stack.push(mmh.dotFile(name))
+        stack.push(mmh.xdgFile(name))
+        stack.push(mmh.dotFile(name))
 
 mmh_search_in_dirs(cfg, 'config.yaml')
 mmh_search_in_dirs(src, 'sources.yaml')
@@ -370,7 +367,7 @@ if cmdargs.query is not None:
     log.disable()
 
 if (isinstance(cmdargs.directory, str)):
-    cmdargs.preserve = not(cmdargs.preserve)
+    cmdargs.preserve = not cmdargs.preserve
 
 if (cmdargs.verbose):
     mmh.setVerbosity(1)
@@ -402,7 +399,7 @@ earlyExit = False
 def mmh_add_to_stack(lst, stack, desc):
     global earlyExit
     for item in lst:
-        if (re.search(r'\.ya?ml$', item) != None):
+        if (re.search(r'\.ya?ml$', item) is not None):
             if (os.path.isfile(item)):
                 stack.push(item)
             else:
@@ -440,22 +437,29 @@ if cmdargs.architectures is not None:
 
 cmdargs.cmake = cmakeParameters
 
-if (cmdargs.sub_command == None):
+if (cmdargs.sub_command is None):
     if (os.path.isfile('system.yaml')):
         cmdargs.sub_command = 'system'
-    elif (cmdargs.directory != None and os.path.exists(cmdargs.directory)):
+    elif (cmdargs.directory is not None and os.path.exists(cmdargs.directory)):
         cmdargs.sub_command = 'run-instance'
     else:
         cmdargs.sub_command = 'build'
-    log.info("Starting up using default command ({})".format(cmdargs.sub_command))
+    log.info("Starting up using default command ({})"
+             .format(cmdargs.sub_command))
 elif (cmdargs.sub_command != False):
     log.info("Starting up using '{}' command".format(cmdargs.sub_command))
 
+def needMMHYAML():
+    if cmdargs.sub_command == 'reset-setup':
+        return False
+    if cmdargs.sub_command == 'system':
+        return False
+    if cmdargs.directory is None:
+        return False
+    return mmh.noParameters(cmdargs)
+
 cmdargs.fromyaml = False
-if (cmdargs.sub_command != 'reset-setup' and
-    cmdargs.sub_command != 'system'      and
-    cmdargs.directory != None            and
-    mmh.noParameters(cmdargs)):
+if needMMHYAML():
     fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
     if (os.path.exists(fn)):
         data = mmh.load(fn)
@@ -497,7 +501,7 @@ if (cmdargs.sub_command != 'reset-setup' and
                     cmdargs.socRoot = p['soc-root']
         else:
             fv = None
-            if (not data is None and 'version' in data):
+            if (data is not None and 'version' in data):
                 fv = data['version']
             log.error("{}: Version mismatch: {} != {}".format(fn, version, fv))
             log.error("If suitable ‘--force’ to force using the file!")
