@@ -32,35 +32,35 @@ def verbose(*args, **kwargs):
 
 def setVerbosity(value):
     global verbosity
-    verbosity = value;
+    verbosity = value
 
 def matchingVersion(version, data):
-    if (data == None):
+    if data is None:
         return False
-    if (not 'version' in data):
+    if ('version' not in data):
         return False
     return (data['version'] == version)
 
 def noParameters(args):
-    return (args.architectures  == None and
-            args.buildconfigs   == None and
-            args.buildtools     == None and
-            args.toolchains     == None and
-            args.cmake          == None and
+    return (args.architectures  is None and
+            args.buildconfigs   is None and
+            args.buildtools     is None and
+            args.toolchains     is None and
+            args.cmake          is None and
             len(args.instances) == 0)
 
 def load(file):
-    (root,fn) = os.path.split(os.path.realpath(file))
+    (root, fn) = os.path.split(os.path.realpath(file))
     with open(file) as fh:
         data = yaml.safe_load(fh.read())
-        if data == None:
+        if data is None:
             data = {}
         data['root'] = root
         data['definition'] = fn
         return data
 
 def dump(file, data):
-    (root,fn) = os.path.split(os.path.realpath(file))
+    (root, fn) = os.path.split(os.path.realpath(file))
     data['definition'] = fn
     data['root'] = root
     with open(file, 'w') as fh:
@@ -92,7 +92,7 @@ def pager(cfg, thunk):
 
 def logOutput(log, pipe):
     for line in iter(pipe.readline, b''):
-        log.info(line.decode(errors = 'backslashreplace').strip())
+        log.info(line.decode(errors = 'backslashreplace').rstrip())
 
 def loggedProcess(cfg, log, cmd):
     log.info("Running command: {}".format(cmd))
@@ -131,7 +131,7 @@ def questionPattern(s):
 bracketExpression = re.compile(r'\[.*\]')
 
 def bracketPattern(s):
-    return re.search(bracketExpression, s) != None
+    return re.search(bracketExpression, s) is not None
 
 def isPattern(s):
     return starPattern(s) or questionPattern(s) or bracketPattern(s)
@@ -146,7 +146,7 @@ def flatten(lst):
         return [lst]
 
 def expandFile(tmpl):
-    if (tmpl == None):
+    if tmpl is None:
         return None
     curdir = os.getcwd()
     exp = mako.Template(tmpl).render(system = curdir)
@@ -173,7 +173,7 @@ def findByKey(lst, key):
 
 def findByName(lst, name):
     for i, d in enumerate(lst):
-        #print('DEBUG:', name, i, d)
+        # print('DEBUG:', name, i, d)
         if ('name' in d and d['name'] == name):
             return i
     return None

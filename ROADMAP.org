@@ -9,6 +9,19 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
+** TODO Add hook system to execute arbitrary code during operation
+
+Possible points of interest:
+
+- pre-exec
+- post-exec
+- pre-instance
+- post-instance
+
+…more might be possible. One possible application is to allow preparing build
+environments in ways that stock mmh can't; or to allow post-processing the
+build results, or to execute deployment code.
+
 ** TODO Make revision overrides use release-pattern from sources
 …as the default for its use-latest-revision-pattern parameter.
 ** TODO Implement YAML linters

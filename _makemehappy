@@ -146,6 +146,7 @@ _makemehappy-download-source() {
     _arguments -C -s -w : \
                '*::: :__makemehappy-modules' \
                '(-h --help)'{-h,--help}'[display help message]' \
+               '(-b --bare)'{-b,--bare}'[create a bare repository when cloning]' \
                '(-r --release)'{-r,--release}'[use latest release tag after cloning]' \
         && ret=0
 }
@@ -156,7 +157,12 @@ _makemehappy-download-sources() {
         print "Download sources for all known modules"
         return
     fi
-    __makemehappy-nothing-else
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-b --bare)'{-b,--bare}'[create a bare repository when cloning]' \
+        && ret=0
 }
 
 _makemehappy-dump-description() {
