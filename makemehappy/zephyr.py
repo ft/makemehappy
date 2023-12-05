@@ -62,6 +62,12 @@ def westNameFromSourceStack(src, mod):
     except UnknownModule:
         return None
 
+def maybeWestName(src, mod):
+    zpkg = westNameFromSourceStack(src, mod)
+    if zpkg == None:
+        return mod
+    return zpkg
+
 def westPackage(west, mod):
     if ('manifest' not in west):
         return None

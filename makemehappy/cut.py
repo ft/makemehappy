@@ -488,7 +488,8 @@ def fetch(cfg, log, src, st, trace):
             return False
 
         url = source['repository']
-        p = os.path.join('deps', dep['name'])
+        zpkg = z.westNameFromSourceStack(src, dep['name'])
+        p = os.path.join('deps', zpkg if zpkg != None else dep['name'])
         newmod = os.path.join(p, 'module.yaml')
         detectrev = True
         if (os.path.exists(p)):
