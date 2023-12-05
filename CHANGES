@@ -1,6 +1,35 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.21 → v0.22 (released 2023-12-05):
+
+** New Features
+
+- download-source,-sources: Add --bare option to produce bare clones.
+- zephyr: Improve support for modules in newer zephyr version.
+
+** Bugfixes
+
+- Fix corner cases where --log-to-file doesn't in fact log to a file.
+- log-all: Only strip trailing whitespace from external program output.
+
+** Miscellaneous
+
+- Fix a number of python style issues; add "tox.ini".
+
+** Diffstat:
+
+    ROADMAP.org              |  13 ++++
+    _makemehappy             |   8 ++-
+    makemehappy/build.py     |   3 +
+    makemehappy/cut.py       |   3 +-
+    makemehappy/utilities.py |  30 ++++-----
+    makemehappy/zephyr.py    |   6 ++
+    mmh.in                   | 130 ++++++++++++++++++++++-----------------
+    tox.ini                  |   2 +
+    8 files changed, 123 insertions(+), 72 deletions(-)
+
+
 * v0.20 → v0.21 (released 2023-05-11):
 
 ** New Features
