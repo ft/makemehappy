@@ -1,6 +1,22 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.22 → v0.23 (released 2024-01-14):
+
+** Bugfixes
+
+- Fix regression that broke the program with most, if not all non-zephyr module
+  builds. This was a regression introduced in v0.22 when improving the zephyr
+  module support.
+
+** Diffstat:
+
+    LICENCE              | 2 +-
+    doc/mmh.mdwn         | 2 +-
+    makemehappy/build.py | 6 ++++--
+    3 files changed, 6 insertions(+), 4 deletions(-)
+
+
 * v0.21 → v0.22 (released 2023-12-05):
 
 ** New Features

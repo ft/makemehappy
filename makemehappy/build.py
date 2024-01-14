@@ -302,8 +302,10 @@ def allofthem(cfg, log, mod, ext, args):
     for instance in instances:
         log.info('    {}'.format(instanceName(instance)))
     for instance in instances:
-        instance['modules'] = map(lambda m: z.maybeWestName(mod.sources, m),
-                                  instance['modules'])
+        if 'modules' in instance:
+            instance['modules'] = map(
+                lambda m: z.maybeWestName(mod.sources, m),
+                instance['modules'])
         log.info('Building instance: {}'.format(instanceName(instance)))
         build(cfg, log, mod.args, mod.stats, ext, olddir, instance)
 
