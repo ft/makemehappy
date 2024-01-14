@@ -3,7 +3,7 @@ Upstream-Name: makemehappy
 Source: <https://github.com/ft/makemehappy>
 
 Files: *
-Copyright: 2019-2023 Frank Terbeck <ft@bewatermyfriend.org>
+Copyright: 2019-2024 Frank Terbeck <ft@bewatermyfriend.org>
 License: 2-clause-bsd
  Redistribution  and use  in source  and binary  forms, with  or without
  modification, are permitted provided  that the following conditions are
@@ -30,7 +30,7 @@ License: 2-clause-bsd
  POSSIBILITY OF SUCH DAMAGE.
 
 Files: debian/*
-Copyright: 2019-2023 Frank Terbeck <ft@bewatermyfriend.org>
+Copyright: 2019-2024 Frank Terbeck <ft@bewatermyfriend.org>
 License: GPL-2+
  This package is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
