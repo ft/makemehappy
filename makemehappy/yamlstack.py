@@ -114,7 +114,9 @@ class ConfigStack(YamlStack):
         for slice in slices:
             if ('remove' in slice):
                 for cat in slice['remove']:
-                    if (cat in self.mergeLists):
+                    if (slice['remove'][cat] == True):
+                        self.merged[cat] = []
+                    elif (cat in self.mergeLists):
                         self.merged[cat] = list(
                             filter(lambda x: (x not in slice['remove'][cat]),
                                    self.merged[cat]))
