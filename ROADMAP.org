@@ -36,6 +36,24 @@ switches to a different toolchain, accumulating a consistent and comprehensive
 log for the entire build process. This log should be machine readable, say
 JSON, so machine driven analysis modes become easy to implement.
 
+** TODO Allow setting cmake env. variables from module.yaml and system.yaml
+
+CMake variables are settable in module.yaml (via "variables" and "defaults").
+There is no analogue in system.yaml. Setting environment variables is not
+supported from either. With ufw now supporting toolchain configuration via
+these mechanisms, it would be useful to support this.
+
+In module mode, adding this seems trivial. In system mode, it would be nice to
+have a similar multistage configuration system as with the other supported
+parameters from system.py. With that, it would be required to have a stack of
+environment variables and instantiate the right set for any given build
+instance.
+
+It would also be useful to only set environment variables that are not set yet
+in the user's execution environment. That way a system/module can set defaults,
+while allowing the user to adjust if they so choose. There should probably be
+an option to override this behaviour, however.
+
 ** TODO Make revision overrides use release-pattern from sources
 …as the default for its use-latest-revision-pattern parameter.
 ** TODO Implement YAML linters
