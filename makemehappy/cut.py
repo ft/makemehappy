@@ -998,6 +998,14 @@ class CodeUnderTest:
         if (args.fromyaml == False or args.all_instances == True):
             updateMMHYAML(self.log, self.root.root, version, args)
 
+    def setEnvironment(self):
+        if (has('environment', self.moduleData, dict) == False):
+            return
+
+        mmh.setEnvironment(self.log,
+                           self.args.environment_overrides,
+                           self.moduleData['environment'])
+
     def cmakeIntoYAML(self):
         self.log.info("Updating MakeMeHappy.yaml with CMake information")
         fn = os.path.join('MakeMeHappy.yaml')

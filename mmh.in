@@ -124,6 +124,10 @@ ap.add_argument(
     help = "force successful termination")
 
 ap.add_argument(
+    "-e", "--environment-overrides", action = "store_true",
+    help = "allow mmh to override existing environment variables")
+
+ap.add_argument(
     "-E", "--ignore-dep-errors", action = "store_true",
     help = "ignore errors in dependency evaluation")
 
@@ -610,6 +614,7 @@ def do_prepare():
         cut.loadDependencies()
         cut.cmakeIntoYAML()
         cut.generateToplevel()
+        cut.setEnvironment()
         return cut
     except Exception as e:
         if (len(e.args) > 0):
@@ -703,6 +708,7 @@ elif (cmdargs.sub_command == "run-instance"):
     cut.changeToRoot()
     cut.loadDependencies()
     cut.cmakeIntoYAML()
+    cut.setEnvironment()
     cut.build()
 
     cut.renderStatistics()

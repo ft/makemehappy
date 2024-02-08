@@ -201,3 +201,21 @@ def get_install_components(log, spec):
 
     log.warning('Invalid installation spec: {}', spec)
     return []
+
+def setEnvironment(log, with_overrides, spec):
+    for var in spec:
+        value = spec[var]
+        if with_overrides == False and var in os.environ:
+            p = os.environ[var]
+            log.info(f'Existing environment for {var} ({p}) supersedes'
+                     f' value from module ({value})')
+            continue
+
+        if var in os.environ:
+            p = os.environ[var]
+            log.info(f'Existing environment for {var} ({p}) overridden by'
+                     f' value from module ({value})')
+        else:
+            log.info(f'Setting environment for {var} ({value})')
+
+        os.environ[var] = value
