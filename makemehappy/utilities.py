@@ -94,11 +94,12 @@ def logOutput(log, pipe):
     for line in iter(pipe.readline, b''):
         log.info(line.decode(errors = 'backslashreplace').rstrip())
 
-def loggedProcess(cfg, log, cmd):
+def loggedProcess(cfg, log, cmd, env = None):
     log.info("Running command: {}".format(cmd))
     if cfg.lookup('log-all'):
         proc = subprocess.Popen(
-            cmd, stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+            cmd, stdout = subprocess.PIPE, stderr = subprocess.STDOUT,
+            env = env)
         with proc.stdout:
             logOutput(log, proc.stdout)
         return proc.wait()
@@ -202,20 +203,30 @@ def get_install_components(log, spec):
     log.warning('Invalid installation spec: {}', spec)
     return []
 
-def setEnvironment(log, with_overrides, spec):
+def makeEnvironment(log, with_overrides, spec):
+    env = dict(os.environ)
     for var in spec:
         value = spec[var]
-        if with_overrides == False and var in os.environ:
-            p = os.environ[var]
+        if with_overrides == False and var in env:
+            p = env[var]
             log.info(f'Existing environment for {var} ({p}) supersedes'
                      f' value from module ({value})')
             continue
 
-        if var in os.environ:
-            p = os.environ[var]
+        if var in env:
+            p = env[var]
             log.info(f'Existing environment for {var} ({p}) overridden by'
                      f' value from module ({value})')
         else:
             log.info(f'Setting environment for {var} ({value})')
 
-        os.environ[var] = value
+        env[var] = value
+
+    return env
+
+def setEnvironment(log, with_overrides, spec):
+    env = makeEnvironment(log, with_overrides, spec)
+    # Apparently, the assignment here is needed to invoke the underlying
+    # setenv(3) call. Who cares… this is quick.
+    for key in env:
+        os.environ[key] = env[key]
