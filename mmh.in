@@ -943,7 +943,11 @@ elif (cmdargs.sub_command == "system"):
             system.listInstances()
         elif (cmdargs.system == 'db'):
             system.makeDBLink()
-    except Exception:
+    except Exception as e:
+        if (len(e.args) > 0):
+            log.error(f'{type(e).__name__}: {e}')
+        else:
+            log.error(f'{type(e).__name__}')
         commandReturnValue = 1
 
 elif (isinstance(cmdargs.sub_command, str)):
