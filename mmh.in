@@ -275,6 +275,18 @@ ap_result.add_argument(
     dest = 'full_result',
     help = "Replay full log with log-prefix stripped.")
 ap_result.add_argument(
+    "-g", "--grep", action = "store_true",
+    dest = 'grep_result',
+    help = "Scan log for incidents.")
+ap_result.add_argument(
+    "-j", "--json", action = "store_true",
+    dest = 'json_incidents',
+    help = "Report incidents from log file in JSON format.")
+ap_result.add_argument(
+    "-r", "--report", action = "store_true",
+    dest = 'report_incidents',
+    help = "Report incidents from log file.")
+ap_result.add_argument(
     "-p", "--paged", action = "store_true",
     dest = 'use_pager',
     help = "Use pager to view result.")

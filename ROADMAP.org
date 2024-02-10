@@ -22,20 +22,6 @@ Possible points of interest:
 environments in ways that stock mmh can't; or to allow post-processing the
 build results, or to execute deployment code.
 
-** TODO Parse build output for errors/warnings/notices, etc.
-
-One usecase (indeed its first design-goal) for mmh is to exercise a codebase
-against a large number of toolchains, architectures, build configurations and
-the like. This is something that is geared toward software QA, running in
-continuous integration services. Statistics about diagnostic output from a
-toolchain running builds is currently not available with mmh, except grepping
-for well known patterns in a full build log.
-
-It would be nice to switch to an appropriate diagnostics parser when the build
-switches to a different toolchain, accumulating a consistent and comprehensive
-log for the entire build process. This log should be machine readable, say
-JSON, so machine driven analysis modes become easy to implement.
-
 ** TODO Make revision overrides use release-pattern from sources
 …as the default for its use-latest-revision-pattern parameter.
 ** TODO Implement YAML linters
@@ -127,6 +113,20 @@ All important parameters are encoded in the build-directory name:
 
 Note that the build directories are encoded differently nowadays.
 ** TODO Flesh out user manual
+** DONE Parse build output for errors/warnings/notices, etc.
+
+One usecase (indeed its first design-goal) for mmh is to exercise a codebase
+against a large number of toolchains, architectures, build configurations and
+the like. This is something that is geared toward software QA, running in
+continuous integration services. Statistics about diagnostic output from a
+toolchain running builds is currently not available with mmh, except grepping
+for well known patterns in a full build log.
+
+It would be nice to switch to an appropriate diagnostics parser when the build
+switches to a different toolchain, accumulating a consistent and comprehensive
+log for the entire build process. This log should be machine readable, say
+JSON, so machine driven analysis modes become easy to implement.
+
 ** DONE Allow setting cmake env. variables from module.yaml and system.yaml
 
 CMake variables are settable in module.yaml (via "variables" and "defaults").

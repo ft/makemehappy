@@ -274,7 +274,10 @@ _makemehappy-show-result() {
 
     _arguments -C -s -w : \
                '(-f --full)'{-f,--full}'[Replay full log with log-prefix stripped]' \
+               '(-g --grep)'{-g,--grep}'[Scan log for incidents]' \
                '(-h --help)'{-h,--help}'[display help message]' \
+               '(-j --json)'{-j,--json}'[Report incidents from log file in JSON format]' \
+               '(-r --report)'{-r,--report}'[Report incidents from log file]' \
                '(-s --short)'{-s,--short}'[Do not show and result output]' \
                '(-p --paged)'{-p,--paged}'[Use pager to view result]' \
                '(-q --quiet)'{-q,--quiet}'[Only show final short-form result]' \
