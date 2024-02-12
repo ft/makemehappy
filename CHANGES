@@ -1,6 +1,29 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.23 → v0.24 (released 2024-02-12):
+
+** New Features
+
+- Allow True with "remove" to wipe out whole configuration sections.
+- Allow setting environment variables from module.yaml.
+- Allow extending environment and cmake variables from system.yaml.
+- Add output parsing for errors/warnings/etc to show-result.
+
+** Diffstat:
+
+    ROADMAP.org              |  32 +++++
+    _makemehappy             |   3 +
+    makemehappy/cmake.py     |   6 +
+    makemehappy/cut.py       |   8 ++
+    makemehappy/result.py    | 294 +++++++++++++++++++++++++++++++++++++--
+    makemehappy/system.py    |  52 +++++--
+    makemehappy/utilities.py |  33 ++++-
+    makemehappy/yamlstack.py |   4 +-
+    mmh.in                   |  24 +++-
+    9 files changed, 430 insertions(+), 26 deletions(-)
+
+
 * v0.22 → v0.23 (released 2024-01-14):
 
 ** Bugfixes

@@ -42,6 +42,12 @@ def makeParam(name, value, allowEmpty = False):
 
     return '-D{}={}'.format(name, exp)
 
+def makeParamsFromDict(d):
+    rv = []
+    for key in d:
+        rv.append(makeParam(key, d[key]))
+    return rv
+
 def zephyrToolchain(spec):
     real = None
     if (isinstance(spec, str)):

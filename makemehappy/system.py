@@ -9,11 +9,13 @@ import makemehappy.zephyr as z
 defaults = { 'build-configs'      : [ 'debug', 'release' ],
              'build-system'       : None,
              'build-tool'         : 'ninja',
+             'environment'        : {},
              'install'            : True,
              'install-dir'        : 'artifacts',
              'ufw'                : '${system}/libraries/ufw',
              'dtc-overlays'       : [ ],
              'kconfig'            : [ ],
+             'variables'          : {},
              'zephyr-kernel'      : '${system}/zephyr/kernel',
              'zephyr-module-path' : [ '${system}/zephyr/modules' ],
              'zephyr-template'    : 'applications/${application}' }
@@ -56,6 +58,22 @@ def makeInstances(data):
     return rv
 
 def maybeCopy(thing, common, key):
+    # If something is a dict in "defaults", we merge upwards through defaults,
+    # common and the final thing. This allows specifying general things for
+    # everything with extending and overriding the way down. You cannot remove
+    # things down the stack, of course.
+    if (key in defaults and isinstance(defaults[key], dict)):
+        if (not key in thing):
+            thing[key] = {}
+
+        if (key in common):
+            thing[key] = { **common[key], **thing[key] }
+
+        thing[key] = { **defaults[key], **thing[key] }
+        return
+
+    # Other values pick from common or defaults, in that order whichever one
+    # has a value first.
     if (not key in thing):
         if (key in common):
             thing[key] = common[key]
@@ -109,6 +127,11 @@ class SystemInstanceBoard:
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['boards'], 'name', self.board)
         self.systemdir = os.getcwd()
+        self.env = None
+        if ('environment' in self.spec):
+            self.env = mmh.makeEnvironment(self.sys.log,
+                                        self.sys.args.environment_overrides,
+                                        self.spec['environment'])
         if (sys.mode == 'system-single'):
             self.builddir = self.sys.args.directory
             self.installdir = os.path.join(self.systemdir,
@@ -124,9 +147,13 @@ class SystemInstanceBoard:
         self.sys.stats.systemBoard(tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
+        cargs = c.makeParamsFromDict(self.spec['variables'])
+        if (self.sys.args.cmake != None):
+            cargs += self.sys.args.cmake
+
         cmd = c.configureBoard(
             log         = self.sys.log,
-            args        = self.sys.args.cmake,
+            args        = cargs,
             ufw         = self.spec['ufw'],
             board       = self.board,
             buildconfig = self.cfg,
@@ -137,7 +164,7 @@ class SystemInstanceBoard:
             buildtool   = self.spec['build-tool'],
             buildsystem = self.spec['build-system'])
 
-        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
         self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
@@ -150,6 +177,11 @@ class SystemInstanceZephyr:
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['zephyr'], 'application', self.app)
         self.systemdir = os.getcwd()
+        self.env = None
+        if ('environment' in self.spec):
+            self.env = mmh.makeEnvironment(self.sys.log,
+                                        self.sys.args.environment_overrides,
+                                        self.spec['environment'])
         if (sys.mode == 'system-single'):
             self.builddir = self.sys.args.directory
             self.installdir = os.path.join(self.systemdir,
@@ -175,9 +207,13 @@ class SystemInstanceZephyr:
         if (not 'modules' in build):
             build['modules'] = [ ]
 
+        cargs = c.makeParamsFromDict(self.spec['variables'])
+        if (self.sys.args.cmake != None):
+            cargs += self.sys.args.cmake
+
         cmd = c.configureZephyr(
             log         = self.sys.log,
-            args        = self.sys.args.cmake,
+            args        = cargs,
             ufw         = build['ufw'],
             board       = self.board,
             buildconfig = self.cfg,
@@ -194,7 +230,7 @@ class SystemInstanceZephyr:
             modulepath  = build['zephyr-module-path'],
             modules     = build['modules'])
 
-        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
         self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
@@ -241,7 +277,7 @@ class SystemInstance:
         self.sys.log.info('Compiling system instance: {}'.format(self.desc))
         mmh.maybeShowPhase(self.sys.log, 'compile', self.desc, self.sys.args)
         cmd = c.cmake(['--build', self.instance.builddir ])
-        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
         self.sys.stats.logBuild(rc)
         return (rc == 0)
 
@@ -251,7 +287,7 @@ class SystemInstance:
             self.sys.log.info('Testing system instance: {}'.format(self.desc))
             mmh.maybeShowPhase(self.sys.log, 'test', self.desc, self.sys.args)
             cmd = c.test(self.instance.builddir)
-            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
             self.sys.stats.logTestsuite(num, rc)
             return (rc == 0)
         return True
@@ -266,7 +302,7 @@ class SystemInstance:
         for component in mmh.get_install_components(
                 self.sys.log, self.instance.spec['install']):
             cmd = c.install(component = component)
-            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
             if (rc != 0):
                 break
         self.sys.log.info('Changing back to directory {}.'.format(olddir))
@@ -278,7 +314,7 @@ class SystemInstance:
         self.sys.log.info('Cleaning system instance: {}'.format(self.desc))
         mmh.maybeShowPhase(self.sys.log, 'clean', self.desc, self.sys.args)
         cmd = c.clean(self.instance.builddir)
-        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd)
+        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
         return (rc == 0)
 
     def build(self):

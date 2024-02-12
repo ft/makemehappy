@@ -124,6 +124,10 @@ ap.add_argument(
     help = "force successful termination")
 
 ap.add_argument(
+    "-e", "--environment-overrides", action = "store_true",
+    help = "allow mmh to override existing environment variables")
+
+ap.add_argument(
     "-E", "--ignore-dep-errors", action = "store_true",
     help = "ignore errors in dependency evaluation")
 
@@ -270,6 +274,18 @@ ap_result.add_argument(
     "-f", "--full", action = "store_true",
     dest = 'full_result',
     help = "Replay full log with log-prefix stripped.")
+ap_result.add_argument(
+    "-g", "--grep", action = "store_true",
+    dest = 'grep_result',
+    help = "Scan log for incidents.")
+ap_result.add_argument(
+    "-j", "--json", action = "store_true",
+    dest = 'json_incidents',
+    help = "Report incidents from log file in JSON format.")
+ap_result.add_argument(
+    "-r", "--report", action = "store_true",
+    dest = 'report_incidents',
+    help = "Report incidents from log file.")
 ap_result.add_argument(
     "-p", "--paged", action = "store_true",
     dest = 'use_pager',
@@ -610,6 +626,7 @@ def do_prepare():
         cut.loadDependencies()
         cut.cmakeIntoYAML()
         cut.generateToplevel()
+        cut.setEnvironment()
         return cut
     except Exception as e:
         if (len(e.args) > 0):
@@ -703,6 +720,7 @@ elif (cmdargs.sub_command == "run-instance"):
     cut.changeToRoot()
     cut.loadDependencies()
     cut.cmakeIntoYAML()
+    cut.setEnvironment()
     cut.build()
 
     cut.renderStatistics()
@@ -937,7 +955,11 @@ elif (cmdargs.sub_command == "system"):
             system.listInstances()
         elif (cmdargs.system == 'db'):
             system.makeDBLink()
-    except Exception:
+    except Exception as e:
+        if (len(e.args) > 0):
+            log.error(f'{type(e).__name__}: {e}')
+        else:
+            log.error(f'{type(e).__name__}')
         commandReturnValue = 1
 
 elif (isinstance(cmdargs.sub_command, str)):
