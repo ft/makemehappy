@@ -337,6 +337,8 @@ class System:
         self.cfg = cfg
         self.args = args
         self.spec = 'system.yaml'
+        if (args.module is not None):
+            self.spec = args.module
         self.singleInstance = None
         if (args.single_instance == None):
             self.mode = None
