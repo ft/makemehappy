@@ -32,6 +32,8 @@ def makeParam(name, value, allowEmpty = False):
     exp = ''
     if (isinstance(value, str)):
         exp = value
+    elif (isinstance(value, bool) or isinstance(value, int)):
+        exp = str(value)
     elif (isinstance(value, list)):
         exp = makeList(value)
     else:
