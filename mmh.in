@@ -57,6 +57,12 @@ ap.add_argument(
            " module description (defaults to module.yaml)")
 
 ap.add_argument(
+    "-y", "--system", default = "system.yaml",
+    dest = 'system_spec',
+    help = "specify the file that contains the" +
+           " system description (defaults to system.yaml)")
+
+ap.add_argument(
     "-p", "--preserve", action = "store_true",
     help = "preserve build root instead of deleting it." +
            " In combination with -d, delete build root"  +
