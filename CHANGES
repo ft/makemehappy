@@ -1,6 +1,21 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.24 → v0.25 (released 2024-04-15):
+
+** New Features
+
+- Add --system to specify a custom system.yaml file.
+- Allow boolean and integer values as cmake values.
+
+** Diffstat:
+
+    makemehappy/cmake.py  |  2 ++
+    makemehappy/system.py | 20 ++++++++++----------
+    mmh.in                |  6 ++++++
+    3 files changed, 18 insertions(+), 10 deletions(-)
+
+
 * v0.23 → v0.24 (released 2024-02-12):
 
 ** New Features
