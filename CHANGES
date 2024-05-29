@@ -1,6 +1,23 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.25 → v0.26 (released 2024-05-29):
+
+** Bugfixes
+
+- result: Allow dot (.) characters inside of phase strings.
+
+** Miscellaneous
+
+- Some documentation improvements.
+
+** Diffstat:
+
+    doc/mmh.mdwn          | 290 ++++++++++++++++++++++++++++++++++--------
+    makemehappy/result.py |   2 +-
+    2 files changed, 241 insertions(+), 51 deletions(-)
+
+
 * v0.24 → v0.25 (released 2024-04-15):
 
 ** New Features
