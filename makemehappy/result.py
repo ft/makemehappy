@@ -146,7 +146,7 @@ class ResultTableScanner(Scanner):
 
 class PhaseScanner(Scanner):
     def __init__(self):
-        Scanner.__init__(self, r'^Phase: (([a-zA-Z0-9+_@-]+/)+[a-zA-Z0-9+_@-]+): ([a-zA-Z0-9+_@-]+)$')
+        Scanner.__init__(self, r'^Phase: (([.a-zA-Z0-9+_@-]+/)+[.a-zA-Z0-9+_@-]+): ([.a-zA-Z0-9+_@-]+)$')
     def process(self, state, matchData, line):
         part = matchData.group(1).split('/')
         phase = matchData.group(3)
