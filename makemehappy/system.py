@@ -36,6 +36,20 @@ def makeZephyrInstances(zephyr):
                         board, name, tcname, cfg)])
     return instances
 
+class InvalidZephyrAlias(Exception):
+    pass
+
+def makeZephyrAliases(data):
+    aliases = {}
+    alias_forbidden_chars = ['/', ' ']
+    aliases_yaml = data['zephyr-aliases']
+    for alias in aliases_yaml.keys():
+        if any(char in alias for char in alias_forbidden_chars):
+            raise InvalidZephyrAlias(alias)
+        aliases[alias] = aliases_yaml[alias]
+
+    return aliases
+
 def makeBoardInstances(board):
     instances = []
     for cfg in board['build-configs']:
@@ -171,7 +185,8 @@ class SystemInstanceBoard:
 class SystemInstanceZephyr:
     def __init__(self, sys, board, app, tc, cfg):
         self.sys = sys
-        self.board = board
+        self.board_alias = board
+        self.board = self.sys.matchZephyrAlias(board)
         self.app = app
         self.tc = tc
         self.cfg = cfg
@@ -189,15 +204,16 @@ class SystemInstanceZephyr:
                                            self.spec['install-dir'])
         else:
             self.builddir = os.path.join(self.sys.args.directory, 'zephyr',
-                                         self.board, self.app, self.tc, self.cfg)
+                                         self.board_alias, self.app, self.tc, self.cfg)
             self.installdir = os.path.join(self.systemdir,
                                            self.sys.args.directory,
                                            self.spec['install-dir'],
-                                           self.board, self.tc, self.app, self.cfg)
-        self.sys.stats.systemZephyr(app, tc, board, cfg, self.spec['build-tool'])
+                                           self.board_alias, self.tc, self.app, self.cfg)
+        self.sys.stats.systemZephyr(app, tc, self.board, cfg, self.spec['build-tool'])
 
     def configure(self):
-        build = z.findBuild(self.spec['build'], self.tc, self.board)
+        build = z.findBuild(self.spec['build'], self.tc,
+                            self.board_alias)
 
         tmp = copy.deepcopy(self.spec)
         tmp.pop('build', None)
@@ -436,6 +452,7 @@ class System:
         self.data = mmh.load(self.spec)
         fillData(self.data)
         self.instances = makeInstances(self.data)
+        self.zephyr_aliases = makeZephyrAliases(self.data)
         self.args.instances = mmh.patternsToList(self.instances,
                                                  self.args.instances)
         if (len(self.args.instances) > 0):
@@ -461,6 +478,9 @@ class System:
                           .format(self.stats.countFailed(),
                                   self.stats.countBuilds()))
             raise(SystemFailedSomeBuilds())
+
+    def matchZephyrAlias(self, name):
+        return self.zephyr_aliases.get(name, name)
 
     def buildInstances(self, instances):
         for i in instances:
