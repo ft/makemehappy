@@ -36,23 +36,18 @@ def makeZephyrInstances(zephyr):
                         board, name, tcname, cfg)])
     return instances
 
+class InvalidZephyrAlias(Exception):
+    pass
+
 def makeZephyrAliases(data):
     aliases = {}
-    for alias in data['zephyr-aliases']:
-        alias_name = alias['alias']
-        if 'board-string' in alias:
-            aliases[alias_name] = alias['board-string']
-        if 'board-name' in alias:
-            board_string = alias['board-name']
-            if 'revision' in alias:
-                board_string += '@' + alias['revision']
-            if 'soc' in alias:
-                board_string += '/' + alias['soc']
-                if 'cpu-cluster' in alias:
-                    board_string += '/' + alias['cpu-cluster']
-                if 'variant' in alias:
-                    board_string += '/' + alias['variant']
-            aliases[alias_name] = board_string
+    alias_forbidden_chars = ['/', ' ']
+    aliases_yaml = data['zephyr-aliases']
+    for alias in aliases_yaml.keys():
+        if any(char in alias for char in alias_forbidden_chars):
+            raise InvalidZephyrAlias(alias)
+        aliases[alias] = aliases_yaml[alias]
+
     return aliases
 
 def makeBoardInstances(board):
