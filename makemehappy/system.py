@@ -231,7 +231,7 @@ class SystemInstanceZephyr:
             log         = self.sys.log,
             args        = cargs,
             ufw         = build['ufw'],
-            board       = self.board,
+            zephyr_board= self.board,
             buildconfig = self.cfg,
             toolchain   = z.findToolchain(build, self.tc),
             sourcedir   = '.',
