@@ -87,7 +87,7 @@ class InvalidZephyrModuleSpec(Exception):
     pass
 
 def configureZephyr(log, args, ufw,
-                    board, buildtool, buildconfig, buildsystem,
+                    zephyr_board, buildtool, buildconfig, buildsystem,
                     toolchain, sourcedir, builddir, installdir,
                     appsource, kernel, dtc, kconfig,
                     modulepath, modules):
@@ -113,7 +113,7 @@ def configureZephyr(log, args, ufw,
           zephyrToolchain(toolchain),
           makeParam('CMAKE_BUILD_TYPE',       buildconfig),
           makeParam('CMAKE_INSTALL_PREFIX',   installdir),
-          makeParam('BOARD',                  board),
+          makeParam('BOARD',                  zephyr_board),
           makeParam('ZEPHYR_MODULES',         modules),
           makeParam('DTC_OVERLAY_FILE',       dtc),
           makeParam('OVERLAY_CONFIG',         overlay),
