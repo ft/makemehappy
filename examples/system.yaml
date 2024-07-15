@@ -26,6 +26,13 @@ common:
   # zephyr applications.
   zephyr-template: applications/${application}
 
+# For Zephyr boards whose board string contains a forward slash, it is
+# necessary to define a slash-free alias.
+# For other Zephyr boards, this is optional.
+zephyr-aliases:
+  stm32h747i_disco_m7: stm32h747i_disco/stm32h747xx/m7
+  stm32h747i_disco_m4: stm32h747i_disco/stm32h747xx/m4
+
 zephyr:
   - application: foobar
     # This is the same as if we left it out because of zephyr-template.
