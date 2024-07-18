@@ -84,18 +84,6 @@ def generateInstances(log, mod):
 
     return instances
 
-class InvalidZephyrAlias(Exception):
-    pass
-
-def generateZephyrAliases(data):
-    aliases = {}
-    alias_forbidden_chars = ['/', ' ']
-    aliases_yaml = data['zephyr-aliases']
-    for alias in aliases_yaml.keys():
-        if any(char in alias for char in alias_forbidden_chars):
-            raise InvalidZephyrAlias(alias)
-        aliases[alias] = aliases_yaml[alias]
-
 
 def generateZephyrInstances(log, mod):
     targets = mod.targets()
@@ -111,7 +99,7 @@ def generateZephyrInstances(log, mod):
     if ('install' in mod.moduleData):
         install = mod.moduleData['install']
 
-    aliases = generateZephyrAliases(mod.moduleData)
+    aliases = z.generateZephyrAliases(mod.moduleData)
 
     instances = []
     for target in targets:
