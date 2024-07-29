@@ -211,6 +211,11 @@ class SystemInstanceZephyr:
         if (self.sys.args.cmake != None):
             cargs += self.sys.args.cmake
 
+        extra_cfg = []
+        if self.spec.get('config'):
+            if self.spec['config'].get(self.cfg):
+                extra_cfg.extend(self.spec['config'][self.cfg])
+
         cmd = c.configureZephyr(
             log         = self.sys.log,
             args        = cargs,
@@ -227,6 +232,7 @@ class SystemInstanceZephyr:
             kernel      = build['zephyr-kernel'],
             dtc         = build['dtc-overlays'],
             kconfig     = build['kconfig'],
+            extra_cfg   = extra_cfg,
             modulepath  = build['zephyr-module-path'],
             modules     = build['modules'])
 

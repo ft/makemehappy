@@ -213,6 +213,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             kernel      = os.path.join(root, 'deps', 'zephyr-kernel'),
             dtc         = instance['dtc-overlays'],
             kconfig     = instance['kconfig'],
+            extra_cfg   = [],
             modulepath  = [ os.path.join(root, 'deps') ],
             modules     = instance['modules'])
     else:

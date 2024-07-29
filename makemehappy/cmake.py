@@ -89,7 +89,7 @@ class InvalidZephyrModuleSpec(Exception):
 def configureZephyr(log, args, ufw,
                     board, buildtool, buildconfig, buildsystem,
                     toolchain, sourcedir, builddir, installdir,
-                    appsource, kernel, dtc, kconfig,
+                    appsource, kernel, dtc, kconfig, extra_cfg,
                     modulepath, modules):
     modules = z.generateModules(modulepath, modules)
 
@@ -117,6 +117,7 @@ def configureZephyr(log, args, ufw,
           makeParam('ZEPHYR_MODULES',         modules),
           makeParam('DTC_OVERLAY_FILE',       dtc),
           makeParam('OVERLAY_CONFIG',         overlay),
+          makeParam('EXTRA_CONF_FILE',        ':'.join(extra_cfg)),
           makeParam('UFW_ZEPHYR_KERNEL',      mmh.expandFile(kernel)),
           makeParam('UFW_ZEPHYR_APPLICATION', mmh.expandFile(appsource)),
           makeParam('UFW_LOAD_BUILD_SYSTEM',  mmh.expandFile(buildsystem)) ])
