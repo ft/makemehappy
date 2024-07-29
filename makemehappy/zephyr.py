@@ -98,7 +98,7 @@ def westRevision(src, west, mod):
 def generateZephyrAliases(data):
     aliases = {}
     alias_forbidden_chars = ['/', ' ']
-    aliases_yaml = data['zephyr-aliases']
+    aliases_yaml = data.get('zephyr-aliases', {})
     for alias in aliases_yaml.keys():
         if any(char in alias for char in alias_forbidden_chars):
             raise InvalidZephyrAlias(alias)
