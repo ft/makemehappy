@@ -9,7 +9,7 @@ def cmakeVariable(name):
     return '${' + name + '}'
 
 def deprecatedTemplate(inc):
-    return re.match('^[0-9a-z_]+$', inc) != None
+    return re.match(r'^[0-9a-z_]+$', inc) != None
 
 class InvalidVariant(Exception):
     pass

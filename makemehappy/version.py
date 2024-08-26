@@ -69,8 +69,8 @@ def compare(a, b):
 
 class Version:
     def __init__(self, s, origin = None):
-        self.seps = re.compile('[-:/!_]')
-        self.dots = re.compile('[.]')
+        self.seps = re.compile(r'[-:/!_]')
+        self.dots = re.compile(r'[.]')
         self.prefix = None
         self.suffix = None
         self.elements = None

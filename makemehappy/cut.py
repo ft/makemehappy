@@ -1071,12 +1071,12 @@ class CodeUnderTest:
                 intodetails = True
             elif (l0['kind'] == 'revision:discouraged'):
                 rv['discouraged-revision'] += 1
-            elif (m := re.match('^version:mismatch:(.*)', l0['kind'])):
+            elif (m := re.match(r'^version:mismatch:(.*)', l0['kind'])):
                 rv[m.group(1) + '-mismatch'] += 1
 
             if intodetails:
                 for l1 in l0['details']:
-                    if (m := re.match('version:(unique|ambiguous)', l1['kind'])):
+                    if (m := re.match(r'version:(unique|ambiguous)', l1['kind'])):
                         rv[m.group(1) + '-dependency'] += 1
                     elif (l1['kind'] == 'deprecated:revision'):
                         rv['deprecated-revision'] += 1
@@ -1106,7 +1106,7 @@ class CodeUnderTest:
         if ('kind' not in entry):
             self.log.fatal(f'Broken journal: {entry}')
             exit(1)
-        elif (m := re.match('version:(unique|ambiguous)', entry['kind'])):
+        elif (m := re.match(r'version:(unique|ambiguous)', entry['kind'])):
             k = m.group(1)
             if (k == 'unique' and not self.cfg.lookup('log-unique-versions')):
                 return
@@ -1127,7 +1127,7 @@ class CodeUnderTest:
         elif (entry['kind'] == 'maybe-bug'):
             self.log.warning(f'BUG? {entry["module"]}: {entry["tag"]}')
             self.log.warning(f'BUG? {entry["meta"]}')
-        elif (m := re.match('^version:mismatch:(.*)', entry['kind'])):
+        elif (m := re.match(r'^version:mismatch:(.*)', entry['kind'])):
             self.handleMismatch(entry, m.group(1))
         elif (entry['kind'] == 'revision:kind'):
             # This is handled in revision:incompatible.

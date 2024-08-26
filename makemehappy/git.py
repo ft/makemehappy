@@ -8,7 +8,7 @@ def latestTag(path, pattern):
          'describe', '--always', '--abbrev=12', '--match=' + pattern])
     if (rc != 0):
         return None
-    return re.sub('-\d+-g?[0-9a-fA-F]+$', '', stdout)
+    return re.sub(r'-\d+-g?[0-9a-fA-F]+$', '', stdout)
 
 def remoteHasBranch(rev):
     rc = mmh.devnullProcess(['git', 'rev-parse', '--verify', 'origin/' + rev])
