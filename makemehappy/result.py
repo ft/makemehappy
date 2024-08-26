@@ -165,7 +165,7 @@ class PhaseScanner(Scanner):
 
 class TexasInstrumentsCompilerScanner(Scanner):
     def __init__(self):
-        Scanner.__init__(self, r'^"([^"]+)", line ([0-9]+): ([a-z]+): (.*)$')
+        Scanner.__init__(self, r'^"([^"]+)", line ([0-9]+): ([ a-z]+): (.*)$')
     def process(self, state, matchData, line):
         (fname, line, kind, desc) = matchData.groups()
         self.result = CompilerIncident(kind, fname, line, None, None, desc)
