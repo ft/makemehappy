@@ -119,7 +119,7 @@ def configureZephyr(log, args, ufw,
         overlay.extend(kconfig)
 
     overlayvariable = 'OVERLAY_CONFIG'
-    if (zephyrWithExtraConfFile(kernel)):
+    if (zephyrWithExtraConfFile(mmh.expandFile(kernel))):
         overlayvariable = 'EXTRA_CONF_FILE'
 
     log.info(f'KConfig extension variable: {overlayvariable}')
