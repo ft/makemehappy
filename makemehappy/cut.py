@@ -8,6 +8,7 @@ import itertools as it
 
 import makemehappy.utilities as mmh
 import makemehappy.build as build
+import makemehappy.git as git
 import makemehappy.version as v
 import makemehappy.yamlstack as ys
 import makemehappy.zephyr as z
@@ -380,14 +381,6 @@ def getSource(dep, src):
 
     return tmp
 
-def gitLatestTag(path, pattern):
-    (stdout, stderr, rc) = mmh.stdoutProcess(
-        ['git', '-C', path,
-         'describe', '--always', '--abbrev=12', '--match=' + pattern])
-    if (rc != 0):
-        return None
-    return re.sub('-\d+-g?[0-9a-fA-F]+$', '', stdout)
-
 def revisionOverride(cfg, src, mod):
     rev = cfg.processOverrides(mod)
     if (isinstance(rev, tuple)):
@@ -399,27 +392,6 @@ def revisionOverride(cfg, src, mod):
             return [ m ]
         return m
     return rev
-
-def gitRemoteHasBranch(rev):
-    rc = mmh.devnullProcess(['git', 'rev-parse', '--verify', 'origin/' + rev])
-    return (rc == 0)
-
-def gitDetectRevision(log, path):
-    (stdout, stderr, rc) = mmh.stdoutProcess(
-        ['git', '-C', path,
-         'describe', '--always', '--abbrev=12', '--exact-match'])
-    if (rc == 0):
-        return stdout
-    (stdout, stderr, rc) = mmh.stdoutProcess(
-        ['git', '-C', path, 'rev-parse', '--abbrev-ref', 'HEAD'])
-    if (rc == 0 and stdout != 'HEAD'):
-        return stdout
-    (stdout, stderr, rc) = mmh.stdoutProcess(
-        ['git', '-C', path, 'rev-parse', 'HEAD'])
-    if (rc == 0):
-        return stdout
-    log.info("Could not determine repository state: {}".format(stderr))
-    return None
 
 def gitCheckout(cfg, log, mod, revision):
     rc = mmh.loggedProcess(cfg, log, ['git',
@@ -437,7 +409,7 @@ def fetchCheckout(cfg, log, mod, rev):
     revision = None
     if (isinstance(rev, list)):
         for branch in rev:
-            if (gitRemoteHasBranch(branch)):
+            if (git.remoteHasBranch(branch)):
                 log.info('Using main branch: {} for module {}'
                          .format(branch, mod))
                 revision = branch
@@ -514,7 +486,7 @@ def fetch(cfg, log, src, st, trace):
             dep['revision'] = rev
             rev = cfg.processOverrides(dep['name'])
             if (isinstance(rev, tuple) and rev[0] == '!latest'):
-                latest = gitLatestTag('.', rev[1])
+                latest = git.latestTag('.', rev[1])
                 if (latest != None):
                     log.info('Moving to latest tag for {}: {}',
                             dep['name'], latest)
@@ -529,14 +501,14 @@ def fetch(cfg, log, src, st, trace):
 
         if (isinstance(dep['revision'], list)):
             for branch in dep['revision']:
-                if (gitRemoteHasBranch(branch)):
+                if (git.remoteHasBranch(branch)):
                     log.info('Using main branch: {} for module {}'
                             .format(branch, dep['name']))
                     dep['revision'] = branch
                     break
 
         if (detectrev):
-            dep['detected'] = gitDetectRevision(log, p)
+            dep['detected'] = git.detectRevision(log, p)
             log.info(f'Current repository state for {dep["name"]}: {dep["detected"]}')
         else:
             dep['detected'] = None

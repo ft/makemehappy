@@ -5,6 +5,7 @@ import os
 import re
 import sys
 
+import makemehappy.git as git
 import makemehappy.utilities as mmh
 import makemehappy.result as result
 import makemehappy.system as ms
@@ -12,7 +13,6 @@ import makemehappy.system as ms
 from logbook import Logger
 from makemehappy.cut import CodeUnderTest
 from makemehappy.cut import fetchCheckout
-from makemehappy.cut import gitLatestTag
 from makemehappy.cut import gitCheckout
 from makemehappy.yamlstack import ConfigStack, SourceStack
 from makemehappy.loghandler import MMHLogHandler
@@ -859,7 +859,7 @@ elif (cmdargs.sub_command == "download-source"):
             pat = '*'
             if ('release-pattern' in meta):
                 pat = meta['release-pattern']
-            tag = gitLatestTag('.', pat)
+            tag = git.latestTag('.', pat)
             if tag is None:
                 log.fatal('Unable to find latest release tag for module {}'
                           .format(module))
