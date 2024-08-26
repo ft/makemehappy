@@ -17,15 +17,15 @@ s = r'All \d+ builds succeeded\.'
 f = r'\d+ build\(s\) out of \d+ failed\.'
 
 success = re.compile(s)
-outcome = re.compile('(' + s + '|' + f + ')')
+outcome = re.compile(r'(' + s + r'|' + f + r')')
 deperror = re.compile(r'Dependency Evaluation contained errors!')
-error = re.compile('^ERROR: ')
+error = re.compile(r'^ERROR: ')
 nobuild = re.compile(r'Module type is \'nobuild\'\. Doing nothing\.')
 
 def toolchain_to_category(tc):
     if tc.startswith('ti-'):
         return 'texas-instruments'
-    if re.match('^.*clang', tc):
+    if re.match(r'^.*clang', tc):
         return 'clang'
     return 'gnu'
 
@@ -165,7 +165,7 @@ class PhaseScanner(Scanner):
 
 class TexasInstrumentsCompilerScanner(Scanner):
     def __init__(self):
-        Scanner.__init__(self, r'^"([^"]+)", line ([0-9]+): ([a-z]+): (.*)$')
+        Scanner.__init__(self, r'^"([^"]+)", line ([0-9]+): ([ a-z]+): (.*)$')
     def process(self, state, matchData, line):
         (fname, line, kind, desc) = matchData.groups()
         self.result = CompilerIncident(kind, fname, line, None, None, desc)

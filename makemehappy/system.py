@@ -172,6 +172,7 @@ class SystemInstanceZephyr:
     def __init__(self, sys, board, app, tc, cfg):
         self.sys = sys
         self.board = board
+        self.zephyr_board = self.sys.matchZephyrAlias(board)
         self.app = app
         self.tc = tc
         self.cfg = cfg
@@ -194,10 +195,11 @@ class SystemInstanceZephyr:
                                            self.sys.args.directory,
                                            self.spec['install-dir'],
                                            self.board, self.tc, self.app, self.cfg)
-        self.sys.stats.systemZephyr(app, tc, board, cfg, self.spec['build-tool'])
+        self.sys.stats.systemZephyr(app, tc, self.zephyr_board, cfg, self.spec['build-tool'])
 
     def configure(self):
-        build = z.findBuild(self.spec['build'], self.tc, self.board)
+        build = z.findBuild(self.spec['build'], self.tc,
+                            self.board)
 
         tmp = copy.deepcopy(self.spec)
         tmp.pop('build', None)
@@ -215,7 +217,7 @@ class SystemInstanceZephyr:
             log         = self.sys.log,
             args        = cargs,
             ufw         = build['ufw'],
-            board       = self.board,
+            zephyr_board= self.zephyr_board,
             buildconfig = self.cfg,
             toolchain   = z.findToolchain(build, self.tc),
             sourcedir   = '.',
@@ -436,6 +438,7 @@ class System:
         self.data = mmh.load(self.spec)
         fillData(self.data)
         self.instances = makeInstances(self.data)
+        self.zephyr_aliases = z.generateZephyrAliases(self.data)
         self.args.instances = mmh.patternsToList(self.instances,
                                                  self.args.instances)
         if (len(self.args.instances) > 0):
@@ -461,6 +464,9 @@ class System:
                           .format(self.stats.countFailed(),
                                   self.stats.countBuilds()))
             raise(SystemFailedSomeBuilds())
+
+    def matchZephyrAlias(self, name):
+        return self.zephyr_aliases.get(name, name)
 
     def buildInstances(self, instances):
         for i in instances:

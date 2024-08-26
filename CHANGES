@@ -1,6 +1,38 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.26 → v0.27 (released 2024-08-26):
+
+** Bugfixes
+
+- zephyr: Make 'kconfig' work with Zephyr 3.4.0+
+- result,ti: Allow space (" ") characters inside of incident strings.
+
+** New Features
+
+- zephyr: Add board aliases to support slashes in full Zephyr board names, in
+  current Zephyr 3.7.0 LTS and onward.
+
+** Miscellaneous
+
+- Improve python3 syntax compatibility.
+
+** Diffstat:
+
+    examples/system.yaml    |  7 +++++++
+    makemehappy/build.py    |  7 ++++++-
+    makemehappy/cmake.py    | 25 +++++++++++++++++++---
+    makemehappy/cut.py      | 46 ++++++++---------------------------------
+    makemehappy/git.py      | 32 ++++++++++++++++++++++++++++
+    makemehappy/result.py   |  8 +++----
+    makemehappy/system.py   | 12 ++++++++---
+    makemehappy/toplevel.py |  2 +-
+    makemehappy/version.py  |  4 ++--
+    makemehappy/zephyr.py   | 13 ++++++++++++
+    mmh.in                  |  4 ++--
+    11 files changed, 107 insertions(+), 53 deletions(-)
+
+
 * v0.25 → v0.26 (released 2024-05-29):
 
 ** Bugfixes

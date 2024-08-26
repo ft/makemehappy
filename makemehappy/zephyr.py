@@ -2,6 +2,9 @@ import os
 
 import makemehappy.utilities as mmh
 
+class InvalidZephyrAlias(Exception):
+    pass
+
 def isModule(d):
     return (os.path.isdir(d) and
             os.path.isdir(os.path.join(d, 'zephyr')))
@@ -91,3 +94,13 @@ def westRevision(src, west, mod):
     if ('revision' not in zmod):
         return None
     return zmod['revision']
+
+def generateZephyrAliases(data):
+    aliases = {}
+    alias_forbidden_chars = ['/', ' ']
+    aliases_yaml = data.get('zephyr-aliases', {})
+    for alias in aliases_yaml.keys():
+        if any(char in alias for char in alias_forbidden_chars):
+            raise InvalidZephyrAlias(alias)
+        aliases[alias] = aliases_yaml[alias]
+    return aliases

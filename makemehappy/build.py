@@ -84,6 +84,7 @@ def generateInstances(log, mod):
 
     return instances
 
+
 def generateZephyrInstances(log, mod):
     targets = mod.targets()
     cfgs = mod.buildconfigs()
@@ -98,11 +99,14 @@ def generateZephyrInstances(log, mod):
     if ('install' in mod.moduleData):
         install = mod.moduleData['install']
 
+    aliases = z.generateZephyrAliases(mod.moduleData)
+
     instances = []
     for target in targets:
         for cfg in cfgs:
             for tool in tools:
                 for board in target['boards']:
+                    zephyr_board = aliases.get(board, board)
                     for tc in target['toolchains']:
                         if ('kconfig' not in target):
                             target['kconfig'] = []
@@ -121,6 +125,7 @@ def generateZephyrInstances(log, mod):
                         instances.append(
                             { 'toolchain'   : tc,
                               'board'       : board,
+                              'zephyr_board': zephyr_board,
                               'architecture': board,
                               'name'        : name,
                               'application' : target['application'],
@@ -201,7 +206,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             log         = log,
             args        = cmakeArgs,
             ufw         = os.path.join(root, 'deps', 'ufw'),
-            board       = instance['board'],
+            zephyr_board= instance['zephyr_board'],
             buildconfig = instance['buildcfg'],
             toolchain   = instance['toolchain'],
             sourcedir   = root,

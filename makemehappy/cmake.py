@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+import makemehappy.git as git
 import makemehappy.utilities as mmh
 import makemehappy.zephyr as z
 
@@ -86,8 +87,20 @@ def ctest(lst):
 class InvalidZephyrModuleSpec(Exception):
     pass
 
+def zephyrWithExtraConfFile(path):
+    tag = git.latestTag(path, 'v*')
+    version = list(map(int, tag[1:].split('.')[0:3]))
+    # This needs 3.4.0+, see:
+    # https://docs.zephyrproject.org/latest/releases/release-notes-3.4.html
+    # and search for OVERLAY_CONFIG.
+    if (version[0] > 3):
+        return True
+    if (version[0] == 3 and version[1] >= 4):
+        return True
+    return False
+
 def configureZephyr(log, args, ufw,
-                    board, buildtool, buildconfig, buildsystem,
+                    zephyr_board, buildtool, buildconfig, buildsystem,
                     toolchain, sourcedir, builddir, installdir,
                     appsource, kernel, dtc, kconfig,
                     modulepath, modules):
@@ -105,6 +118,12 @@ def configureZephyr(log, args, ufw,
     if (kconfig != None):
         overlay.extend(kconfig)
 
+    overlayvariable = 'OVERLAY_CONFIG'
+    if (zephyrWithExtraConfFile(mmh.expandFile(kernel))):
+        overlayvariable = 'EXTRA_CONF_FILE'
+
+    log.info(f'KConfig extension variable: {overlayvariable}')
+
     cmd = cmake(
         [ usetool(log, buildtool),
           sourceDir(sourcedir),
@@ -113,10 +132,10 @@ def configureZephyr(log, args, ufw,
           zephyrToolchain(toolchain),
           makeParam('CMAKE_BUILD_TYPE',       buildconfig),
           makeParam('CMAKE_INSTALL_PREFIX',   installdir),
-          makeParam('BOARD',                  board),
+          makeParam('BOARD',                  zephyr_board),
           makeParam('ZEPHYR_MODULES',         modules),
           makeParam('DTC_OVERLAY_FILE',       dtc),
-          makeParam('OVERLAY_CONFIG',         overlay),
+          makeParam(overlayvariable,          overlay),
           makeParam('UFW_ZEPHYR_KERNEL',      mmh.expandFile(kernel)),
           makeParam('UFW_ZEPHYR_APPLICATION', mmh.expandFile(appsource)),
           makeParam('UFW_LOAD_BUILD_SYSTEM',  mmh.expandFile(buildsystem)) ])
