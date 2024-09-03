@@ -18,6 +18,7 @@ def maybeTuple(i, a, b):
 class VersionComparison:
     def __init__(self):
         self.kind = None
+        self.order = 'eq'
         self.compatible = False
         self.elements = (None, None)
         self.major = (None, None)
@@ -42,19 +43,23 @@ class VersionComparison:
                 self.patch = maybeTuple(i, a, b)
 
         for i in range(0, min(an, bn)):
-            if (a.elements[i] != b.elements[i]):
-                if (i == 0):
-                    self.kind = 'major'
-                    break
-                elif (i == 1):
-                    self.kind = 'minor'
-                    break
-                elif (i == 2):
-                    self.kind = 'patch'
-                    break
-                else:
-                    self.kind = 'miniscule'
-                    break
+            if (a.elements[i] < b.elements[i]):
+                self.order = 'lt'
+            elif (a.elements[i] > b.elements[i]):
+                self.order = 'gt'
+            else:
+                continue
+
+            if (i == 0):
+                self.kind = 'major'
+            elif (i == 1):
+                self.kind = 'minor'
+            elif (i == 2):
+                self.kind = 'patch'
+            else:
+                self.kind = 'miniscule'
+
+            break
 
         if (self.kind == None):
             if (self.compatible):
