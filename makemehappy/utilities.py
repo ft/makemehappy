@@ -200,7 +200,7 @@ def get_install_components(log, spec):
     if (isinstance(spec, list)):
         return spec
 
-    log.warning('Invalid installation spec: {}', spec)
+    log.warn('Invalid installation spec: {}', spec)
     return []
 
 def makeEnvironment(log, with_overrides, spec):

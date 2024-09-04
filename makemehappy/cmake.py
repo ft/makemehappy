@@ -88,14 +88,14 @@ def ctest(lst):
 class InvalidZephyrModuleSpec(Exception):
     pass
 
-def zephyrWithExtraConfFile(path):
+def zephyrWithExtraConfFile(log, path):
     # This needs 3.4.0+, see:
     # https://docs.zephyrproject.org/latest/releases/release-notes-3.4.html
     # and search for OVERLAY_CONFIG.
     tag = git.latestTag(path, 'v*')
     version = v.Version(tag)
     if (version.kind != 'version' or len(version.elements) != 3):
-        log.warning(f'Unsupported Zephyr version: {tag}, assuming 3.4+ behaviour!')
+        log.warn(f'Unsupported Zephyr version: {tag}, assuming 3.4+ behaviour!')
         return True
 
     comparison = v.compare(version, v.Version('v3.4.0'))
@@ -121,7 +121,7 @@ def configureZephyr(log, args, ufw,
         overlay.extend(kconfig)
 
     overlayvariable = 'OVERLAY_CONFIG'
-    if (zephyrWithExtraConfFile(mmh.expandFile(kernel))):
+    if (zephyrWithExtraConfFile(log, mmh.expandFile(kernel))):
         overlayvariable = 'EXTRA_CONF_FILE'
 
     log.info(f'KConfig extension variable: {overlayvariable}')
