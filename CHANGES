@@ -1,6 +1,22 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.27 → v0.28 (unreleased 2024-10-xx):
+
+** Bugfixes
+
+- Fix method name typos in code paths that are used seldom.
+- Fix zephyr version parsing for non-release checkouts.
+
+** Diffstat:
+
+    makemehappy/cmake.py     | 18 ++++++++++--------
+    makemehappy/cut.py       |  6 +++---
+    makemehappy/utilities.py |  2 +-
+    makemehappy/version.py   | 41 +++++++++++++++++++++++-----------------
+    4 files changed, 38 insertions(+), 29 deletions(-)
+
+
 * v0.26 → v0.27 (released 2024-08-26):
 
 ** Bugfixes
