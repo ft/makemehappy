@@ -1,12 +1,16 @@
  User-visible changes in make-me-happy
 =======================================
 
-* v0.27 → v0.28 (unreleased 2024-10-xx):
+* v0.27 → v0.28 (unreleased 2024-10-19):
 
 ** Bugfixes
 
 - Fix method name typos in code paths that are used seldom.
 - Fix zephyr version parsing for non-release checkouts.
+
+** New Features
+
+- Add --raise-exceptions for debugging odd sources of errors.
 
 ** Diffstat:
 
