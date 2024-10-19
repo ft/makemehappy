@@ -1125,8 +1125,8 @@ class CodeUnderTest:
             self.log.info('{}: Incompatible versioning scheme: {} vs {}'
                           .format(entry['module'], entry['a'], entry['b']))
         elif (entry['kind'] == 'maybe-bug'):
-            self.log.warning(f'BUG? {entry["module"]}: {entry["tag"]}')
-            self.log.warning(f'BUG? {entry["meta"]}')
+            self.log.warn(f'BUG? {entry["module"]}: {entry["tag"]}')
+            self.log.warn(f'BUG? {entry["meta"]}')
         elif (m := re.match(r'^version:mismatch:(.*)', entry['kind'])):
             self.handleMismatch(entry, m.group(1))
         elif (entry['kind'] == 'revision:kind'):
@@ -1170,7 +1170,7 @@ class CodeUnderTest:
             for origin in entry['from']:
                 self.log.info('    {}'.format(origin))
         else:
-            self.log.warning(f'Unsupported Journal Entry: {entry}')
+            self.log.warn(f'Unsupported Journal Entry: {entry}')
 
     def cmakeModules(self):
         if (has('cmake-modules', self.moduleData, str)):

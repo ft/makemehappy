@@ -369,6 +369,7 @@ _makemehappy() {
                '(-F --force)'{-F,--force}'[force using MakeMeHappy.yaml]' \
                '(-f --log-file)'{-f,--log-file}'[specify log file]:file name:_path_files' \
                '(-h --help)'{-h,--help}'[display help message]' \
+               '(-R --raise-exceptions)'{-R,--raise-exceptions}'[Raise toplevel exceptions in case of errors.]' \
                '(-P --show-phases)'{-P,--show-phases}'[Show build phases even with --log-to-file.]' \
                '(-L --log-all)'{-L,--log-all}'[send all output to logging facility]' \
                '(-l --log-to-file)'{-l,--log-to-file}'[log output to file (implies --log-all)]' \

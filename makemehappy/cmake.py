@@ -3,6 +3,7 @@ import subprocess
 
 import makemehappy.git as git
 import makemehappy.utilities as mmh
+import makemehappy.version as v
 import makemehappy.zephyr as z
 
 def usetool(log, name):
@@ -87,17 +88,18 @@ def ctest(lst):
 class InvalidZephyrModuleSpec(Exception):
     pass
 
-def zephyrWithExtraConfFile(path):
-    tag = git.latestTag(path, 'v*')
-    version = list(map(int, tag[1:].split('.')[0:3]))
+def zephyrWithExtraConfFile(log, path):
     # This needs 3.4.0+, see:
     # https://docs.zephyrproject.org/latest/releases/release-notes-3.4.html
     # and search for OVERLAY_CONFIG.
-    if (version[0] > 3):
+    tag = git.latestTag(path, 'v*')
+    version = v.Version(tag)
+    if (version.kind != 'version' or len(version.elements) != 3):
+        log.warn(f'Unsupported Zephyr version: {tag}, assuming 3.4+ behaviour!')
         return True
-    if (version[0] == 3 and version[1] >= 4):
-        return True
-    return False
+
+    comparison = v.compare(version, v.Version('v3.4.0'))
+    return comparison.order != 'lt'
 
 def configureZephyr(log, args, ufw,
                     zephyr_board, buildtool, buildconfig, buildsystem,
@@ -119,7 +121,7 @@ def configureZephyr(log, args, ufw,
         overlay.extend(kconfig)
 
     overlayvariable = 'OVERLAY_CONFIG'
-    if (zephyrWithExtraConfFile(mmh.expandFile(kernel))):
+    if (zephyrWithExtraConfFile(log, mmh.expandFile(kernel))):
         overlayvariable = 'EXTRA_CONF_FILE'
 
     log.info(f'KConfig extension variable: {overlayvariable}')

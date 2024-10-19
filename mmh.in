@@ -73,6 +73,10 @@ ap.add_argument(
     help = "Disable informational output")
 
 ap.add_argument(
+    "-R", "--raise-exceptions", action = "store_true",
+    help = "Raise toplevel exceptions in case of errors.")
+
+ap.add_argument(
     "-P", "--show-phases", action = "store_true",
     help = "Show build phases even with --log-to-file.")
 
@@ -576,6 +580,9 @@ def adjustConfig(cfg, args):
             except ValueError:
                 log.error("cmdline: Invalid revision-spec: {}"
                           .format(rev))
+
+                if (cmdargs.raise_exceptions):
+                    raise(e)
                 mmh_exit(1)
             adjustments = adjustments + 1
     if adjustments > 0:
@@ -639,6 +646,8 @@ def do_prepare():
             log.error(f'{type(e).__name__}: {e}')
         else:
             log.error(f'{type(e).__name__}')
+        if (cmdargs.raise_exceptions):
+            raise(e)
         mmh_exit(1)
 
 if (cmdargs.sub_command == "build-tree-init"):
@@ -966,6 +975,8 @@ elif (cmdargs.sub_command == "system"):
             log.error(f'{type(e).__name__}: {e}')
         else:
             log.error(f'{type(e).__name__}')
+        if (cmdargs.raise_exceptions):
+            raise(e)
         commandReturnValue = 1
 
 elif (isinstance(cmdargs.sub_command, str)):
