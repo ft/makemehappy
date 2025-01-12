@@ -587,7 +587,7 @@
   10 files changed, 663 insertions(+), 75 deletions(-)
 
 
-* v0.5 → v0.6 (released 2020-10-27):
+* v0.5 → v0.6 (released 2020-10-28):
 
 ** Miscellaneous Changes
 
@@ -644,7 +644,7 @@
     5 files changed, 125 insertions(+), 1 deletion(-)
 
 
-* v0.2 → v0.3 (released 2019-10-01):
+* v0.2 → v0.3 (released 2019-10-02):
 
 ** Breaking Compatibility:
 
