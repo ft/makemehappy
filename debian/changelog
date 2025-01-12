@@ -1,3 +1,10 @@
+makemehappy (0.29-1) unstable; urgency=medium
+
+  * [d10de113] New upstream release
+  * [3d02e673] debian: Update copyright years
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Sun, 12 Jan 2025 02:04:08 +0100
+
 makemehappy (0.28-1) unstable; urgency=medium
 
   * [6bbe26e1] New upstream release
