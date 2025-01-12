@@ -352,9 +352,10 @@ def show(cfg, args):
             n = len(uniq)
             if n == 0:
                 print(f'No compiler incidents found.')
+                return True
             else:
                 print(f'\nFound {n} compiler incident(s).')
-            return True
+                return False
         # --grep
         return scan(resultScanners, logfile, accumulate = False)
 
