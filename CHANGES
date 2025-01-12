@@ -1,7 +1,19 @@
  User-visible changes in make-me-happy
 =======================================
 
-* v0.27 → v0.28 (unreleased 2024-10-19):
+* v0.28 → v0.29 (released 2025-01-12):
+
+** Bugfixes
+
+- Make "result -r" return failure to the system if incidents were found.
+
+** Diffstat:
+
+    makemehappy/result.py | 3 ++-
+    1 file changed, 2 insertions(+), 1 deletion(-)
+
+
+* v0.27 → v0.28 (released 2024-10-19):
 
 ** Bugfixes
 
