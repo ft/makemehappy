@@ -773,6 +773,7 @@ elif (cmdargs.sub_command == "run-instance"):
                   buildconfigs  = cmdargs.buildconfigs,
                   buildtools    = cmdargs.buildtools)
     cut.loadSources()
+    prevdir = os.getcwd()
     cut.changeToRoot()
     cut.loadDependencies()
     cut.cmakeIntoYAML()
@@ -795,6 +796,7 @@ elif (cmdargs.sub_command == "run-instance"):
 
     resultSuccess = True
     if (cmdargs.log_to_file):
+        os.chdir(prevdir)
         resultSuccess = runResult(cfg, cmdargs)
 
     if (not (buildSuccess and depSuccess and resultSuccess)):
