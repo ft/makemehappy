@@ -937,6 +937,7 @@ elif (cmdargs.sub_command == "download-sources"):
     for source in src.data:
         if 'modules' not in source:
             continue
+        mmh.expectedInstances(len(source['modules']))
         for module in source['modules']:
             if (module in loaded):
                 log.info("Module {} already defined by {}",
@@ -973,6 +974,7 @@ elif (cmdargs.sub_command == "download-sources"):
 
                 return (rc == 0)
 
+            mmh.nextInstance()
             mmh.maybeShowPhase(log, f'{module}', 'download-sources',
                                cmdargs, rest)
 

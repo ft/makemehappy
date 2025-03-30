@@ -483,7 +483,9 @@ class System:
     def buildInstances(self, instances):
         for i in instances:
             self.log.info("    {}".format(i))
+        mmh.expectedInstances(len(instances))
         for instance in instances:
+            mmh.nextInstance()
             sys = self.newInstance(instance)
             sys.build()
         return True
@@ -491,7 +493,9 @@ class System:
     def rebuildInstances(self, instances):
         for i in instances:
             self.log.info("    {}".format(i))
+        mmh.expectedInstances(len(instances))
         for instance in instances:
+            mmh.nextInstance()
             sys = self.newInstance(instance)
             sys.rebuild()
         return True

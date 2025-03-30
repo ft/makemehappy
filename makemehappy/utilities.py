@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import fnmatch
+import math
 import os
 import pprint
 import re
@@ -179,9 +180,28 @@ def findByName(lst, name):
             return i
     return None
 
+currentInstance = 0
+expectedInstances__ = None
+def expectedInstances(n):
+    global expectedInstances__
+    expectedInstances__ = n
+
+def nextInstance():
+    global currentInstance
+    currentInstance += 1
+
+def extendPhasesNote(note):
+    if expectedInstances__ is None:
+        return note
+    width = math.floor(math.log10(expectedInstances__) + 1)
+    cur = currentInstance
+    exp = expectedInstances__
+    return f'[{cur:{0}{width}}/{exp}] ' + note
+
 def maybeShowPhase(log, phase, tag, args, thunk):
     string = f'{tag}: {phase}'
     log.info(f'Phase: {string}')
+    string = extendPhasesNote(string)
     if (args.log_to_file and args.show_phases):
         print(string, flush = True)
     res = thunk()

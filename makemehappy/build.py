@@ -278,6 +278,7 @@ def maybeInstall(cfg, log, args, stats, instance):
                               args, rest)
 
 def build(cfg, log, args, stats, ext, root, instance):
+    mmh.nextInstance()
     dname = instanceDirectory(stats, instance)
     dnamefull = os.path.join(root, 'build', dname)
     if (os.path.exists(dnamefull)):
@@ -311,6 +312,7 @@ def listInstances(log, mod, args):
 def allofthem(cfg, log, mod, ext, args):
     olddir = os.getcwd()
     instances = listInstances(log, mod, args)
+    mmh.expectedInstances(len(instances))
     log.info('Using {} build-instances:'.format(len(instances)))
     for instance in instances:
         log.info('    {}'.format(instanceName(instance)))
