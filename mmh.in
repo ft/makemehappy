@@ -746,6 +746,12 @@ elif (cmdargs.sub_command == "list-instances"):
         print("list-instances only works with -d!")
         mmh_exit(1)
 
+    if not os.path.exists(cmdargs.directory):
+        print("list-instances called with non-existent build directory")
+        print("If the directory is the correct name, you may want to",
+              "prepare it first")
+        mmh_exit(1)
+
     requireModuleDefinition(cmdargs)
     cfg.load()
     adjustConfig(cfg, cmdargs)
