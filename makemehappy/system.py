@@ -432,7 +432,7 @@ class System:
                 self.log.error('Failed to load build state from {}'.format(state))
                 raise(InvalidBuildTree())
         else:
-            os.mkdir(d)
+            os.makedirs(d, mode=0o755, exist_ok=True)
             if (self.mode == None):
                 self.mode = 'system-multi'
             data = { 'mode'    : self.mode,
