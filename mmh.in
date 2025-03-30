@@ -650,6 +650,17 @@ def do_prepare():
             raise(e)
         mmh_exit(1)
 
+def runResult(cfg, args):
+    # Simulate command line args as if "mmh result" was run.
+    args.file = [ args.log_file ]
+    args.full_result = False
+    args.quiet_result = False
+    args.short_result = True
+    args.report_incidents = False
+    args.json_incidents = False
+    args.grep_result = False
+    return result.show(cfg, args)
+
 if (cmdargs.sub_command == "build-tree-init"):
     requireModuleDefinition(cmdargs)
     cfg.load()
@@ -752,7 +763,11 @@ elif (cmdargs.sub_command == "run-instance"):
     if (not depSuccess):
         log.info('Dependency Evaluation contained errors!')
 
-    if (not (buildSuccess and depSuccess)):
+    resultSuccess = True
+    if (cmdargs.log_to_file):
+        resultSuccess = runResult(cfg, cmdargs)
+
+    if (not (buildSuccess and depSuccess and resultSuccess)):
         commandReturnValue = 1
 
 elif (cmdargs.sub_command == "focus-instance"):
@@ -960,21 +975,30 @@ elif (cmdargs.sub_command == "system"):
         system = ms.System(log, version, cfg, cmdargs);
         system.load()
 
+        resultSuccess = True
         if (cmdargs.system == 'build'):
             system.build()
+            if (cmdargs.log_to_file):
+                resultSuccess = runResult(cfg, cmdargs)
         elif (cmdargs.system == 'rebuild'):
             system.rebuild()
+            if (cmdargs.log_to_file):
+                resultSuccess = runResult(cfg, cmdargs)
         elif (cmdargs.system == 'clean'):
             system.clean()
         elif (cmdargs.system == 'list'):
             system.listInstances()
         elif (cmdargs.system == 'db'):
             system.makeDBLink()
+
+        commandReturnValue = 0 if resultSuccess else 1
     except Exception as e:
         if (len(e.args) > 0):
             log.error(f'{type(e).__name__}: {e}')
         else:
             log.error(f'{type(e).__name__}')
+        if (cmdargs.log_to_file):
+            runResult(cfg, cmdargs)
         if (cmdargs.raise_exceptions):
             raise(e)
         commandReturnValue = 1
