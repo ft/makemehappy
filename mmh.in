@@ -10,6 +10,7 @@ import makemehappy.utilities as mmh
 import makemehappy.result as result
 import makemehappy.system as ms
 
+from pathlib import Path
 from logbook import Logger
 from makemehappy.cut import CodeUnderTest
 from makemehappy.cut import fetchCheckout
@@ -590,6 +591,21 @@ def adjustConfig(cfg, args):
         cfg.pushLayer(layer)
     cfg.merge()
 
+def findRootDirectory(lst):
+    p = Path(os.getcwd())
+    p.resolve()
+    while (True):
+        for file in lst:
+            if (os.path.exists(file)):
+                print(p)
+                return 0
+        if (p.parent == p):
+            break
+        os.chdir("..")
+        p = Path(os.getcwd())
+        p.resolve()
+    return 1
+
 if cmdargs.query is not None:
     cfg.load()
     adjustConfig(cfg, cmdargs)
@@ -606,6 +622,20 @@ if cmdargs.query is not None:
         res = cut.allBuildtools()
     elif (q == 'buildconfigs'):
         res = cut.allBuildConfigs()
+    elif (q == 'root'):
+        mmh_exit(findRootDirectory([cmdargs.module, cmdargs.system_spec]))
+    elif (q == 'root-module'):
+        mmh_exit(findRootDirectory([cmdargs.module]))
+    elif (q == 'root-system'):
+        mmh_exit(findRootDirectory([cmdargs.system_spec]))
+    elif (q == 'type'):
+        if (os.path.exists(cmdargs.module)):
+            print('module')
+        elif (os.path.exists(cmdargs.system_spec)):
+            print('system')
+        else:
+            print('none')
+        mmh_exit(0)
     else:
         mmh.warn('Unknown query: {}'.format(q))
         mmh_exit(1)

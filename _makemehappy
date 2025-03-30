@@ -68,6 +68,9 @@ __makemehappy-queries () {
         'architectures:List target architectures'
         'buildtools:List build tools'
         'buildconfigs:List build configurations'
+        'root:Find closest root-directory'
+        'root-module:Find closest module root-directory'
+        'root-system:Find closest system root-directory'
     )
     _describe -t makemehappy-queries       \
               'makemehappy query keywords' \
