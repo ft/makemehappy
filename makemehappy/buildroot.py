@@ -22,7 +22,7 @@ def mkTempDir(seed, name):
     while True:
         d = os.path.join(root, tempDirName(seed, name))
         try:
-            os.kdir(d)
+            os.mkdir(d)
             return d
         except FileExistsError:
             time.sleep(0.1)
