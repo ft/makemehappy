@@ -179,11 +179,15 @@ def findByName(lst, name):
             return i
     return None
 
-def maybeShowPhase(log, phase, tag, args):
+def maybeShowPhase(log, phase, tag, args, thunk):
     string = f'{tag}: {phase}'
     log.info(f'Phase: {string}')
     if (args.log_to_file and args.show_phases):
         print(string, flush = True)
+    res = thunk()
+    if not res and args.log_to_file and args.show_phases:
+        print(string, "...failed", flush = True)
+    return res
 
 def get_install_components(log, spec):
     if (isinstance(spec, bool)):

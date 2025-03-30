@@ -272,52 +272,64 @@ class SystemInstance:
 
     def configure(self):
         self.sys.log.info('Configuring system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase(self.sys.log, 'configure', self.desc, self.sys.args)
-        return self.instance.configure()
+        return mmh.maybeShowPhase(self.sys.log, 'configure', self.desc,
+                                  self.sys.args, self.instance.configure)
 
     def compile(self):
         self.sys.log.info('Compiling system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase(self.sys.log, 'compile', self.desc, self.sys.args)
-        cmd = c.cmake(['--build', self.instance.builddir ])
-        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
-        self.sys.stats.logBuild(rc)
-        return (rc == 0)
+        def rest():
+            cmd = c.cmake(['--build', self.instance.builddir ])
+            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
+                                   self.instance.env)
+            self.sys.stats.logBuild(rc)
+            return (rc == 0)
+        return mmh.maybeShowPhase(self.sys.log, 'compile', self.desc,
+                                  self.sys.args, rest)
 
     def test(self):
         num = c.countTests(self.instance.builddir)
         if (num > 0):
             self.sys.log.info('Testing system instance: {}'.format(self.desc))
-            mmh.maybeShowPhase(self.sys.log, 'test', self.desc, self.sys.args)
-            cmd = c.test(self.instance.builddir)
-            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
-            self.sys.stats.logTestsuite(num, rc)
-            return (rc == 0)
+            def rest():
+                cmd = c.test(self.instance.builddir)
+                rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
+                                       self.instance.env)
+                self.sys.stats.logTestsuite(num, rc)
+                return (rc == 0)
+            return mmh.maybeShowPhase(self.sys.log, 'test', self.desc,
+                                      self.sys.args, rest)
         return True
 
     def install(self):
         self.sys.log.info('Installing system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase(self.sys.log, 'install', self.desc, self.sys.args)
-        olddir = os.getcwd()
-        self.sys.log.info(
-            'Changing to directory {}.'.format(self.instance.builddir))
-        os.chdir(self.instance.builddir)
-        for component in mmh.get_install_components(
-                self.sys.log, self.instance.spec['install']):
-            cmd = c.install(component = component)
-            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
-            if (rc != 0):
-                break
-        self.sys.log.info('Changing back to directory {}.'.format(olddir))
-        os.chdir(olddir)
-        self.sys.stats.logInstall(rc)
-        return (rc == 0)
+        def rest():
+            olddir = os.getcwd()
+            self.sys.log.info(
+                'Changing to directory {}.'.format(self.instance.builddir))
+            os.chdir(self.instance.builddir)
+            for component in mmh.get_install_components(
+                    self.sys.log, self.instance.spec['install']):
+                cmd = c.install(component = component)
+                rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
+                                       self.instance.env)
+                if (rc != 0):
+                    break
+            self.sys.log.info('Changing back to directory {}.'.format(olddir))
+            os.chdir(olddir)
+            self.sys.stats.logInstall(rc)
+            return (rc == 0)
+        return mmh.maybeShowPhase(self.sys.log, 'install', self.desc,
+                                  self.sys.args, rest)
 
     def clean(self):
         self.sys.log.info('Cleaning system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase(self.sys.log, 'clean', self.desc, self.sys.args)
-        cmd = c.clean(self.instance.builddir)
-        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
-        return (rc == 0)
+        def rest():
+            cmd = c.clean(self.instance.builddir)
+            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
+                                   self.instance.env)
+            return (rc == 0)
+        return mmh.maybeShowPhase(self.sys.log, 'clean', self.desc,
+                                  self.sys.args, rest)
 
     def build(self):
         return (self.configure() and

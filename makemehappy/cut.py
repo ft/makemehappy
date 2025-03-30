@@ -1035,28 +1035,38 @@ class CodeUnderTest:
         self.stats.checkpoint('load-dependencies')
         self.depstack = Stack(self.dependencies())
         self.deptrace = Trace()
-        mmh.maybeShowPhase(self.log, 'load-dependencies', 'mmh/preparation',
-                           self.args)
-        rc = fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
+        def rest():
+            rc = fetch(self.cfg, self.log, self.sources,
+                       self.depstack, self.deptrace)
 
-        if (rc == False):
-            self.log.error("Fatal error loading dependencies. Giving up!")
+            if (rc == False):
+                self.log.error("Fatal error loading dependencies. Giving up!")
+                return rc
+
+            self.deporder = self.calculateDependencyOrder()
+            self.extensions = CMakeExtensions(self.moduleData,
+                                            self.deptrace,
+                                            self.deporder)
+            self.zephyr = ZephyrExtensions(self.moduleData,
+                                        self.deptrace,
+                                        self.deporder)
+            if ('dependencies' in self.moduleData):
+                self.depEval.insertSome(self.moduleData['dependencies'],
+                                        self.moduleData['name'])
+            for dept in self.deptrace.data:
+                self.depEval.insertSome(dept['dependencies'], dept['name'])
+            self.depEval.evaluate()
+            self.fullDependencyLog()
+            return True
+        rc = mmh.maybeShowPhase(self.log,
+                                'load-dependencies',
+                                'mmh/preparation',
+                                self.args,
+                                rest)
+        if not rc:
+            if self.cfg.log_to_file:
+                print("Fatal error loading dependencies. Giving up!")
             exit(1)
-
-        self.deporder = self.calculateDependencyOrder()
-        self.extensions = CMakeExtensions(self.moduleData,
-                                          self.deptrace,
-                                          self.deporder)
-        self.zephyr = ZephyrExtensions(self.moduleData,
-                                       self.deptrace,
-                                       self.deporder)
-        if ('dependencies' in self.moduleData):
-            self.depEval.insertSome(self.moduleData['dependencies'],
-                                    self.moduleData['name'])
-        for dept in self.deptrace.data:
-            self.depEval.insertSome(dept['dependencies'], dept['name'])
-        self.depEval.evaluate()
-        self.fullDependencyLog()
 
     def dependencySummary(self):
         rv = {}

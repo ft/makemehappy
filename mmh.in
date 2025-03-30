@@ -946,30 +946,35 @@ elif (cmdargs.sub_command == "download-sources"):
             dd = os.path.join(destination, module)
             repo = source['modules'][module]['repository']
             log.info("Downloading module {} from {}...", module, repo)
-            mmh.maybeShowPhase(log, f'{module}', 'download-sources', cmdargs)
 
-            cmd = ['git', '-c', 'advice.detachedHead=false',
-                   'clone', '--quiet' ]
-            if (cmdargs.clone_bare):
-                cmd.append('--bare')
-            cmd += [ repo, dd ]
+            def rest():
+                cmd = ['git', '-c', 'advice.detachedHead=false',
+                       'clone', '--quiet' ]
+                if (cmdargs.clone_bare):
+                    cmd.append('--bare')
+                cmd += [ repo, dd ]
 
-            rc = mmh.loggedProcess(cfg, log, cmd)
-            if (rc == 0):
-                log.info("Downloading module {} was successful.", module)
-            else:
-                log.error("Downloading module {} failed!", module)
-                failed[module] = {'source': sf, 'repository': repo }
+                rc = mmh.loggedProcess(cfg, log, cmd)
+                if (rc == 0):
+                    log.info("Downloading module {} was successful.", module)
+                else:
+                    log.error("Downloading module {} failed!", module)
+                    failed[module] = {'source': sf, 'repository': repo }
 
-            olddir = os.getcwd()
-            os.chdir(module)
-            meta = src.lookup(module)
-            revision = fetchCheckout(cfg, log, module, meta['main'])
-            os.chdir(olddir)
+                olddir = os.getcwd()
+                os.chdir(module)
+                meta = src.lookup(module)
+                revision = fetchCheckout(cfg, log, module, meta['main'])
+                os.chdir(olddir)
 
-            loaded[module] = { 'source':     sf,
-                               'repository': repo,
-                               'revision':   revision}
+                loaded[module] = { 'source':     sf,
+                                   'repository': repo,
+                                   'revision':   revision}
+
+                return (rc == 0)
+
+            mmh.maybeShowPhase(log, f'{module}', 'download-sources',
+                               cmdargs, rest)
 
     for mod in sorted(loaded):
         log.info("  Success: {} ({}) from {} [{}]",
