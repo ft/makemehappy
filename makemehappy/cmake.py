@@ -117,8 +117,12 @@ def configureZephyr(log, args, ufw,
 
     overlay = [ z.findTransformer(ufw, buildconfig) ]
 
-    if (kconfig != None):
+    if (isinstance(kconfig, list) != None):
         overlay.extend(kconfig)
+    elif (isinstance(kconfig, str) != None):
+        overlay.append(kconfig)
+    else:
+        log.error(f'Invalid kconfig spec: {kconfig}')
 
     overlayvariable = 'OVERLAY_CONFIG'
     if (zephyrWithExtraConfFile(log, mmh.expandFile(kernel))):
