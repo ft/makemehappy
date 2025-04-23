@@ -944,6 +944,8 @@ class CodeUnderTest:
         self.moduleData = mmh.load(self.module)
         if ('type' in self.moduleData):
             self.moduleType = self.moduleData['type']
+        if ('evaluate' in self.moduleData):
+            mmh.loadPython(self.log, self.moduleData['evaluate'])
 
     def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools):
         if toolchains is not None:

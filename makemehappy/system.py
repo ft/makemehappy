@@ -461,6 +461,8 @@ class System:
                     error = True
             if (error):
                 raise(InvalidSystemSpec())
+        if ('evaluate' in self.data):
+            mmh.loadPython(self.log, self.data['evaluate'])
 
     def newInstance(self, desc):
         return SystemInstance(self, desc)

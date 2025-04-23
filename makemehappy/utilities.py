@@ -254,3 +254,16 @@ def setEnvironment(log, with_overrides, spec):
     # setenv(3) call. Who cares… this is quick.
     for key in env:
         os.environ[key] = env[key]
+
+class WorldWriteableFragment(Exception):
+    pass
+
+def loadPython(log, fn):
+    info = os.stat(fn)
+    if (info.st_mode & 2):
+        log.error(f'Python fragment is world-writeable: {fn}')
+        raise WorldWriteableFragment(fn, info)
+    log.info(f'Loading python fragment: {fn}')
+    with open(fn, mode = "r", encoding = "utf-8") as fragment:
+        code = fragment.read()
+        exec(code)
