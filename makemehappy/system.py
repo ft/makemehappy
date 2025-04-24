@@ -4,6 +4,7 @@ import os
 import makemehappy.utilities as mmh
 import makemehappy.cut as cut
 import makemehappy.cmake as c
+import makemehappy.hooks as h
 import makemehappy.zephyr as z
 
 defaults = { 'build-configs'      : [ 'debug', 'release' ],
@@ -272,8 +273,14 @@ class SystemInstance:
 
     def configure(self):
         self.sys.log.info('Configuring system instance: {}'.format(self.desc))
-        return mmh.maybeShowPhase(self.sys.log, 'configure', self.desc,
-                                  self.sys.args, self.instance.configure)
+        h.phase_hook('pre/configure', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        success = mmh.maybeShowPhase(self.sys.log, 'configure', self.desc,
+                                     self.sys.args, self.instance.configure)
+        h.phase_hook('post/configure', log = self.sys.log,
+                     args = self.sys.args, cfg = self.sys.cfg,
+                     data = self.sys.data, success = success)
+        return success
 
     def compile(self):
         self.sys.log.info('Compiling system instance: {}'.format(self.desc))
@@ -283,8 +290,14 @@ class SystemInstance:
                                    self.instance.env)
             self.sys.stats.logBuild(rc)
             return (rc == 0)
-        return mmh.maybeShowPhase(self.sys.log, 'compile', self.desc,
-                                  self.sys.args, rest)
+        h.phase_hook('pre/compile', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        success = mmh.maybeShowPhase(self.sys.log, 'compile', self.desc,
+                                     self.sys.args, rest)
+        h.phase_hook('post/compile', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data,
+                     success = success)
+        return success
 
     def test(self):
         num = c.countTests(self.instance.builddir)
@@ -296,8 +309,15 @@ class SystemInstance:
                                        self.instance.env)
                 self.sys.stats.logTestsuite(num, rc)
                 return (rc == 0)
-            return mmh.maybeShowPhase(self.sys.log, 'test', self.desc,
-                                      self.sys.args, rest)
+            h.phase_hook('pre/test', log = self.sys.log,
+                         args = self.sys.args, cfg = self.sys.cfg,
+                         data = self.sys.data)
+            success = mmh.maybeShowPhase(self.sys.log, 'test', self.desc,
+                                         self.sys.args, rest)
+            h.phase_hook('post/test', log = self.sys.log,
+                         args = self.sys.args, cfg = self.sys.cfg,
+                         data = self.sys.data, success = success)
+            return success
         return True
 
     def install(self):
@@ -318,8 +338,13 @@ class SystemInstance:
             os.chdir(olddir)
             self.sys.stats.logInstall(rc)
             return (rc == 0)
-        return mmh.maybeShowPhase(self.sys.log, 'install', self.desc,
-                                  self.sys.args, rest)
+        h.phase_hook('pre/install', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        success = mmh.maybeShowPhase(self.sys.log, 'install', self.desc,
+                                     self.sys.args, rest)
+        h.phase_hook('post/install', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        return success
 
     def clean(self):
         self.sys.log.info('Cleaning system instance: {}'.format(self.desc))
@@ -328,8 +353,13 @@ class SystemInstance:
             rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
                                    self.instance.env)
             return (rc == 0)
-        return mmh.maybeShowPhase(self.sys.log, 'clean', self.desc,
-                                  self.sys.args, rest)
+        h.phase_hook('pre/clean', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        success = mmh.maybeShowPhase(self.sys.log, 'clean', self.desc,
+                                     self.sys.args, rest)
+        h.phase_hook('post/clean', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        return success
 
     def build(self):
         return (self.configure() and
@@ -463,6 +493,7 @@ class System:
                 raise(InvalidSystemSpec())
         if ('evaluate' in self.data):
             mmh.loadPython(self.log, self.data['evaluate'])
+            h.startup_hook(cfg = self.cfg, data = self.data)
 
     def newInstance(self, desc):
         return SystemInstance(self, desc)

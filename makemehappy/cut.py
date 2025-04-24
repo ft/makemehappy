@@ -9,6 +9,7 @@ import itertools as it
 import makemehappy.utilities as mmh
 import makemehappy.build as build
 import makemehappy.git as git
+import makemehappy.hooks as h
 import makemehappy.version as v
 import makemehappy.yamlstack as ys
 import makemehappy.zephyr as z
@@ -946,6 +947,7 @@ class CodeUnderTest:
             self.moduleType = self.moduleData['type']
         if ('evaluate' in self.moduleData):
             mmh.loadPython(self.log, self.moduleData['evaluate'])
+            h.startup_hook(cfg = self.cfg, data = self.moduleData)
 
     def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools):
         if toolchains is not None:
@@ -1047,11 +1049,11 @@ class CodeUnderTest:
 
             self.deporder = self.calculateDependencyOrder()
             self.extensions = CMakeExtensions(self.moduleData,
-                                            self.deptrace,
-                                            self.deporder)
+                                              self.deptrace,
+                                              self.deporder)
             self.zephyr = ZephyrExtensions(self.moduleData,
-                                        self.deptrace,
-                                        self.deporder)
+                                           self.deptrace,
+                                           self.deporder)
             if ('dependencies' in self.moduleData):
                 self.depEval.insertSome(self.moduleData['dependencies'],
                                         self.moduleData['name'])
@@ -1060,11 +1062,16 @@ class CodeUnderTest:
             self.depEval.evaluate()
             self.fullDependencyLog()
             return True
+        h.checkpoint_hook('pre/load-dependencies', args = self.args,
+                          cfg = self.cfg, data = self.moduleData)
         rc = mmh.maybeShowPhase(self.log,
                                 'load-dependencies',
                                 'mmh/preparation',
                                 self.args,
                                 rest)
+        h.checkpoint_hook('post/load-dependencies', args = self.args,
+                          cfg = self.cfg, data = self.moduleData,
+                          success = rc)
         if not rc:
             if self.cfg.log_to_file:
                 print("Fatal error loading dependencies. Giving up!")

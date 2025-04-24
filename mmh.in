@@ -6,6 +6,7 @@ import re
 import sys
 
 import makemehappy.git as git
+import makemehappy.hooks as h
 import makemehappy.utilities as mmh
 import makemehappy.result as result
 import makemehappy.system as ms
@@ -386,6 +387,7 @@ mmh_search_in_dirs(cfg, 'config.yaml')
 mmh_search_in_dirs(src, 'sources.yaml')
 
 def mmh_exit(code):
+    h.finish_hook(cmdargs = cmdargs, exitcode = code)
     if cmdargs.succeed:
         exit(0)
     exit(code)
@@ -983,8 +985,13 @@ elif (cmdargs.sub_command == "download-sources"):
                 return (rc == 0)
 
             mmh.nextInstance()
-            mmh.maybeShowPhase(log, f'{module}', 'download-sources',
-                               cmdargs, rest)
+            h.checkpoint_hook('pre/download-source', log = log,
+                              cmdargs = cmdargs, module = module)
+            rc = mmh.maybeShowPhase(log, f'{module}', 'download-sources',
+                                    cmdargs, rest)
+            h.checkpoint_hook('post/download-source', log = log,
+                              cmdargs = cmdargs, module = module,
+                              success = rc)
 
     for mod in sorted(loaded):
         log.info("  Success: {} ({}) from {} [{}]",

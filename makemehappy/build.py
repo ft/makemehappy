@@ -5,6 +5,7 @@ import shutil
 import subprocess
 
 import makemehappy.cmake as c
+import makemehappy.hooks as h
 import makemehappy.utilities as mmh
 import makemehappy.zephyr as z
 
@@ -225,16 +226,26 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
         rc = mmh.loggedProcess(cfg, log, cmd)
         stats.logConfigure(rc)
         return (rc == 0)
-    return mmh.maybeShowPhase(log, 'configure', instanceName(instance),
-                              args, rest)
+    h.phase_hook('pre/configure', log = log, args = args, cfg = cfg,
+                 data = instance)
+    success = mmh.maybeShowPhase(log, 'configure', instanceName(instance),
+                                 args, rest)
+    h.phase_hook('post/configure', log = log, args = args, cfg = cfg,
+                 data = instance, success = success)
+    return success
 
 def cmakeBuild(cfg, log, args, stats, instance):
     def rest():
         rc = mmh.loggedProcess(cfg, log, c.compile())
         stats.logBuild(rc)
         return (rc == 0)
-    return mmh.maybeShowPhase(log, 'compile', instanceName(instance),
-                              args, rest)
+    h.phase_hook('pre/compile', log = log, args = args, cfg = cfg,
+                 data = instance)
+    success = mmh.maybeShowPhase(log, 'compile', instanceName(instance),
+                                 args, rest)
+    h.phase_hook('post/compile', log = log, args = args, cfg = cfg,
+                 data = instance, success = success)
+    return success
 
 def cmakeTest(cfg, log, args, stats, instance):
     # The last line of this command reads  like this: "Total Tests: N" …where N
@@ -246,8 +257,13 @@ def cmakeTest(cfg, log, args, stats, instance):
             rc = mmh.loggedProcess(cfg, log, c.test())
             stats.logTestsuite(num, rc)
             return (rc == 0)
-        return mmh.maybeShowPhase(log, 'test', instanceName(instance),
-                                  args, rest)
+        h.phase_hook('pre/test', log = log, args = args, cfg = cfg,
+                     data = instance)
+        success = mmh.maybeShowPhase(log, 'test', instanceName(instance),
+                                     args, rest)
+        h.phase_hook('post/test', log = log, args = args, cfg = cfg,
+                     data = instance, success = success)
+        return success
     return True
 
 def cleanInstance(log, d):
@@ -274,8 +290,13 @@ def maybeInstall(cfg, log, args, stats, instance):
                 break
         stats.logInstall(rc)
         return (rc == 0)
-    return mmh.maybeShowPhase(log, 'install', instanceName(instance),
-                              args, rest)
+    h.phase_hook('pre/install', log = log, args = args, cfg = cfg,
+                 data = instance)
+    success = mmh.maybeShowPhase(log, 'install', instanceName(instance),
+                                 args, rest)
+    h.phase_hook('post/install', log = log, args = args, cfg = cfg,
+                 data = instance, success = success)
+    return success
 
 def build(cfg, log, args, stats, ext, root, instance):
     mmh.nextInstance()
