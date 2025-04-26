@@ -557,27 +557,33 @@ class System:
     def buildInstances(self, instances):
         for i in instances:
             self.log.info("    {}".format(i))
-        mmh.expectedInstances(len(instances) +
-                              self.combinations.countPossible(instances))
+        cn = 0
+        if not self.args.no_combinations:
+            cn = self.combinations.countPossible(instances)
+        mmh.expectedInstances(len(instances) + cn)
         for instance in instances:
             mmh.nextInstance()
             sys = self.newInstance(instance)
             sys.build()
-            self.combinations.addParent(instance, sys)
-            self.combinations.execute()
+            if not self.args.no_combinations:
+                self.combinations.addParent(instance, sys)
+                self.combinations.execute()
         return True
 
     def rebuildInstances(self, instances):
         for i in instances:
             self.log.info("    {}".format(i))
-        mmh.expectedInstances(len(instances) +
-                              self.combinations.countPossible(instances))
+        cn = 0
+        if not self.args.no_combinations:
+            cn = self.combinations.countPossible(instances)
+        mmh.expectedInstances(len(instances) + cn)
         for instance in instances:
             mmh.nextInstance()
             sys = self.newInstance(instance)
             sys.rebuild()
-            self.combinations.addParent(instance, sys)
-            self.combinations.execute()
+            if not self.args.no_combinations:
+                self.combinations.addParent(instance, sys)
+                self.combinations.execute()
         return True
 
     def cleanInstances(self, instances):

@@ -333,6 +333,9 @@ ap_system.add_argument(
 ap_system.add_argument(
     "-a", "--all-instances", action = "store_true",
     help = "Force building all system instances")
+ap_system.add_argument(
+    "-c", "--no-combinations", action = "store_true",
+    help = "Do not build any combinations")
 
 
 ### System Commands
