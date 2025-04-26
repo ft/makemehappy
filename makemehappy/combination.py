@@ -156,7 +156,8 @@ def combination(name, parents, run = None, **kwargs):
 
     This registers a build combination named "name", which requires the list of
     "parents" to be build before it can be executed. The "run" function must
-    accept at least a single argument, that will be a list of ParentInstance
+    accept at least two arguments, the first argument will be the name of the
+    combination to be built, and the second being a list of ParentInstance
     instances, corresponding to its parent list from the "parents" argument.
 
     Any other keyword arguments are passed to the "run" function verbatim. It
