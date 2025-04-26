@@ -508,17 +508,32 @@ class System:
         self.zephyr_aliases = z.generateZephyrAliases(self.data)
         self.args.instances = mmh.patternsToList(self.instances,
                                                  self.args.instances)
-        if (len(self.args.instances) > 0):
-            error = False
-            for instance in self.args.instances:
-                if (not instance in self.instances):
-                    self.log.error("Unknown instance: {}", instance)
-                    error = True
-            if (error):
-                raise(InvalidSystemSpec())
         if ('evaluate' in self.data):
             mmh.loadPython(self.log, self.data['evaluate'],
                            { 'system_instances': self.instances })
+        if (len(self.args.instances) > 0):
+            error = False
+            lst = []
+            prefix = 'combination/'
+            offset = len(prefix)
+            for instance in self.args.instances:
+                if instance.startswith(prefix):
+                    name = instance[offset:]
+                    if name not in self.combinations.combinations:
+                        self.log.error("Unknown combination: {}", instance)
+                        error = True
+                    else:
+                        lst.extend(self.combinations.combinations[name].parents)
+                else:
+                    lst.append(instance)
+            for instance in lst:
+                if (not instance in self.instances):
+                    self.log.error("Unknown instance: {}", instance)
+                    error = True
+            self.args.instances = list(set(lst))
+            if (error):
+                raise(InvalidSystemSpec())
+        if ('evaluate' in self.data):
             h.startup_hook(cfg = self.cfg, data = self.data)
 
     def newInstance(self, desc):
@@ -615,6 +630,8 @@ class System:
         self.log.info("Generating list of all system build instances:")
         for v in self.instances:
             print(v)
+        for c in self.combinations.listCombinations():
+            print(f'combination/{c}')
 
     def makeDBLink(self):
         d = self.args.directory

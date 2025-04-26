@@ -120,6 +120,9 @@ class Registry:
     def listParents(self, lst):
         return list(map(lambda p: self.parents[p], lst))
 
+    def listCombinations(self):
+        return list(self.combinations)
+
     def execute(self):
         for name in self.combinations:
             c = self.combinations[name]
