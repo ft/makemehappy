@@ -1,6 +1,50 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.29 → v0.30 (unreleased):
+
+This release adds an experimental feature: The "evaluate" key for use in module
+and system specs. This features aims to  make mmh more flexible by allowing the
+user to inject python code into the operation of the program.
+
+With this it is  possible to register code with certain  points in the executed
+of mmh.  These are called  "hooks", and they are  available in both  module and
+system type builds. Secondly, in system  builds, it is possible to specify code
+that is  executed when a  set of build-steps are  completed, to allow  users to
+perform  actions to  combine such  sub-results  into a  combined results.  This
+injectable code is called "combinations".
+
+Both hooks and combinations are experimental  features. Their API is subject to
+change. Additionally, it has to be  noted that while this code injection allows
+for basically full access to the core of mmh, this should not be abused: Do not
+change internal information,  and do not depend on  internal information. mmh's
+internals are not particularly cleanly abstracted in a modular fashion, and are
+subject to change. Dependable APIs for hooks and combinations will be specified
+in the future.
+
+** Bugfixes
+
+- run-instance: Fix cwd for inspecting log file.
+- prepare: Allow calling sub-command multiple times.
+- list-instances: Don't try to run if build-directory does not exist.
+- result: Fix toolchain detection of ti-clang.
+
+** New Features
+
+- Show short-result at the end of builds with --log-to-file.
+- Make a note of failed phases in --show-phases output.
+- Show a progress report with each line of --show-phases output.
+- New root query-type.
+- New root-module query-type.
+- New root-system query-type.
+- Allow kconfig parameter to be a string, which will behave like a list of a
+  single string.
+
+** Diffstat:
+
+    TBD.
+
+
 * v0.28 → v0.29 (released 2025-01-12):
 
 ** Bugfixes
