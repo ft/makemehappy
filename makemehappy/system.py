@@ -4,6 +4,7 @@ import os
 import makemehappy.utilities as mmh
 import makemehappy.cut as cut
 import makemehappy.cmake as c
+import makemehappy.combination as comb
 import makemehappy.hooks as h
 import makemehappy.zephyr as z
 
@@ -241,6 +242,7 @@ class SystemInstance:
     def __init__(self, sys, description):
         self.sys = sys
         self.desc = description
+        self.success = False
         if (description.startswith("zephyr/")):
             try:
                 (self.kind,
@@ -362,18 +364,23 @@ class SystemInstance:
         return success
 
     def build(self):
-        return (self.configure() and
-                self.compile()   and
-                self.test()      and
-                self.install())
+        self.success = (self.configure() and
+                        self.compile()   and
+                        self.test()      and
+                        self.install())
+        return self.success
 
     def rebuild(self):
-        return (self.compile()   and
-                self.test()      and
-                self.install())
+        self.success = (self.compile()   and
+                        self.test()      and
+                        self.install())
+        return self.success
+
+    def succeeded(self):
+        return self.success
 
 class System:
-    def __init__(self, log, version, cfg, args):
+    def __init__(self, log, version, cfg, args, combinations):
         self.stats = cut.ExecutionStatistics(cfg, log)
         self.stats.checkpoint('system-initialisation')
         self.version = version
@@ -381,6 +388,7 @@ class System:
         self.cfg = cfg
         self.args = args
         self.spec = args.system_spec
+        self.combinations = combinations
         self.singleInstance = None
         if (args.single_instance == None):
             self.mode = None
@@ -396,6 +404,23 @@ class System:
             self.mode = 'system-single'
         else:
             self.mode = 'system-multi'
+
+        def combinationEntry(c):
+            log.info(f'Combination: {c}')
+            mmh.nextInstance()
+            if (args.log_to_file and args.show_phases):
+                string = mmh.extendPhasesNote(f'combination/{c}')
+                print(string, flush = True)
+
+        def combinationFinish(c, result):
+            if result is not None:
+                log.info(f'Combination: {c} {result}')
+            if (args.log_to_file and args.show_phases and result is not None):
+                string = mmh.extendPhasesNote(f'combination/{c} ...{result}')
+                print(string, flush = True)
+
+        self.combinations.setCallbacks(combinationEntry, combinationFinish)
+        self.combinations.setStats(self.stats)
 
     def buildRoot(self):
         return self.args.directory
@@ -492,7 +517,8 @@ class System:
             if (error):
                 raise(InvalidSystemSpec())
         if ('evaluate' in self.data):
-            mmh.loadPython(self.log, self.data['evaluate'])
+            mmh.loadPython(self.log, self.data['evaluate'],
+                           { 'system_instances': self.instances })
             h.startup_hook(cfg = self.cfg, data = self.data)
 
     def newInstance(self, desc):
@@ -516,21 +542,27 @@ class System:
     def buildInstances(self, instances):
         for i in instances:
             self.log.info("    {}".format(i))
-        mmh.expectedInstances(len(instances))
+        mmh.expectedInstances(len(instances) +
+                              self.combinations.countPossible(instances))
         for instance in instances:
             mmh.nextInstance()
             sys = self.newInstance(instance)
             sys.build()
+            self.combinations.addParent(instance, sys)
+            self.combinations.execute()
         return True
 
     def rebuildInstances(self, instances):
         for i in instances:
             self.log.info("    {}".format(i))
-        mmh.expectedInstances(len(instances))
+        mmh.expectedInstances(len(instances) +
+                              self.combinations.countPossible(instances))
         for instance in instances:
             mmh.nextInstance()
             sys = self.newInstance(instance)
             sys.rebuild()
+            self.combinations.addParent(instance, sys)
+            self.combinations.execute()
         return True
 
     def cleanInstances(self, instances):

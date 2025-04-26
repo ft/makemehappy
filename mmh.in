@@ -6,6 +6,7 @@ import re
 import sys
 
 import makemehappy.git as git
+import makemehappy.combination as comb
 import makemehappy.hooks as h
 import makemehappy.utilities as mmh
 import makemehappy.result as result
@@ -26,6 +27,7 @@ commandReturnValue = 0
 
 log = Logger(fullname)
 log.handlers.append(MMHLogHandler())
+comb.combinations.setLog(log)
 
 etcdir = '@@ETCDIR@@'
 datadir = '@@DATADIR@@'
@@ -1024,7 +1026,7 @@ elif (cmdargs.sub_command == "system"):
     cfg.load()
     adjustConfig(cfg, cmdargs)
     try:
-        system = ms.System(log, version, cfg, cmdargs);
+        system = ms.System(log, version, cfg, cmdargs, comb.combinations)
         system.load()
 
         resultSuccess = True

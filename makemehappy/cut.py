@@ -554,9 +554,15 @@ def buildFailed(data):
 class InvalidTimeStampKind(Exception):
     pass
 
+def validDatumType(t):
+    return (t == 'build' or
+            t == 'system-board' or
+            t == 'system-zephyr' or
+            t == 'system-combination')
+
 def endoftime(datum):
     t = datum['type']
-    if (t == 'build' or t == 'system-board' or t == 'system-zephyr'):
+    if validDatumType(t):
         return datum['time-stamp']
     elif t == 'checkpoint':
         if 'testsuite-stamp' in datum:
@@ -623,6 +629,12 @@ class ExecutionStatistics:
                             'board':     board,
                             'buildcfg':  buildcfg,
                             'buildtool': buildtool,
+                            'time-stamp': datetime.datetime.now() } )
+
+    def systemCombination(self, name, parents):
+        self.data.append( { 'type':       'system-combination',
+                            'name':       name,
+                            'parents':    parents,
                             'time-stamp': datetime.datetime.now() } )
 
     def logConfigure(self, result):
@@ -807,6 +819,20 @@ class ExecutionStatistics:
         self.renderTestStepResult(datum)
         self.renderInstallStepResult(datum)
 
+    def renderSystemCombination(self, datum):
+        result = 'Success'
+        if ('build-result' not in datum):
+            result = 'Skipped'
+        elif buildFailed(datum):
+            result = 'Failure   ---!!!---'
+        maybeInfo(self.cfg, self.log, ''.ljust(100, '-'))
+        string = (f'    Combination: {datum["name"]}, Number' +
+                  f' of dependencies: {len(datum["parents"])}')
+        maybeInfo(self.cfg, self.log, '{string:100}     {result}'
+                  .format(string = string,
+                          result = result))
+        self.renderBuildStepResult(datum)
+
     def renderStatistics(self):
         maybeInfo(self.cfg, self.log, '')
         maybeInfo(self.cfg, self.log, 'Build Summary:')
@@ -828,6 +854,8 @@ class ExecutionStatistics:
                 self.renderSystemBoardResult(entry)
             elif t == 'system-zephyr':
                 self.renderSystemZephyrResult(entry)
+            elif t == 'system-combination':
+                self.renderSystemCombination(entry)
             elif t == 'checkpoint':
                 self.renderCheckpoint(entry)
             else:

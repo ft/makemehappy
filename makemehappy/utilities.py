@@ -258,7 +258,7 @@ def setEnvironment(log, with_overrides, spec):
 class WorldWriteableFragment(Exception):
     pass
 
-def loadPython(log, fn):
+def loadPython(log, fn, localenv = None):
     info = os.stat(fn)
     if (info.st_mode & 2):
         log.error(f'Python fragment is world-writeable: {fn}')
@@ -266,4 +266,4 @@ def loadPython(log, fn):
     log.info(f'Loading python fragment: {fn}')
     with open(fn, mode = "r", encoding = "utf-8") as fragment:
         code = fragment.read()
-        exec(code)
+        exec(code, None, localenv)
