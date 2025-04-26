@@ -1,3 +1,6 @@
+import os
+import makemehappy.cmake as cmake
+
 class Combination:
     def __init__(self, name, parents, run, kwargs):
         self.name = name
@@ -42,17 +45,36 @@ class Combination:
         return self.status
 
 class ParentInstance:
-    def __init__(self, name, data):
+    def __init__(self, log, name, data):
+        self.log = log
         self.name = name
         self.data = data
         self.cmake = None
 
     def getCMakeCache(self):
-        # TODO: Implement a cmake-cache parser, and run it if self.cmake is
-        # still None. Assign the return value to self.cmake, so the parsing
-        # will only have to be done once with the same parent being used in
-        # more than one combination.
+        if self.cmake is None:
+            self.cmake = cmake.readCMakeCache(
+                self.log,
+                os.path.join(self.data.instance.builddir, 'CMakeCache.txt'))
         return self.cmake
+
+    def cmake_get(self, thing):
+        self.getCMakeCache()
+        if thing in self.cmake:
+            return self.cmake[thing]
+        return None
+
+    def install_directory(self):
+        return self.cmake_get('CMAKE_INSTALL_PREFIX')
+
+    def system_directory(self):
+        return self.data.instance.systemdir
+
+    def build_directory(self):
+        dir = self.data.instance.builddir
+        if not os.path.isabs(dir):
+            dir = os.path.join(self.data.instance.systemdir, dir)
+        return dir
 
 class Registry:
     def __init__(self):
@@ -110,7 +132,7 @@ class Registry:
         return n
 
     def addParent(self, name, data):
-        self.parents[name] = ParentInstance(name, data)
+        self.parents[name] = ParentInstance(self.log, name, data)
 
     def register(self, name, parents, run, **kwargs):
         self.log.info(f'Registering build-combination {name}' +
