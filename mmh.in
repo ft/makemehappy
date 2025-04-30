@@ -1023,6 +1023,9 @@ elif (cmdargs.sub_command == "system"):
     if (cmdargs.directory is None):
         cmdargs.directory = 'build'
 
+    if ('no_combinations' not in cmdargs):
+        cmdargs.no_combinations = False
+
     if ('instances' not in cmdargs):
         cmdargs.instances = [ ]
 
