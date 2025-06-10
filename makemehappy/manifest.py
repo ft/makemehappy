@@ -5,6 +5,17 @@ import makemehappy.git as git
 import makemehappy.utilities as mmh
 from pathlib import Path
 
+# Implementation  note: This  was  initially implemented  using python  3.13.x,
+# where pathlib classes  support subclassing (which they do  since 3.12.x). Un-
+# fortunately, the author still has the  requirement to run mmh on debian book-
+# worm for at least a year, which features python 3.11.x, where pathlib classes
+# do NOT  support subclassing  out of the  box. It is  possible to  work around
+# this, but this  work around breaks down  in 3.12.x and newer.  To support all
+# versions of python, the implementation abandons deriving from Path. Instead a
+# Path object is  a member of its path-like  classes (InputFile, BuildDirectory
+# and SourceDirectory),  and just  enough of  the Path  API was  implemented to
+# require almost no changes in the rest of the code.
+
 # This is an implementation of a git-version-information store. It delays
 # getting the information as much as possible. So only when the information is
 # accessed will it be queried.
@@ -64,21 +75,40 @@ class GitInformation:
 
 # A SourceDirectory is a pathlike object that references a directory, and
 # optional additional version-control information.
-class SourceDirectory(Path):
+class SourceDirectory:
     def __init__(self, p, tagprefix = 'v'):
-        super().__init__(p)
+        if isinstance(p, InputFile):
+            self.path = p.path
+        elif isinstance(p, Path):
+            self.path = p
+        else:
+            self.path = Path(p)
         self.vcs = GitInformation(p, tagprefix)
+
+    def __truediv__(self, rhs):
+        return self.path.__truediv__(rhs)
+
+    def __repr__(self):
+        s = str(self.path)
+        return f'SourceDirectory({s})'
 
 # A BuildDirectory is a pathlike object that references a directory, and
 # optional additional build-system state (via CMake's cache file).
-class BuildDirectory(Path):
+class BuildDirectory:
     def __init__(self, root, subdir, log):
         self.prefix = Path(root)
         self.subdir = Path(subdir)
-        super().__init__(self.prefix / self.subdir)
+        self.path = self.prefix / self.subdir
         self.cmakeCache = None
         self.cmakeCacheFile = None
         self.log = log
+
+    def __truediv__(self, rhs):
+        return self.path.__truediv__(rhs)
+
+    def __repr__(self):
+        s = str(self.path)
+        return f'BuildDirectory({s})'
 
     def cmake(self, force = False):
         if not force and self.cmakeCache is not None:
@@ -93,15 +123,35 @@ class BuildDirectory(Path):
 # An InputFile is a pathlike object that references a file, and optional
 # additional pattern matcher state for the file produced. Generator functions
 # for ManifestEntry objects produce lists of these.
-class InputFile(Path):
+class InputFile:
     def __init__(self, p, matchobj = None):
-        super().__init__(p)
+        if isinstance(p, InputFile):
+            self.path = p.path
+        elif isinstance(p, Path):
+            self.path = p
+        else:
+            self.path = Path(p)
         self.matchobj = None
 
     def group(self, n):
         if self.matchobj is None:
             return None
         return self.matchobj.group(n)
+
+    def is_file(self):
+        return self.path.is_file()
+
+    def __repr__(self):
+        s = str(self.path)
+        return f'InputFile({s})'
+
+    @property
+    def stem(self):
+        return self.path.stem
+
+    @property
+    def name(self):
+        return self.path.name
 
 # The input to a Manifest is a list of these. Each of these can generate any
 # number of InputFile objects.
@@ -291,18 +341,32 @@ class Manifest:
 
 # Helpers for ManifestEntry constructors.
 
+def _someroot(root):
+    # This is a function introduced when the workaround for python 3.11 and
+    # older was put in place. When we abandon support for these python ver-
+    # sions, this function can be removed and the old code can be put into
+    # place. Check the commit that adds this comment for details.
+    if isinstance(root, SourceDirectory):
+        return root.path
+    elif isinstance(root, BuildDirectory):
+        return root.path
+    elif isinstance(root, Path):
+        return root
+    else:
+        return Path(root)
+
 def genFile(g, root):
-    realroot = Path('.' if root is None else root)
+    realroot = _someroot(root)
     f = InputFile(realroot / g)
     return [ f ] if f.is_file() else []
 
 def genGlob(pat, root):
-    p = Path('.' if root is None else root)
+    p = _someroot(root)
     return list(p.glob(pat))
 
 def genRegex(pat, root):
     pattern = re.compile(pat)
-    realroot = Path('.' if root is None else root)
+    realroot = _someroot(root)
     files = os.listdir(realroot)
     rv = []
     for f in files:
