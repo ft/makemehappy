@@ -6,6 +6,7 @@ import makemehappy.cut as cut
 import makemehappy.cmake as c
 import makemehappy.combination as comb
 import makemehappy.hooks as h
+import makemehappy.manifest as m
 import makemehappy.zephyr as z
 
 defaults = { 'build-configs'      : [ 'debug', 'release' ],
@@ -329,6 +330,7 @@ class SystemInstance:
             self.sys.log.info(
                 'Changing to directory {}.'.format(self.instance.builddir))
             os.chdir(self.instance.builddir)
+            rc = 0
             for component in mmh.get_install_components(
                     self.sys.log, self.instance.spec['install']):
                 cmd = c.install(component = component)
@@ -340,6 +342,9 @@ class SystemInstance:
             os.chdir(olddir)
             self.sys.stats.logInstall(rc)
             return (rc == 0)
+        if self.instance.spec['install'] == False:
+            self.sys.log.info('System installation disabled')
+            return True
         h.phase_hook('pre/install', log = self.sys.log, args = self.sys.args,
                      cfg = self.sys.cfg, data = self.sys.data)
         success = mmh.maybeShowPhase(self.sys.log, 'install', self.desc,
@@ -631,6 +636,35 @@ class System:
         else:
             self.log.info("Cleaning selected instance(s):")
             self.cleanInstances(self.args.instances)
+
+    def deploy(self):
+        if ('manifest' in self.data):
+            mmh.loadPython(self.log, self.data['manifest'],
+                           { 'system_instances': self.instances,
+                             'build_prefix'    : self.buildRoot(),
+                             'logging'         : self.log })
+        else:
+            print('deploy: No manifest specified!')
+            self.log.error('deploy: No manifest specified!')
+            return False
+
+        self.setupDirectory()
+        m.theManifest.collect()
+
+        uniquenessviolations = m.theManifest.unique()
+        if len(uniquenessviolations) > 0:
+            self.log.error(f'{len(uniquenessviolations)} uniqueness ' +
+                           'violations in manifest!')
+            # TODO: Print a list of violations, once they are implemented.
+            return False
+
+        issues = m.theManifest.issues()
+        if len(issues) > 0:
+            self.log.error(f'Found {len(issues)} issues in manifest.')
+            for issue in issues:
+                self.log.error('  - ' + str(issue))
+            return False
+        return m.theManifest.deploy()
 
     def listInstances(self):
         self.log.info("Generating list of all system build instances:")

@@ -374,6 +374,10 @@ sys_clean = sub_system.add_parser(
 
 sys_clean.add_argument('instances', default = [ ], nargs = '*')
 
+# deploy
+sys_deploy = sub_system.add_parser(
+    'deploy', help = 'Run system deployment sub-system')
+
 ### End of Argument Parser Spec
 
 
@@ -1046,6 +1050,8 @@ elif (cmdargs.sub_command == "system"):
                 resultSuccess = runResult(cfg, cmdargs)
         elif (cmdargs.system == 'clean'):
             system.clean()
+        elif (cmdargs.system == 'deploy'):
+            resultSuccess = system.deploy()
         elif (cmdargs.system == 'list'):
             system.listInstances()
         elif (cmdargs.system == 'db'):
