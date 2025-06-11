@@ -391,7 +391,7 @@ def genZephyr(builddir):
     more0 = list(map(lambda ext: InputFile(builddir /
                                            Path('zephyr') /
                                            Path(base + '.' + ext)),
-                     [ 'lst', 'map', 'stat', 'symbols' ]))
+                     [ 'dts', 'lst', 'map', 'stat', 'symbols' ]))
 
     more1 = [ builddir / Path('zephyr/include/generated/zephyr/autoconf.h'),
               builddir / Path('zephyr/.config') ]
@@ -446,8 +446,8 @@ def zephyr(builddir, name = None):
     # These variables are also used to determine the basic set of artefacts
     # (those can be bin, elf, exe, hex, s19, and uf2).
     #
-    # In addition, .lst, .map, .stat, .symbols files of the same basename will
-    # be considered if they exist.
+    # In addition, .dts, .lst, .map, .stat, .symbols files of the same basename
+    # will be considered if they exist.
     #
     # Additionally "zephyr/include/generated/zephyr/autoconf.h" and
     # "zephyr/.config" are considered as well.
