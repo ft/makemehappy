@@ -651,11 +651,14 @@ class System:
         self.setupDirectory()
         m.theManifest.collect()
 
-        uniquenessviolations = m.theManifest.unique()
+        uniquenessviolations = m.theManifest.uniquenessViolations()
         if len(uniquenessviolations) > 0:
             self.log.error(f'{len(uniquenessviolations)} uniqueness ' +
-                           'violations in manifest!')
-            # TODO: Print a list of violations, once they are implemented.
+                           'violation(s) in manifest!')
+            for uv in uniquenessviolations:
+                self.log.error(str(uv) + ':')
+                for s in uv.strlist():
+                    self.log.error(' - ' + s)
             return False
 
         issues = m.theManifest.issues()

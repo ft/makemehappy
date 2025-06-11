@@ -274,6 +274,25 @@ class ManifestEntryMismatch:
         return (f'Index {self.index} ({self.entry.string}) yielded ' +
                 f'{self.actual} files, but {self.expected} were expected.')
 
+# In Manifests, the destination file names specified have the property that
+# they must be unique. Otherwise there would be more than one input mapped to
+# the same output, resulting in at least one source file not being represented
+# in the resulting deploy tree. This class represents one such error.
+class UniquenessViolation:
+    def __init__(self, path, occurances):
+        self.path = path
+        self.occurances = occurances
+
+    def __str__(self):
+        return (f'{str(self.path)} is used as an ' +
+                f'output file {len(self.occurances)} times')
+
+    def strlist(self):
+        rv = []
+        for (index, me) in self.occurances:
+            rv.append(f'Manifest index {index} ({me.string})')
+        return rv
+
 # This is a collection of ManifestEntry objects with associated operations.
 # Deployment is split into two phases: collecting in/out file pairs from
 # ManifestEntry processing, and the actual deployment process. This allows for
@@ -315,7 +334,7 @@ class Manifest:
 
         return rv
 
-    def unique(self):
+    def uniquenessViolations(self):
         # It is imperative, that a manifest's destination file names are
         # unique. It may be tolerable (depending on the situation), that an
         # entry does not produce files (and those cases are covered by
@@ -324,7 +343,22 @@ class Manifest:
         if self.collection is None:
             raise BareManifest
 
-        return []
+        check = {}
+        for entry in self.collection:
+            (index, me, n, pairs) = entry
+            for pair in pairs:
+                (_, file) = pair
+                if file not in check:
+                    check[file] = [ (index, me) ]
+                else:
+                    check[file].append((index, me))
+
+        errors = []
+        for key, occurances in check.items():
+            if len(occurances) > 1:
+                errors.append(UniquenessViolation(key, occurances))
+
+        return errors
 
     def deploy(self):
         # TODO: Implement the actual deployment process. Luckily, this is most-
