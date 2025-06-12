@@ -145,6 +145,9 @@ class InputFile:
         s = str(self.path)
         return f'InputFile({s})'
 
+    def __str__(self):
+        return str(self.path)
+
     @property
     def stem(self):
         return self.path.stem
