@@ -674,7 +674,7 @@ class System:
         issues = m.theManifest.issues()
         if len(issues) > 0:
             printi = self.log.error if self.args.strict else self.log.warn
-            printi(f'Found {len(issues)} issues in manifest.')
+            printi(f'Found {len(issues)} issue(s) in manifest.')
             for issue in issues:
                 printi('  - ' + str(issue))
             if self.args.strict:
