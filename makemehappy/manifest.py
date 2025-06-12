@@ -329,7 +329,7 @@ class Manifest:
         self.collection = []
         for n, entry in enumerate(self.entries):
             new = entry.run(n)
-            mmh.pp(new)
+            # mmh.pp(new)
             self.collection.append(new)
 
     def issues(self):
