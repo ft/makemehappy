@@ -1,3 +1,4 @@
+import math
 import os
 import re
 import makemehappy.cmake as cmake
@@ -109,6 +110,9 @@ class BuildDirectory:
     def __repr__(self):
         s = str(self.path)
         return f'BuildDirectory({s})'
+
+    def __str__(self):
+        return str(self.path)
 
     def cmake(self, force = False):
         if not force and self.cmakeCache is not None:
@@ -378,6 +382,71 @@ class Manifest:
 
         return errors
 
+    def listSpec(self):
+        tindex = 'Index'
+        tgen = 'Generator'
+        tdest = 'Destination'
+        width = max(math.floor(math.log10(len(self.entries)) + 1),
+                    len(tindex))
+        maxstring = len(tgen)
+        maxdest = len(tdest)
+        for spec in self.entries:
+            n = len(spec.string)
+            if n > maxstring:
+                maxstring = n
+            m = len('.'
+                    if spec.destinationDir is None
+                    else spec.destinationDir)
+            if m > maxdest:
+                maxdest = m
+        hl = ('-' * (width + 2) + '+' +
+              '-' * (maxstring + 2) + '+' +
+              '-' * (maxdest + 2))
+        rv = [ hl, f' {tindex:{width}} | {tgen:{maxstring}} | {tdest}', hl ]
+        for n, spec in enumerate(self.entries):
+            d = ('.'
+                 if spec.destinationDir is None
+                 else spec.destinationDir)
+            rv.append(f' {n:{width}} | ' +
+                      f'{spec.string:{maxstring}} | ' +
+                      f'{d}')
+
+        rv.append(hl)
+        return rv
+
+    def listCollection(self):
+        if self.collection is None:
+            raise BareManifest
+
+        tindex = 'Index'
+        tfile = 'Input/Output'
+        width = max(math.floor(math.log10(len(self.collection)) + 1),
+                    len(tindex))
+        maxfile = len(tfile)
+
+        for (idx, entry, n, pairs) in self.collection:
+            for (infile, outfile) in pairs:
+                n = max(len(str(infile)), len(str(outfile)))
+                if n > maxfile:
+                    maxfile = n
+
+        hl = ('-' * (width + 2) + '+' +
+              '-' * (maxfile + 4))
+
+        rv = [ hl, f' {tindex:{width}} | {tfile}', hl ]
+
+        i = 0
+        for (idx, entry, n, pairs) in self.collection:
+            j = 0
+            for (infile, outfile) in pairs:
+                rv.append(f' {i if j == 0 else "":{width}} |   {infile}')
+                rv.append(f' {"":{width}} | → {outfile}')
+                j += 1
+            rv.append(hl)
+            i += 1
+
+        return rv
+
     def deploy(self):
         # TODO: Implement the actual deployment process. Luckily, this is most-
         # ly just copying files around. But we should also add md5sum files,
@@ -497,17 +566,19 @@ def basenameZephyr(builddir):
 # zephyr. You should not construct ManifestEntry instances yourself.
 
 def file(g, root = '.'):
-    return ManifestEntry(lambda: genFile(g, root), g, None, 1)
+    return ManifestEntry(lambda: genFile(g, root), f'file({g})', None, 1)
 
 def fromFile(f, file_root = '.', spec_root = '.'):
     return ManifestEntry(lambda: genFromFile(f, file_root, spec_root),
                          'fromFile(' + f + ')')
 
 def glob(pat, root = '.'):
-    return ManifestEntry(lambda: map(InputFile, genGlob(pat, root)), pat)
+    return ManifestEntry(lambda: map(InputFile, genGlob(pat, root)),
+                         f'glob({pat}, root = {root})')
 
 def regex(pat, root = '.'):
-    return ManifestEntry(lambda: genRegex(pat, root), pat)
+    return ManifestEntry(lambda: genRegex(pat, root),
+                         f'regex({pat}, root = {root})')
 
 def zephyr(builddir, name = None):
     # Automatic manifest entry for zephyr-based firmware artefacts. "builddir"
@@ -523,7 +594,8 @@ def zephyr(builddir, name = None):
     #
     # Additionally "zephyr/include/generated/zephyr/autoconf.h" and
     # "zephyr/.config" are considered as well.
-    me = ManifestEntry(lambda: genZephyr(builddir), str(builddir))
+    me = ManifestEntry(lambda: genZephyr(builddir),
+                       f'zephyr({str(builddir)})')
     if name is None:
         name = basenameZephyr(builddir)
     return me.rename(renameZephyr(name))
