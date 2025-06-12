@@ -648,8 +648,18 @@ class System:
             self.log.error('deploy: No manifest specified!')
             return False
 
+        if (self.args.show):
+            for line in m.theManifest.listSpec():
+                print(line)
+            return True
+
         self.setupDirectory()
         m.theManifest.collect()
+
+        if (self.args.listCollection):
+            for line in m.theManifest.listCollection():
+                print(line)
+            return True
 
         uniquenessviolations = m.theManifest.uniquenessViolations()
         if len(uniquenessviolations) > 0:
@@ -663,10 +673,13 @@ class System:
 
         issues = m.theManifest.issues()
         if len(issues) > 0:
-            self.log.error(f'Found {len(issues)} issues in manifest.')
+            printi = self.log.error if self.args.strict else self.log.warn
+            printi(f'Found {len(issues)} issues in manifest.')
             for issue in issues:
-                self.log.error('  - ' + str(issue))
-            return False
+                printi('  - ' + str(issue))
+            if self.args.strict:
+                printi('All issues considered errors with --strict.')
+                return False
         return m.theManifest.deploy()
 
     def listInstances(self):
