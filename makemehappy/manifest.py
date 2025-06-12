@@ -254,6 +254,18 @@ class InvalidManifestEntry(Exception):
 class BareManifest(Exception):
     pass
 
+# Some manifest generators may produce input files that do not exist. That is
+# obviously an issue.
+class ManifestEntryMissing:
+    def __init__(self, idx, entry, file):
+        self.index = idx
+        self.entry = entry
+        self.file = file
+
+    def __str__(self):
+        return (f'Index {self.index} ({self.entry.string}) yielded ' +
+                f'missing file: {str(self.file)}')
+
 # This issue is used when a ManifestEntry yields no files at all.
 class ManifestEntryEmpty:
     def __init__(self, idx, entry, actual):
@@ -334,6 +346,9 @@ class Manifest:
             else:
                 if n == 0:
                     rv.append(ManifestEntryEmpty(idx, entry, n))
+            for file, _ in pairs:
+                if not file.is_file():
+                    rv.append(ManifestEntryMissing(idx, entry, file))
 
         return rv
 
@@ -396,6 +411,22 @@ def genFile(g, root):
     realroot = _someroot(root)
     f = InputFile(realroot / g)
     return [ f ] if f.is_file() else []
+
+def genFromFile(f, file_root, spec_root):
+    spec = _someroot(spec_root) / f
+    if not spec.is_file():
+        # This will cause an ignorable issue to be flagged.
+        return [ InputFile(spec) ]
+    rv = [ ]
+    with open(spec, mode = 'r', encoding = 'utf-8') as sp:
+        for n, string in enumerate(sp):
+            line = string.strip()
+            if line.startswith('#'):
+                continue
+            if line == "":
+                continue
+            rv.append(InputFile(_someroot(file_root) / line))
+    return rv
 
 def genGlob(pat, root):
     p = _someroot(root)
@@ -467,6 +498,10 @@ def basenameZephyr(builddir):
 
 def file(g, root = '.'):
     return ManifestEntry(lambda: genFile(g, root), g, None, 1)
+
+def fromFile(f, file_root = '.', spec_root = '.'):
+    return ManifestEntry(lambda: genFromFile(f, file_root, spec_root),
+                         'fromFile(' + f + ')')
 
 def glob(pat, root = '.'):
     return ManifestEntry(lambda: map(InputFile, genGlob(pat, root)), pat)
