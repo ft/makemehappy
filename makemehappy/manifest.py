@@ -318,19 +318,26 @@ class UniquenessViolation:
 # additional things to happen in between, like checking the manifest for
 # possible issues.
 class Manifest:
-    def __init__(self, entries):
-        self.entries = mmh.flatten(entries)
-        for n, entry in enumerate(self.entries):
-            if not isinstance(entry, ManifestEntry):
-                raise InvalidManifestEntry(n, entry)
+    def __init__(self):
+        self.entries = []
         self.collection = None
+
+    def __call__(self, *args):
+        return self.extend(list(args))
+
+    def extend(self, entries):
+        self.entries.extend(mmh.flatten(entries))
 
     def collect(self):
         self.collection = []
         for n, entry in enumerate(self.entries):
             new = entry.run(n)
-            # mmh.pp(new)
             self.collection.append(new)
+
+    def validate(self):
+        for n, entry in enumerate(self.entries):
+            if not isinstance(entry, ManifestEntry):
+                raise InvalidManifestEntry(n, entry)
 
     def issues(self):
         # This scans for common issues in a collection of files from a mani-
@@ -640,12 +647,4 @@ def withVersion(vcs):
         return f.with_stem(old + '-' + vcs.version())
     return _transform
 
-# The one true manifest. To be honest, I am not sure this will stay this way,
-# because manifest variants might be a good thing. Like: Deploy everything
-# based on release builds. Or everything based on debug builds, while yet
-# another variant might mix debug and release builds, for whatever reason.
-theManifest = None
-
-def manifest(*args):
-    global theManifest
-    theManifest = Manifest(list(args))
+manifest = Manifest()
