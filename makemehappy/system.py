@@ -638,6 +638,8 @@ class System:
             self.cleanInstances(self.args.instances)
 
     def deploy(self):
+        m.manifest.prefix(self.args.destination)
+
         if ('manifest' in self.data):
             mmh.loadPython(self.log, self.data['manifest'],
                            { 'system_instances': self.instances,

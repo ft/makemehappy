@@ -321,9 +321,13 @@ class Manifest:
     def __init__(self):
         self.entries = []
         self.collection = None
+        self.prefixDir = None
 
     def __call__(self, *args):
         return self.extend(list(args))
+
+    def prefix(self, p):
+        self.prefixDir = Path(p)
 
     def extend(self, entries):
         self.entries.extend(mmh.flatten(entries))
