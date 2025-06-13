@@ -360,8 +360,7 @@ class Manifest:
         # It is imperative, that a manifest's destination file names are
         # unique. It may be tolerable (depending on the situation), that an
         # entry does not produce files (and those cases are covered by
-        # issues()), but this property cannot be violated. TODO: Implement!
-        # This should return a list of uniqueness violations.
+        # issues()), but this property cannot be violated.
         if self.collection is None:
             raise BareManifest
 
