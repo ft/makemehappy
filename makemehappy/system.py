@@ -651,10 +651,12 @@ class System:
             return False
 
         m.manifest.validate()
+        final = m.manifest.final()
 
         if (self.args.show):
             for line in m.manifest.listSpec():
                 print(line)
+            print(f'Deployment into: {final}')
             return True
 
         self.setupDirectory()
@@ -663,6 +665,7 @@ class System:
         if (self.args.listCollection):
             for line in m.manifest.listCollection():
                 print(line)
+            print(f'Deployment into: {final}')
             return True
 
         uniquenessviolations = m.manifest.uniquenessViolations()
@@ -684,6 +687,8 @@ class System:
             if self.args.strict:
                 printi('All issues considered errors with --strict.')
                 return False
+
+        self.log.info(f'Deploying into {final}')
         return m.manifest.deploy()
 
     def listInstances(self):

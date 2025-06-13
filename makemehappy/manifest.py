@@ -321,13 +321,22 @@ class Manifest:
     def __init__(self):
         self.entries = []
         self.collection = None
-        self.prefixDir = None
+        self._prefix = None
 
     def __call__(self, *args):
         return self.extend(list(args))
 
     def prefix(self, p):
-        self.prefixDir = Path(p)
+        self._prefix = Path(p)
+
+    def subdir(self, d):
+        self._subdir = Path(d)
+
+    def final(self):
+        if self._subdir is not None:
+            return self._prefix / self._subdir
+        else:
+            return self._prefix
 
     def extend(self, entries):
         self.entries.extend(mmh.flatten(entries))
@@ -468,6 +477,7 @@ class Manifest:
         if self.collection is None:
             raise BareManifest
 
+        finalDestination = self.final()
         return True
 
 # Helpers for ManifestEntry constructors.
