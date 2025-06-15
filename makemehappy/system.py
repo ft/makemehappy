@@ -650,6 +650,7 @@ class System:
             self.log.error('deploy: No manifest specified!')
             return False
 
+        m.manifest.withSpecification(self.data['manifest'])
         m.manifest.validate()
         final = m.manifest.final()
 
@@ -689,7 +690,18 @@ class System:
                 return False
 
         self.log.info(f'Deploying into {final}')
-        return m.manifest.deploy()
+        errors = m.manifest.deploy(self.args.verbose)
+        errorsn = len(errors)
+        if errorsn == 0:
+            return True
+
+        print(f'{errorsn} errors while copying. Please check:')
+        for (infile, outfile, error) in errors:
+            print(f'  install({infile}')
+            print(f'          {outfile})')
+            print(f'    {error}')
+
+        return False
 
     def listInstances(self):
         self.log.info("Generating list of all system build instances:")

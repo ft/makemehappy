@@ -7,6 +7,7 @@ import pprint
 import re
 import subprocess
 import shlex
+import shutil
 import sys
 import yaml
 
@@ -137,6 +138,15 @@ def bracketPattern(s):
 
 def isPattern(s):
     return starPattern(s) or questionPattern(s) or bracketPattern(s)
+
+def install(i, o):
+    oldmask = os.umask(0o022)
+    try:
+        odir = o.parent
+        odir.mkdir(parents = True, exist_ok = True)
+        shutil.copyfile(i, o)
+    finally:
+        os.umask(oldmask)
 
 def flatten(lst):
     if (isinstance(lst, list)):

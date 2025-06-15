@@ -322,9 +322,16 @@ class Manifest:
         self.entries = []
         self.collection = None
         self._prefix = None
+        self.spec = None
 
     def __call__(self, *args):
         return self.extend(list(args))
+
+    def withSpecification(self, file):
+        self.spec = file
+
+    def specification(self):
+        return self.spec
 
     def prefix(self, p):
         self._prefix = Path(p)
@@ -466,19 +473,34 @@ class Manifest:
 
         return rv
 
-    def deploy(self):
-        # TODO: Implement the actual deployment process. Luckily, this is most-
-        # ly just copying files around. But we should also add md5sum files,
-        # and maybe also other checksums like sha256 and sha512. Luckily, py-
-        # thon has hashlib. But we should generate files that can be processed
-        # by the associated command line tools, like md5sum(1). And of course,
-        # at the end of the deployment process, mmh should verify all files by
-        # processing those files.
+    def deploy(self, verbose):
         if self.collection is None:
             raise BareManifest
 
         finalDestination = self.final()
-        return True
+
+        print('Deploying based on specification:', self.spec)
+        print('Final destination directory:', finalDestination)
+        errors = []
+        for (idx, entry, n, pairs) in self.collection:
+            if verbose:
+                print()
+            print(f'Index {idx}: {entry.string}, {n} files to deploy...')
+            for (infile, outfile) in pairs:
+                if verbose:
+                    print(f'  in : {str(infile)}')
+                    print(f'  out: {str(outfile)}')
+                try:
+                    mmh.install(infile.path, finalDestination / outfile)
+                except Exception as e:
+                    if (len(e.args) > 0):
+                        error = f'{type(e).__name__}: {e}'
+                    else:
+                        error = f'{type(e).__name__}'
+                    errors.append((infile, outfile, error))
+
+        # TODO: Add md5sum, sha256, and sha512 files.
+        return errors
 
 # Helpers for ManifestEntry constructors.
 
