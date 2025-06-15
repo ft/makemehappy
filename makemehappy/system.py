@@ -690,7 +690,8 @@ class System:
                 return False
 
         self.log.info(f'Deploying into {final}')
-        errors = m.manifest.deploy(self.args.verbose)
+        errors = m.manifest.deploy(self.args.verbose,
+                                   self.args.raise_exceptions)
         errorsn = len(errors)
         if errorsn == 0:
             return True

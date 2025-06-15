@@ -477,7 +477,7 @@ class Manifest:
 
         return rv
 
-    def deploy(self, verbose):
+    def deploy(self, verbose = False, raiseException = False):
         if self.collection is None:
             raise BareManifest
 
@@ -503,7 +503,11 @@ class Manifest:
                         error = f'{type(e).__name__}: {e}'
                     else:
                         error = f'{type(e).__name__}'
-                    errors.append((infile, outfile, error))
+
+                    if raiseException:
+                        raise e
+                    else:
+                        errors.append((infile, outfile, error))
 
         # TODO: Add md5sum, sha256, and sha512 files.
         return errors
