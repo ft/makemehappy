@@ -323,9 +323,13 @@ class Manifest:
         self.collection = None
         self._prefix = None
         self.spec = None
+        self.installcb = None
 
     def __call__(self, *args):
         return self.extend(list(args))
+
+    def withInstallCallback(self, cb):
+        self.installcb = cb
 
     def withSpecification(self, file):
         self.spec = file
@@ -491,7 +495,9 @@ class Manifest:
                     print(f'  in : {str(infile)}')
                     print(f'  out: {str(outfile)}')
                 try:
-                    mmh.install(infile.path, finalDestination / outfile)
+                    mmh.install(infile.path,
+                                finalDestination / outfile,
+                                self.installcb)
                 except Exception as e:
                     if (len(e.args) > 0):
                         error = f'{type(e).__name__}: {e}'

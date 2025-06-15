@@ -139,12 +139,14 @@ def bracketPattern(s):
 def isPattern(s):
     return starPattern(s) or questionPattern(s) or bracketPattern(s)
 
-def install(i, o):
+def install(i, o, cb = None):
     oldmask = os.umask(0o022)
     try:
         odir = o.parent
         odir.mkdir(parents = True, exist_ok = True)
         shutil.copyfile(i, o)
+        if cb is not None:
+            cb(i, o)
     finally:
         os.umask(oldmask)
 
