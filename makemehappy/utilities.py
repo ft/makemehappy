@@ -1,6 +1,8 @@
 from __future__ import print_function
 
+import contextlib
 import fnmatch
+import hashlib
 import math
 import os
 import pprint
@@ -279,3 +281,22 @@ def loadPython(log, fn, localenv = None):
     with open(fn, mode = "r", encoding = "utf-8") as fragment:
         code = fragment.read()
         exec(code, None, localenv)
+
+def checksumFile(filename, variant = hashlib.md5, buffersize = 2**13):
+    state = variant()
+    with open(filename, 'rb') as fh:
+        data = fh.read(buffersize)
+        while data:
+            state.update(data)
+            data = fh.read(buffersize)
+    return state.hexdigest()
+
+def checksumFiles(files, variant = hashlib.md5, buffersize = 2**13):
+    for file in files:
+        chksum = checksumFile(file, variant, buffersize)
+        print(f'{chksum}  {file}')
+
+def checksum(files, output, variant = hashlib.md5, buffersize = 2**13):
+    with open(output, 'w') as ofh:
+        with contextlib.redirect_stdout(ofh):
+            checksumFiles(files, variant, buffersize)
