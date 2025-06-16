@@ -487,6 +487,7 @@ class Manifest:
         if self.collection is None:
             raise BareManifest
 
+        # TODO: Maybe remove finalDestination if it already exists?
         finalDestination = self.final()
 
         print('Deploying based on specification:', self.spec)
@@ -539,6 +540,9 @@ class Manifest:
                         raise e
                     else:
                         errors.append((None, out, error))
+
+        # TODO: Maybe check if the checksum files are consistent after
+        #       creaation. At least now there should be no rot.
 
         return errors
 
