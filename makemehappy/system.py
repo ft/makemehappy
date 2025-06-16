@@ -696,11 +696,14 @@ class System:
         if errorsn == 0:
             return True
 
-        print(f'{errorsn} errors while copying. Please check:')
+        print(f'{errorsn} errors while deploying. Please check:')
         for (infile, outfile, error) in errors:
-            print(f'  install({infile}')
-            print(f'          {outfile})')
-            print(f'    {error}')
+            if infile is None:
+                print(f'  {outfile}: {error}')
+            else:
+                print(f'  install({infile}')
+                print(f'          {outfile})')
+                print(f'    {error}')
 
         return False
 

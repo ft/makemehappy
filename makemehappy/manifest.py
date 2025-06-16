@@ -1,3 +1,5 @@
+import contextlib
+import hashlib
 import math
 import os
 import re
@@ -324,9 +326,13 @@ class Manifest:
         self._prefix = None
         self.spec = None
         self.installcb = None
+        self.checksumName = 'contents'
 
     def __call__(self, *args):
         return self.extend(list(args))
+
+    def withChecksumName(self, name):
+        self.checksumName = name
 
     def withInstallCallback(self, cb):
         self.installcb = cb
@@ -485,12 +491,14 @@ class Manifest:
 
         print('Deploying based on specification:', self.spec)
         print('Final destination directory:', finalDestination)
+        outfiles = []
         errors = []
         for (idx, entry, n, pairs) in self.collection:
             if verbose:
                 print()
             print(f'Index {idx}: {entry.string}, {n} files to deploy...')
             for (infile, outfile) in pairs:
+                outfiles.append(outfile)
                 if verbose:
                     print(f'  in : {str(infile)}')
                     print(f'  out: {str(outfile)}')
@@ -509,7 +517,29 @@ class Manifest:
                     else:
                         errors.append((infile, outfile, error))
 
-        # TODO: Add md5sum, sha256, and sha512 files.
+        if len(errors) == 0:
+            # We didn't see any errors while copying. Next: checksums.
+            outfiles.sort()
+            variants = [ (hashlib.md5,    'md5sum'),
+                         (hashlib.sha256, 'sha256sum'),
+                         (hashlib.sha512, 'sha512sum') ]
+            for (construct, extension) in variants:
+                out = Path(self.checksumName + '.' + extension)
+                print('Generating checksums:', out)
+                try:
+                    with contextlib.chdir(finalDestination):
+                        mmh.checksum(outfiles, out, variant = construct)
+                except Exception as e:
+                    if (len(e.args) > 0):
+                        error = f'{type(e).__name__}: {e}'
+                    else:
+                        error = f'{type(e).__name__}'
+
+                    if raiseException:
+                        raise e
+                    else:
+                        errors.append((None, out, error))
+
         return errors
 
 # Helpers for ManifestEntry constructors.
