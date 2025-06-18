@@ -13,9 +13,11 @@ def isWorktree(path):
     return (rc == 0) and (stdout == 'true')
 
 def isDirty(path):
+    mmh.devnullProcess(['git', 'update-index', '-q', '--refresh'])
     (stdout, stderr, rc) = mmh.stdoutProcess(
-        ['git', '-C', path, 'status', '--porcelain=v1'])
-    return (rc == 0) and (stdout != '')
+        ['git', '-C', path,
+         'diff-index', '--name-only', 'HEAD', '--'])
+    return (stdout != '')
 
 def latestTag(path, pattern):
     (stdout, stderr, rc) = mmh.stdoutProcess(
