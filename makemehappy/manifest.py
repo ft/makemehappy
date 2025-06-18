@@ -502,7 +502,6 @@ class Manifest:
         finalDestination = self.final()
 
         print('Deploying based on specification:', self.spec)
-        print('Final destination directory:', finalDestination)
         outfiles = []
         errors = []
         for (idx, entry, n, pairs) in self.collection:
