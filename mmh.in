@@ -387,6 +387,10 @@ sys_deploy.add_argument(
     help = "Show human readable manifest spec")
 
 sys_deploy.add_argument(
+    "-k", "--keep", action = 'store_true',
+    help = "Do not remove destination directory before deployment")
+
+sys_deploy.add_argument(
     "-l", "--list", action = 'store_true', dest = 'listCollection',
     help = "List input/output file collection of manifest")
 

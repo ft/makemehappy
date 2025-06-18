@@ -3,6 +3,7 @@ import hashlib
 import math
 import os
 import re
+import shutil
 import makemehappy.cmake as cmake
 import makemehappy.git as git
 import makemehappy.utilities as mmh
@@ -483,11 +484,21 @@ class Manifest:
 
         return rv
 
+    def destinationExists(self):
+        finalDestination = self.final()
+        if finalDestination.is_dir():
+            return True
+        if finalDestination.exists():
+            raise FileExistsError
+        return False
+
+    def removeDestination(self):
+        shutil.rmtree(self.final())
+
     def deploy(self, verbose = False, raiseException = False):
         if self.collection is None:
             raise BareManifest
 
-        # TODO: Maybe remove finalDestination if it already exists?
         finalDestination = self.final()
 
         print('Deploying based on specification:', self.spec)

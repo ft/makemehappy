@@ -689,7 +689,22 @@ class System:
                 printi('All issues considered errors with --strict.')
                 return False
 
-        self.log.info(f'Deploying into {final}')
+        title = f'Deploying into {final}'
+
+        try:
+            finalExists = m.manifest.destinationExists()
+        except FileExistsError:
+            print('Destination exists, but is not a directory!')
+            print(f'Pathname: {final}')
+            return False
+
+        self.log.info(title)
+        print(title)
+
+        if finalExists and not self.args.keep:
+            print(f'Removing existing destination directory!')
+            m.manifest.removeDestination()
+
         errors = m.manifest.deploy(self.args.verbose,
                                    self.args.raise_exceptions)
         errorsn = len(errors)
