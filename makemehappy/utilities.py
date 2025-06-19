@@ -13,6 +13,8 @@ import shutil
 import sys
 import yaml
 
+from pathlib import Path
+
 import mako.template as mako
 
 def dotFile(fn):
@@ -300,3 +302,97 @@ def checksum(files, output, variant = hashlib.md5, buffersize = 2**13):
     with open(output, 'w') as ofh:
         with contextlib.redirect_stdout(ofh):
             checksumFiles(files, variant, buffersize)
+
+class InvalidChecksumRecord(Exception):
+    pass
+
+class ChecksumVariantMismatch(Exception):
+    pass
+
+def checksumTokenise(line):
+    m = re.match('^([0-9a-fA-F]+)  (.*)$', line)
+    if (len(m.groups()) != 2):
+        raise InvalidChecksumRecord(line)
+    return (m.group(1), m.group(2))
+
+def checksumGuess(string):
+    tab = { 'md5':     32,
+            'sha256':  64,
+            'sha512': 128 }
+    n = len(string)
+    for (name, size) in tab.items():
+        if size == n:
+            return name
+    return None
+
+class ChecksumData:
+    def __init__(self, file, variant):
+        self.datafile = file
+        self.variant = variant
+        self.records = []
+        self.start = None
+        self.end = None
+        self.current = None
+
+    def __lshift__(self, rhs):
+        self.records.append(rhs)
+
+    def __iter__(self):
+        self.start = 0
+        self.end = len(self.records)
+        self.current = self.start
+        return self
+
+    def __next__(self):
+        if self.current < self.end:
+            rv = self.records[self.current]
+            self.current += 1
+            return rv
+        else:
+            raise StopIteration()
+
+def checksumVerify(file, root = '.', variant = None):
+    realroot = Path(root)
+    algos = { 'md5':    hashlib.md5,
+              'sha256': hashlib.sha256,
+              'sha512': hashlib.sha512 }
+    data = checksumRead(file, variant)
+    algo = algos[data.variant]
+    errors = []
+    for (expect, filename) in data:
+        fn = realroot / filename
+        actual = checksumFile(fn, algo)
+        if expect != actual:
+            errors.append((fn, expect, actual))
+    return errors
+
+def checksumRead(file, variant = None):
+    with open(file, 'r') as fh:
+        line1 = fh.readline().strip('\n')
+
+    (checksum1, filename1) = checksumTokenise(line1)
+    guess = checksumGuess(checksum1)
+    if guess is None:
+        raise InvalidChecksumRecord(line1)
+
+    if variant is not None:
+        if guess != variant:
+            raise ChecksumVariantMismatch(variant, guess, line1)
+    else:
+        variant = guess
+
+    # We do the variant detection based on the first record in a file. All
+    # other records must use the same variant. So from now on out all checksum
+    # tokens must yield this size:
+    checksumSize = len(checksum1)
+
+    retval = ChecksumData(file, variant)
+    with open(file, 'r') as fh:
+        for line in fh:
+            (checksum, filename) = checksumTokenise(line.strip('\n'))
+            guess = checksumGuess(checksum)
+            if guess != variant:
+                raise ChecksumVariantMismatch(variant, guess, line)
+            retval << (checksum, filename)
+
+    return retval

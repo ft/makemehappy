@@ -551,8 +551,19 @@ class Manifest:
                     else:
                         errors.append((None, out, error))
 
-        # TODO: Maybe check if the checksum files are consistent after
-        #       creaation. At least now there should be no rot.
+        if len(errors) == 0:
+            for variant in [ 'md5', 'sha256', 'sha512' ]:
+                basename = self.checksumName + '.' + variant
+                checksumfile = finalDestination / basename
+                print(f'Verifiying checksums: {str(basename)}...',
+                      end = '')
+                failed = mmh.checksumVerify(checksumfile, finalDestination,
+                                            variant)
+                if len(failed) > 0:
+                    print(' failed!')
+                    errors.append((None, variant, failed))
+                else:
+                    print(' ok.')
 
         return errors
 
