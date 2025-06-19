@@ -20,63 +20,6 @@ from pathlib import Path
 # and SourceDirectory),  and just  enough of  the Path  API was  implemented to
 # require almost no changes in the rest of the code.
 
-# This is an implementation of a git-version-information store. It delays
-# getting the information as much as possible. So only when the information is
-# accessed will it be queried.
-class GitInformation:
-    def __init__(self, path, tagprefix = 'v', tagpattern = None):
-        self.path = path
-        self.tagprefix = tagprefix
-        if tagpattern is not None:
-            self.tagpattern = tagpattern
-        else:
-            self.tagpattern = tagprefix + '*'
-        self.valid = None
-        self.dirty = None
-        self.commit = None
-        self.tag = None
-        self._tag = None
-        self.increment = None
-        self.author = None
-        self.committer = None
-
-    def _ensure(self):
-        if self.valid is None:
-            self.update()
-
-    def update(self):
-        self.valid = git.isWorktree(self.path)
-        if not self.valid:
-            return
-        self.dirty = git.isDirty(self.path)
-        self.commit = git.commitHash(self.path)
-        self._tag = git.latestTag(self.path, self.tagpattern)
-        if self._tag is None:
-            self.tag = 'noversion'
-            self.increment = git.commitsSinceTag(
-                self.path, '4b825dc642cb6eb9a060e54bf8d69288fbee4904')
-        else:
-            if self.tagprefix != '':
-                self.tag = re.sub(f'^{self.tagprefix}', '', self._tag)
-            else:
-                self.tag = self._tag
-            self.increment = git.commitsSinceTag(self.path, self._tag)
-        self.author = git.author(self.path)
-        self.committer = git.committer(self.path)
-
-    def version(self):
-        self._ensure()
-        if not self.valid:
-            return 'noversion'
-        else:
-            rv = f'v{self.tag}' if self._tag else self.tag
-            if self.increment > 0:
-                rv += f'-{self.increment}'
-                rv += f'-g{self.commit[:12]}'
-            if self.dirty:
-                rv += '-dirty'
-            return rv
-
 # A SourceDirectory is a pathlike object that references a directory, and
 # optional additional version-control information.
 class SourceDirectory:
@@ -87,7 +30,7 @@ class SourceDirectory:
             self.path = p
         else:
             self.path = Path(p)
-        self.vcs = GitInformation(p, tagprefix)
+        self.vcs = git.GitInformation(p, tagprefix)
 
     def __truediv__(self, rhs):
         return self.path.__truediv__(rhs)
