@@ -6,6 +6,7 @@ import re
 import shutil
 import makemehappy.cmake as cmake
 import makemehappy.git as git
+import makemehappy.pathlike as p
 import makemehappy.utilities as mmh
 from pathlib import Path
 
@@ -19,92 +20,6 @@ from pathlib import Path
 # Path object is  a member of its path-like  classes (InputFile, BuildDirectory
 # and SourceDirectory),  and just  enough of  the Path  API was  implemented to
 # require almost no changes in the rest of the code.
-
-# A SourceDirectory is a pathlike object that references a directory, and
-# optional additional version-control information.
-class SourceDirectory:
-    def __init__(self, p, tagprefix = 'v'):
-        if isinstance(p, InputFile):
-            self.path = p.path
-        elif isinstance(p, Path):
-            self.path = p
-        else:
-            self.path = Path(p)
-        self.vcs = git.GitInformation(p, tagprefix)
-
-    def __truediv__(self, rhs):
-        return self.path.__truediv__(rhs)
-
-    def __repr__(self):
-        s = str(self.path)
-        return f'SourceDirectory({s})'
-
-# A BuildDirectory is a pathlike object that references a directory, and
-# optional additional build-system state (via CMake's cache file).
-class BuildDirectory:
-    def __init__(self, root, subdir, log):
-        self.prefix = Path(root)
-        self.subdir = Path(subdir)
-        self.path = self.prefix / self.subdir
-        self.cmakeCache = None
-        self.cmakeCacheFile = None
-        self.log = log
-
-    def __truediv__(self, rhs):
-        return self.path.__truediv__(rhs)
-
-    def __repr__(self):
-        s = str(self.path)
-        return f'BuildDirectory({s})'
-
-    def __str__(self):
-        return str(self.path)
-
-    def cmake(self, force = False):
-        if not force and self.cmakeCache is not None:
-            return self.cmakeCache
-
-        self.cmakeCacheFile = self / Path('CMakeCache.txt')
-        self.log.info(f'Reading cmake-cache: {self.cmakeCacheFile}')
-        self.cmakeCache = cmake.readCMakeCache(self.log, self.cmakeCacheFile)
-
-        return self.cmakeCache
-
-# An InputFile is a pathlike object that references a file, and optional
-# additional pattern matcher state for the file produced. Generator functions
-# for ManifestEntry objects produce lists of these.
-class InputFile:
-    def __init__(self, p, matchobj = None):
-        if isinstance(p, InputFile):
-            self.path = p.path
-        elif isinstance(p, Path):
-            self.path = p
-        else:
-            self.path = Path(p)
-        self.matchobj = None
-
-    def group(self, n):
-        if self.matchobj is None:
-            return None
-        return self.matchobj.group(n)
-
-    def is_file(self):
-        return self.path.is_file()
-
-    def __repr__(self):
-        s = str(self.path)
-        return f'InputFile({s})'
-
-    def __str__(self):
-        return str(self.path)
-
-    @property
-    def stem(self):
-        return self.path.stem
-
-    @property
-    def name(self):
-        return self.path.name
 
 # The input to a Manifest is a list of these. Each of these can generate any
 # number of InputFile objects.
@@ -287,8 +202,8 @@ class Manifest:
     def specification(self):
         return self.spec
 
-    def prefix(self, p):
-        self._prefix = Path(p)
+    def prefix(self, path):
+        self._prefix = Path(path)
 
     def subdir(self, d):
         self._subdir = Path(d)
@@ -517,9 +432,9 @@ def _someroot(root):
     # older was put in place. When we abandon support for these python ver-
     # sions, this function can be removed and the old code can be put into
     # place. Check the commit that adds this comment for details.
-    if isinstance(root, SourceDirectory):
+    if isinstance(root, p.SourceDirectory):
         return root.path
-    elif isinstance(root, BuildDirectory):
+    elif isinstance(root, p.BuildDirectory):
         return root.path
     elif isinstance(root, Path):
         return root
@@ -528,14 +443,14 @@ def _someroot(root):
 
 def genFile(g, root):
     realroot = _someroot(root)
-    f = InputFile(realroot / g)
+    f = p.InputFile(realroot / g)
     return [ f ] if f.is_file() else []
 
 def genFromFile(f, file_root, spec_root):
     spec = _someroot(spec_root) / f
     if not spec.is_file():
         # This will cause an ignorable issue to be flagged.
-        return [ InputFile(spec) ]
+        return [ p.InputFile(spec) ]
     rv = [ ]
     with open(spec, mode = 'r', encoding = 'utf-8') as sp:
         for n, string in enumerate(sp):
@@ -544,12 +459,12 @@ def genFromFile(f, file_root, spec_root):
                 continue
             if line == "":
                 continue
-            rv.append(InputFile(_someroot(file_root) / line))
+            rv.append(p.InputFile(_someroot(file_root) / line))
     return rv
 
 def genGlob(pat, root):
-    p = _someroot(root)
-    return list(p.glob(pat))
+    d = _someroot(root)
+    return list(d.glob(pat))
 
 def genRegex(pat, root):
     pattern = re.compile(pat)
@@ -559,7 +474,7 @@ def genRegex(pat, root):
     for f in files:
         m = pattern.search(f)
         if m:
-            rv.append(InputFile(realroot / f, m))
+            rv.append(p.InputFile(realroot / f, m))
     return rv
 
 def genZephyr(builddir):
@@ -568,39 +483,39 @@ def genZephyr(builddir):
     byproducts = re.compile('BYPRODUCT_KERNEL_')
     for key, value in cmake.items():
         if byproducts.match(key):
-            files.append(InputFile(value))
+            files.append(p.InputFile(value))
 
     if len(files) == 0:
         return []
 
     base = files[0].stem
 
-    more0 = list(map(lambda ext: InputFile(builddir /
-                                           Path('zephyr') /
-                                           Path(base + '.' + ext)),
+    more0 = list(map(lambda ext: p.InputFile(builddir /
+                                             Path('zephyr') /
+                                             Path(base + '.' + ext)),
                      [ 'dts', 'lst', 'map', 'stat', 'symbols' ]))
 
     more1 = [ builddir / Path('zephyr/include/generated/zephyr/autoconf.h'),
               builddir / Path('zephyr/.config') ]
 
     for file in more0 + more1:
-        p = InputFile(file)
-        if p.is_file():
-            files.append(p)
+        f = p.InputFile(file)
+        if f.is_file():
+            files.append(f)
 
     return files
 
 def renameZephyr(name):
     def _rename(f):
-        p = Path(f)
+        fp = Path(f)
         # 'autoconf.h' and '.config' are a little weird. The other zephyr style
         # file names are easy to rename.
-        if p.name == 'autoconf.h':
+        if fp.name == 'autoconf.h':
             return name + '-config.h'
-        elif p.name == '.config':
+        elif fp.name == '.config':
             return name + '.config'
         else:
-            return p.with_stem(name)
+            return fp.with_stem(name)
     return _rename
 
 def basenameZephyr(builddir):
@@ -608,8 +523,8 @@ def basenameZephyr(builddir):
     byproducts = re.compile('BYPRODUCT_KERNEL_')
     for key, value in cmake.items():
         if byproducts.match(key):
-            p = Path(value)
-            return p.stem
+            fp = Path(value)
+            return fp.stem
     return 'zephyr'
 
 # Here are constructors for ManifestEntry instances: file, glob, regex, and
@@ -623,7 +538,7 @@ def fromFile(f, file_root = '.', spec_root = '.'):
                          'fromFile(' + f + ')')
 
 def glob(pat, root = '.'):
-    return ManifestEntry(lambda: map(InputFile, genGlob(pat, root)),
+    return ManifestEntry(lambda: map(p.InputFile, genGlob(pat, root)),
                          f'glob({pat}, root = {root})')
 
 def regex(pat, root = '.'):
@@ -657,8 +572,8 @@ def _regex_filter(patterns, ifmatch, ifnotmatch):
 
     def _filter(f):
         string = str(f)
-        for p in ps:
-            if re.search(p, string):
+        for pat in ps:
+            if re.search(pat, string):
                 return ifmatch
         return ifnotmatch
     return _filter
