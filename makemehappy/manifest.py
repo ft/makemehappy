@@ -1,3 +1,22 @@
+# In order to deploy a specific set of desired artefacts from a number of
+# different sub-build-trees into a consistent and reproducible structure, mmh
+# uses the notion of a manifest to specify this mapping, execute and verify it.
+#
+# This module defines two data types: ManifestEntry and Manifest. The former
+# represents a way to generate input files, filter them down, and transform
+# their names for deployment, and the latter is a class that combines a number
+# of ManifestEntry objects and implements a number of operations upon them.
+# Notably the process of copying input files into a deployment tree file
+# structure.
+#
+# The module has a top-level "manifest" object that is an instance of the
+# Manifest class. This one specific object is used by mmh's "deploy" sub-
+# command.
+#
+# The rest of the module is a number of function that represent an EDSL for
+# specifying manifests in mmh's deploy process: Ways to specify ManifestEntry
+# objects, filter predicates, as well as transformation functions.
+
 import contextlib
 import hashlib
 import math
