@@ -531,9 +531,9 @@ class Manifest:
         if len(errors) == 0:
             # We didn't see any errors while copying. Next: checksums.
             outfiles.sort()
-            variants = [ (hashlib.md5,    'md5sum'),
-                         (hashlib.sha256, 'sha256sum'),
-                         (hashlib.sha512, 'sha512sum') ]
+            variants = [ (hashlib.md5,    'md5'),
+                         (hashlib.sha256, 'sha256'),
+                         (hashlib.sha512, 'sha512') ]
             for (construct, extension) in variants:
                 out = Path(self.checksumName + '.' + extension)
                 print('Generating checksums:', out)
