@@ -361,6 +361,22 @@ _makemehappy-system() {
     return ret
 }
 
+_makemehappy-verify() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Verify checksum files in deployments"
+        return
+    fi
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-b --basename)'{-b,--basename}'[Basename for checksum files in directories]' \
+               '(-r --root-directory)'{-r,--root-directory}'[Root directory for files in checksum files]' \
+               '*:: :_path_files' \
+        && ret=0
+}
+
 # Main completion entry point
 
 _makemehappy() {

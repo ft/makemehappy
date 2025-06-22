@@ -19,6 +19,7 @@ from makemehappy.cut import fetchCheckout
 from makemehappy.cut import gitCheckout
 from makemehappy.yamlstack import ConfigStack, SourceStack
 from makemehappy.loghandler import MMHLogHandler
+from makemehappy.verify import mmh_verify
 
 version = "@@VERSION@@"
 fullname = "MakeMeHappy"
@@ -321,6 +322,17 @@ ap_show = subp.add_parser(
 
 ap_show.set_defaults(sub_command = 'show-source')
 ap_show.add_argument('modules', nargs = '*')
+
+# verify
+ap_verify = subp.add_parser(
+    'verify', help = 'Verify checksum data')
+ap_verify.add_argument(
+    "-b", "--basename", default = 'contents',
+    help = "Basename for checksum files in directories")
+ap_verify.add_argument(
+    "-r", "--root-directory", default = '.',
+    help = "Root directory for files in checksum files")
+ap_verify.add_argument('sources', nargs = '*')
 
 # system
 ap_system = subp.add_parser(
@@ -1037,6 +1049,9 @@ elif (cmdargs.sub_command == "download-sources"):
                       fail,
                       failed[fail]['repository'],
                       failed[fail]['source'])
+
+elif (cmdargs.sub_command == "verify"):
+    commandReturnValue = 0 if mmh_verify(log, cmdargs) else 1
 
 elif (cmdargs.sub_command == "system"):
     if (('system' not in cmdargs) or (cmdargs.system is None)):
