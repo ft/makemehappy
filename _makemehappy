@@ -339,8 +339,15 @@ _makemehappy-system() {
             compset -n 1
 
             case $line[1] in
-            (build|clean|rebuild)
+            (clean|rebuild)
                 _arguments -C -s -w : \
+                           '(-h --help)'{-h,--help}'[display help message]' \
+                           '*:: :__makemehappy-system-instances' \
+                    && ret=0
+                ;;
+            (build)
+                _arguments -C -s -w : \
+                           '(-f --force-build)'{-f,--force-build}'[force all build phases]' \
                            '(-h --help)'{-h,--help}'[display help message]' \
                            '*:: :__makemehappy-system-instances' \
                     && ret=0

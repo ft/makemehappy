@@ -9,6 +9,8 @@ import makemehappy.hooks as h
 import makemehappy.manifest as m
 import makemehappy.zephyr as z
 
+from pathlib import Path
+
 defaults = { 'build-configs'      : [ 'debug', 'release' ],
              'build-system'       : None,
              'build-tool'         : 'ninja',
@@ -122,6 +124,22 @@ class InvalidBuildSpec(Exception):
 class SystemFailedSomeBuilds(Exception):
     pass
 
+def gotConfigureStamp(d):
+    f = Path(d) / '.mmh-configure-stamp'
+    return f.exists()
+
+def removeConfigureStamp(d):
+    root = Path(d)
+    if root.is_dir() == False:
+        return
+    f = root / '.mmh-configure-stamp'
+    if f.exists():
+        f.unlink()
+
+def touchConfigureStamp(d):
+    f = Path(d) / '.mmh-configure-stamp'
+    f.touch(mode = 0o666, exist_ok = True)
+
 class SystemInstanceBoard:
     def __init__(self, sys, board, tc, cfg):
         self.sys = sys
@@ -167,7 +185,10 @@ class SystemInstanceBoard:
             buildtool   = self.spec['build-tool'],
             buildsystem = self.spec['build-system'])
 
+        removeConfigureStamp(self.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
+        if (rc == 0):
+            touchConfigureStamp(self.builddir)
         self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
@@ -235,7 +256,10 @@ class SystemInstanceZephyr:
             modulepath  = build['zephyr-module-path'],
             modules     = build['modules'])
 
+        removeConfigureStamp(self.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
+        if (rc == 0):
+            touchConfigureStamp(self.builddir)
         self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
@@ -369,6 +393,9 @@ class SystemInstance:
         return success
 
     def build(self):
+        if (not self.sys.args.force_build and
+           gotConfigureStamp(self.instance.builddir)):
+            return self.rebuild()
         self.success = (self.configure() and
                         self.compile()   and
                         self.test()      and

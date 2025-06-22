@@ -371,7 +371,9 @@ sys_db.add_argument('instances', default = [ ], nargs = '*')
 # build
 sys_build = sub_system.add_parser(
     'build', help = 'Build all or specified build instances')
-
+sys_build.add_argument(
+    "-f", "--force-build", action = "store_true",
+    help = "force all build phases")
 sys_build.add_argument('instances', default = [ ], nargs = '*')
 
 # rebuild
