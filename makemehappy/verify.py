@@ -24,7 +24,13 @@ def verifyDirectory(log, args, d):
         if len(failed) > 0:
             rv = False
             print(' failed!')
-            errors.append((None, variant, failed))
+            for error in failed:
+                msg = error.msg()
+                if isinstance(msg, list):
+                    for line in msg:
+                        print('   ', line)
+                else:
+                    print('   ', msg)
         else:
             print(' ok.')
     return rv

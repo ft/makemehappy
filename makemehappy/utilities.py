@@ -309,6 +309,36 @@ class InvalidChecksumRecord(Exception):
 class ChecksumVariantMismatch(Exception):
     pass
 
+class FileCopyError:
+    def __init__(self, infile, outfile, error):
+        self.infile = infile
+        self.outfile = outfile
+        self.error = error
+
+    def msg(self):
+        return [ f'install({self.infile}',
+                 f'        {self.outfile})',
+                 f'  {str(self.error)}']
+
+class FileAccessError:
+    def __init__(self, file, error):
+        self.file = file
+        self.error = error
+
+    def msg(self):
+        return str(self.error)
+
+class FileVerificationError:
+    def __init__(self, file, expect, actual):
+        self.file = file
+        self.expect = expect
+        self.actual = actual
+
+    def msg(self):
+        return [ self.file,
+                 '  expect: ' + self.expect,
+                 '  actual: ' + self.actual ]
+
 def checksumTokenise(line):
     m = re.match('^([0-9a-fA-F]+)  (.*)$', line)
     if (len(m.groups()) != 2):
@@ -361,9 +391,12 @@ def checksumVerify(file, root = '.', variant = None):
     errors = []
     for (expect, filename) in data:
         fn = realroot / filename
-        actual = checksumFile(fn, algo)
-        if expect != actual:
-            errors.append((fn, expect, actual))
+        try:
+            actual = checksumFile(fn, algo)
+            if expect != actual:
+                errors.append(FileVerificationError(fn, expect, actual))
+        except FileNotFoundError as e:
+            errors.append(FileAccessError(fn, e))
     return errors
 
 def checksumRead(file, variant = None):

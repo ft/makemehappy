@@ -403,7 +403,8 @@ class Manifest:
                     if raiseException:
                         raise e
                     else:
-                        errors.append((infile, outfile, error))
+                        errors.append(
+                            mmh.FileCopyError(infile, outfile, error))
 
         if len(errors) == 0:
             # We didn't see any errors while copying. Next: checksums.
@@ -426,7 +427,7 @@ class Manifest:
                     if raiseException:
                         raise e
                     else:
-                        errors.append((None, out, error))
+                        errors.append(mmh.FileGenerationError(out, error))
 
         if len(errors) == 0:
             for variant in [ 'md5', 'sha256', 'sha512' ]:
@@ -438,7 +439,7 @@ class Manifest:
                                             variant)
                 if len(failed) > 0:
                     print(' failed!')
-                    errors.append((None, variant, failed))
+                    errors.extend(failed)
                 else:
                     print(' ok.')
 

@@ -739,13 +739,13 @@ class System:
             return True
 
         print(f'{errorsn} errors while deploying. Please check:')
-        for (infile, outfile, error) in errors:
-            if infile is None:
-                print(f'  {outfile}: {error}')
+        for error in errors:
+            msg = error.msg()
+            if isinstance(msg, list):
+                for line in msg:
+                    print(' ', line)
             else:
-                print(f'  install({infile}')
-                print(f'          {outfile})')
-                print(f'    {error}')
+                print(' ', msg)
 
         return False
 

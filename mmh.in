@@ -1053,7 +1053,19 @@ elif (cmdargs.sub_command == "download-sources"):
                       failed[fail]['source'])
 
 elif (cmdargs.sub_command == "verify"):
-    commandReturnValue = 0 if mmh_verify(log, cmdargs) else 1
+    try:
+        commandReturnValue = 0 if mmh_verify(log, cmdargs) else 1
+    except Exception as e:
+        print()
+        if (len(e.args) > 0):
+            log.error(f'{type(e).__name__}: {e}')
+        else:
+            log.error(f'{type(e).__name__}')
+        if (cmdargs.log_to_file):
+            runResult(cfg, cmdargs)
+        if (cmdargs.raise_exceptions):
+            raise e
+        commandReturnValue = 1
 
 elif (cmdargs.sub_command == "system"):
     if (('system' not in cmdargs) or (cmdargs.system is None)):
@@ -1067,6 +1079,9 @@ elif (cmdargs.sub_command == "system"):
 
     if ('instances' not in cmdargs):
         cmdargs.instances = [ ]
+
+    if ('force_build' not in cmdargs):
+        cmdargs.force_build = False
 
     cfg.load()
     adjustConfig(cfg, cmdargs)
