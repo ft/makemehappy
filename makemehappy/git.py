@@ -2,7 +2,7 @@ import re
 
 import makemehappy.utilities as mmh
 
-def toplevel(path):
+def toplevel(path = '.'):
     (stdout, stderr, rc) = mmh.stdoutProcess(
         ['git', '-C', path, 'rev-parse', '--show-toplevel'])
     return stdout if (rc == 0) else None
