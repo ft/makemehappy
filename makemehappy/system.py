@@ -682,7 +682,11 @@ class System:
         final = m.manifest.final()
 
         if (self.args.show):
-            for line in m.manifest.listSpec():
+            spec = m.manifest.listSpec()
+            if spec is None:
+                print('Manifest yielded empty spec.')
+                return True
+            for line in spec:
                 print(line)
             print(f'Deployment into: {final}')
             return True
@@ -691,7 +695,11 @@ class System:
         m.manifest.collect()
 
         if (self.args.listCollection):
-            for line in m.manifest.listCollection():
+            col = m.manifest.listCollection()
+            if col is None:
+                print('Manifest yielded empty file collection.')
+                return True
+            for line in col:
                 print(line)
             print(f'Deployment into: {final}')
             return True
@@ -740,6 +748,9 @@ class System:
 
         print(f'{errorsn} errors while deploying. Please check:')
         for error in errors:
+            if isinstance(error, str):
+                print('  ' + error)
+                continue
             msg = error.msg()
             if isinstance(msg, list):
                 for line in msg:

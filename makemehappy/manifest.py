@@ -298,6 +298,8 @@ class Manifest:
         return errors
 
     def listSpec(self):
+        if len(self.entries) == 0:
+            return None
         tindex = 'Index'
         tgen = 'Generator'
         tdest = 'Destination'
@@ -332,6 +334,9 @@ class Manifest:
     def listCollection(self):
         if self.collection is None:
             raise BareManifest
+
+        if len(self.collection) == 0:
+            return None
 
         tindex = 'Index'
         tfile = 'Input/Output'
@@ -376,6 +381,9 @@ class Manifest:
     def deploy(self, verbose = False, raiseException = False):
         if self.collection is None:
             raise BareManifest
+
+        if len(self.collection) == 0:
+            return [ 'Manifest yielded empty collection' ]
 
         finalDestination = self.final()
 
