@@ -202,6 +202,7 @@ class Manifest:
         self.entries = []
         self.collection = None
         self._prefix = None
+        self._subdir = None
         self.spec = None
         self.installcb = None
         self.checksumName = 'contents'
