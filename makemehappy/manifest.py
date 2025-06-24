@@ -428,7 +428,7 @@ class Manifest:
                     if raiseException:
                         raise e
                     else:
-                        errors.append(mmh.FileGenerationError(out, error))
+                        errors.append(mmh.FileAccessError(out, error))
 
         if len(errors) == 0:
             for variant in [ 'md5', 'sha256', 'sha512' ]:
