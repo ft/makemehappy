@@ -21,6 +21,9 @@ class SourceDirectory:
         s = str(self.path)
         return f'SourceDirectory({s})'
 
+    def __str__(self):
+        return str(self.path)
+
 # A BuildDirectory is a pathlike object that references a directory, and
 # optional additional build-system state (via CMake's cache file).
 class BuildDirectory:
@@ -42,15 +45,24 @@ class BuildDirectory:
     def __str__(self):
         return str(self.path)
 
-    def cmake(self, force = False):
-        if not force and self.cmakeCache is not None:
+    def _cmake(self, key = None):
+        if key is None:
             return self.cmakeCache
+
+        if key in self.cmakeCache:
+            return self.cmakeCache[key]
+
+        return None
+
+    def cmake(self, key = None, force = False):
+        if not force and self.cmakeCache is not None:
+            return self._cmake(key)
 
         self.cmakeCacheFile = self / Path('CMakeCache.txt')
         self.log.info(f'Reading cmake-cache: {self.cmakeCacheFile}')
         self.cmakeCache = cmake.readCMakeCache(self.log, self.cmakeCacheFile)
 
-        return self.cmakeCache
+        return self._cmake(key)
 
 # An InputFile is a pathlike object that references a file, and optional
 # additional pattern matcher state for the file produced. Generator functions

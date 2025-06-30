@@ -598,7 +598,7 @@ class System:
             sys = self.newInstance(instance)
             sys.build()
             if not self.args.no_combinations:
-                self.combinations.addParent(instance, sys)
+                self.combinations.addParent(instance, self.buildRoot(), sys)
                 self.combinations.execute()
         return True
 
@@ -614,7 +614,7 @@ class System:
             sys = self.newInstance(instance)
             sys.rebuild()
             if not self.args.no_combinations:
-                self.combinations.addParent(instance, sys)
+                self.combinations.addParent(instance, self.buildRoot(), sys)
                 self.combinations.execute()
         return True
 

@@ -1,5 +1,5 @@
 import os
-import makemehappy.cmake as cmake
+import makemehappy.pathlike as p
 
 class Combination:
     def __init__(self, name, parents, run, kwargs):
@@ -44,37 +44,25 @@ class Combination:
             self.status = self.runner(self, parents)
         return self.status
 
+    def __str__(self):
+        return self.name
+
 class ParentInstance:
-    def __init__(self, log, name, data):
+    def __init__(self, log, name, buildroot, data):
         self.log = log
         self.name = name
         self.data = data
-        self.cmake = None
+        self.builddir = p.BuildDirectory(buildroot, self.name, self.log)
+        self.sourcedir = p.SourceDirectory(self.data.instance.systemdir)
 
-    def getCMakeCache(self):
-        if self.cmake is None:
-            self.cmake = cmake.readCMakeCache(
-                self.log,
-                os.path.join(self.data.instance.builddir, 'CMakeCache.txt'))
-        return self.cmake
+    def cmake(self, key = None, force = False):
+        return self.builddir.cmake(key, force)
 
-    def cmake_get(self, thing):
-        self.getCMakeCache()
-        if thing in self.cmake:
-            return self.cmake[thing]
-        return None
+    def buildDirectory(self):
+        return self.builddir
 
-    def install_directory(self):
-        return self.cmake_get('CMAKE_INSTALL_PREFIX')
-
-    def system_directory(self):
-        return self.data.instance.systemdir
-
-    def build_directory(self):
-        dir = self.data.instance.builddir
-        if not os.path.isabs(dir):
-            dir = os.path.join(self.data.instance.systemdir, dir)
-        return dir
+    def sourceDirectory(self):
+        return self.sourcedir
 
 class Registry:
     def __init__(self):
@@ -84,6 +72,9 @@ class Registry:
         self.finish = None
         self.log = None
         self.stats = None
+
+    def __call__(self, *args, **kwargs):
+        return self.register(*args, **kwargs)
 
     def setCallbacks(self, entry, finish):
         self.entry = entry
@@ -131,10 +122,24 @@ class Registry:
                 n = n + 1
         return n
 
-    def addParent(self, name, data):
-        self.parents[name] = ParentInstance(self.log, name, data)
+    def addParent(self, name, buildroot, data):
+        self.parents[name] = ParentInstance(self.log, name, buildroot, data)
 
     def register(self, name, parents, run, **kwargs):
+        """Register a build-combination.
+
+        This registers a build combination named "name", which requires the
+        list of "parents" to be build before it can be executed. The "run"
+        function must accept at least two arguments, the first argument will be
+        the name of the combination to be built, and the second being a list of
+        ParentInstance instances, corresponding to its parent list from the
+        "parents" argument.
+
+        Any other keyword arguments are passed to the "run" function verbatim.
+        It therefore will have to be able to accept those as well.
+
+        The "run" function must return a boolean value, that indicates whether
+        or not processing the combination succeeded or not."""
         self.log.info(f'Registering build-combination {name}' +
                       f'with {len(parents)} depencencies.')
         self.combinations[name] = Combination(name, parents, run, kwargs)
@@ -171,20 +176,4 @@ class Registry:
                     if self.finish is not None:
                         self.finish(name, None if rc else 'failed')
 
-combinations = Registry()
-
-def combination(name, parents, run = None, **kwargs):
-    """Register a build-combination.
-
-    This registers a build combination named "name", which requires the list of
-    "parents" to be build before it can be executed. The "run" function must
-    accept at least two arguments, the first argument will be the name of the
-    combination to be built, and the second being a list of ParentInstance
-    instances, corresponding to its parent list from the "parents" argument.
-
-    Any other keyword arguments are passed to the "run" function verbatim. It
-    therefore will have to be able to accept those as well.
-
-    The "run" function must return a boolean value, that indicates whether or
-    not processing the combination succeeded or not."""
-    combinations.register(name, parents, run, **kwargs)
+combination = Registry()

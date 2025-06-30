@@ -28,7 +28,7 @@ commandReturnValue = 0
 
 log = Logger(fullname)
 log.handlers.append(MMHLogHandler())
-comb.combinations.setLog(log)
+comb.combination.setLog(log)
 
 etcdir = '@@ETCDIR@@'
 datadir = '@@DATADIR@@'
@@ -1086,7 +1086,7 @@ elif (cmdargs.sub_command == "system"):
     cfg.load()
     adjustConfig(cfg, cmdargs)
     try:
-        system = ms.System(log, version, cfg, cmdargs, comb.combinations)
+        system = ms.System(log, version, cfg, cmdargs, comb.combination)
         system.load()
 
         resultSuccess = True
