@@ -429,3 +429,31 @@ def checksumRead(file, variant = None):
             retval << (checksum, filename)
 
     return retval
+
+def filesExist(files):
+    # Return True if all file names named in deps exist. False otherwise.
+    return all(map(lambda f: Path(f).exists(), files))
+
+
+def fileUptodate(file, deps):
+    # Return True if file exists and is newer than all of the files listed in
+    # deps. Otherwise return False. If either file in deps does not exist,
+    # return False as well. See deps_satisfied() as well.
+    def __newer(a, b):
+        bp = Path(b)
+        if bp.exists() == False:
+            return False
+        return Path(a).stat().st_mtime > bp.stat().st_mtime
+
+    f = Path(file)
+    if f.exists() == False:
+        return False
+
+    return all(map(lambda d: __newer(f, d), deps))
+
+def cat(files, outfile):
+    # Concatenate multiple input files into a single output file.
+    with open(outfile, 'wb') as ofh:
+        for filename in files:
+            with open(filename, 'rb') as ifh:
+                ofh.write(ifh.read())
