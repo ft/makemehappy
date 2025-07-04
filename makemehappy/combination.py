@@ -1,6 +1,8 @@
 import os
 import makemehappy.pathlike as p
 
+from pathlib import Path
+
 class Combination:
     def __init__(self, name, parents, run, kwargs):
         self.name = name
@@ -10,6 +12,8 @@ class Combination:
         self.done = False
         self.status = None
         self.log = None
+        self.buildroot = None
+        self.out = None
 
     def ensureLog(self, log):
         if self.log is not None:
@@ -36,8 +40,18 @@ class Combination:
             return False
         return self.possible(instances)
 
+    def outputDirectory(self):
+        return self.out
+
+    def buildRoot(self):
+        return self.buildroot
+
     def run(self, parents):
         self.done = True
+        self.buildroot = Path(parents[0].buildroot)
+        self.out = self.buildroot / 'combination' / self.name
+        self.log.info(f'mkdir({self.out})')
+        self.out.mkdir(parents = True, exist_ok = True)
         if self.runner is None:
             self.status = True
         else:
@@ -52,6 +66,7 @@ class ParentInstance:
         self.log = log
         self.name = name
         self.data = data
+        self.buildroot = buildroot
         self.builddir = p.BuildDirectory(buildroot, self.name, self.log)
         self.sourcedir = p.SourceDirectory(self.data.instance.systemdir)
 
