@@ -586,7 +586,7 @@ class System:
     def matchZephyrAlias(self, name):
         return self.zephyr_aliases.get(name, name)
 
-    def buildInstances(self, instances):
+    def _builder(self, fnc, instances):
         for i in instances:
             self.log.info("    {}".format(i))
         cn = 0
@@ -596,27 +596,18 @@ class System:
         for instance in instances:
             mmh.nextInstance()
             sys = self.newInstance(instance)
-            sys.build()
+            f = getattr(sys, fnc)
+            f()
             if not self.args.no_combinations:
                 self.combinations.addParent(instance, self.buildRoot(), sys)
                 self.combinations.execute()
         return True
 
     def rebuildInstances(self, instances):
-        for i in instances:
-            self.log.info("    {}".format(i))
-        cn = 0
-        if not self.args.no_combinations:
-            cn = self.combinations.countPossible(instances)
-        mmh.expectedInstances(len(instances) + cn)
-        for instance in instances:
-            mmh.nextInstance()
-            sys = self.newInstance(instance)
-            sys.rebuild()
-            if not self.args.no_combinations:
-                self.combinations.addParent(instance, self.buildRoot(), sys)
-                self.combinations.execute()
-        return True
+        self._builder('rebuild', instances)
+
+    def buildInstances(self, instances):
+        self._builder('build', instances)
 
     def cleanInstances(self, instances):
         for v in instances:
