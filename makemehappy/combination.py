@@ -1,13 +1,31 @@
 import os
 import makemehappy.pathlike as p
+import makemehappy.utilities as mmh
 
 from pathlib import Path
 
+class CombinationOutput:
+    def __init__(self, parent, name, inputs):
+        self.parent = parent
+        self.name = name
+        self.inputs = inputs
+        self.meta = self.parent.outputDirectory() / ('.' + self.name + '.yaml')
+        self.output = self.parent.outputDirectory() / self.name
+
+    def depsSatisfied(self):
+        return mmh.filesExist(self.inputs)
+
+    def alreadyUptodate(self):
+        return mmh.fileUptodate(self.output, self.inputs)
+
+    def shortcutPossible(self):
+        return self.depsSatisfied() and self.alreadyUptodate()
+
 class Combination:
-    def __init__(self, name, parents, run, kwargs):
+    def __init__(self, name, parents, cbs, kwargs):
         self.name = name
         self.parents = parents
-        self.runner = run
+        (self.generate, self.run) = cbs
         self.kwargs = kwargs
         self.done = False
         self.status = None
@@ -140,7 +158,7 @@ class Registry:
     def addParent(self, name, buildroot, data):
         self.parents[name] = ParentInstance(self.log, name, buildroot, data)
 
-    def register(self, name, parents, run, **kwargs):
+    def register(self, name, parents, cbs, **kwargs):
         """Register a build-combination.
 
         This registers a build combination named "name", which requires the
@@ -157,7 +175,7 @@ class Registry:
         or not processing the combination succeeded or not."""
         self.log.info(f'Registering build-combination {name}' +
                       f'with {len(parents)} depencencies.')
-        self.combinations[name] = Combination(name, parents, run, kwargs)
+        self.combinations[name] = Combination(name, parents, cbs, kwargs)
 
     def listParents(self, lst):
         return list(map(lambda p: self.parents[p], lst))
