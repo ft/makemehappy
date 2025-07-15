@@ -555,7 +555,9 @@ class System:
                         self.log.error("Unknown combination: {}", instance)
                         error = True
                     else:
-                        lst.extend(self.combinations.combinations[name].parents)
+                        for p in self.combinations.combinations[name].parents:
+                            if p not in lst:
+                                lst.append(p)
                 else:
                     lst.append(instance)
             for instance in lst:
@@ -563,6 +565,7 @@ class System:
                     self.log.error("Unknown instance: {}", instance)
                     error = True
             self.args.instances = list(set(lst))
+            self.args.instances.sort()
             if (error):
                 raise(InvalidSystemSpec())
         if ('evaluate' in self.data):

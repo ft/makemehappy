@@ -459,6 +459,7 @@ def cat(files, outfile):
         for filename in files:
             with open(filename, 'rb') as ifh:
                 ofh.write(ifh.read())
+    return True
 
 class SourceCodeState:
     def __init__(self, algorithm = hashlib.sha256):
