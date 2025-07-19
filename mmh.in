@@ -49,6 +49,7 @@ except ValueError:
     cmakeParameters = None
 
 ap = argparse.ArgumentParser()
+mmh.sourceCodeState.add(os.path.realpath(__file__))
 
 ### Top Level Options
 

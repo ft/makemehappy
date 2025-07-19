@@ -3,6 +3,7 @@ from __future__ import print_function
 import contextlib
 import fnmatch
 import hashlib
+import inspect
 import math
 import os
 import pprint
@@ -280,6 +281,7 @@ def loadPython(log, fn, localenv = None):
         log.error(f'Python fragment is world-writeable: {fn}')
         raise WorldWriteableFragment(fn, info)
     log.info(f'Loading python fragment: {fn}')
+    sourceCodeState.add(fn)
     with open(fn, mode = "r", encoding = "utf-8") as fragment:
         code = fragment.read()
         exec(code, None, localenv)
@@ -457,3 +459,98 @@ def cat(files, outfile):
         for filename in files:
             with open(filename, 'rb') as ifh:
                 ofh.write(ifh.read())
+
+class SourceCodeState:
+    def __init__(self, algorithm = hashlib.sha256):
+        # Mapping of modules to checksums.
+        self.modules = {}
+        # Mapping of other source files to checksums.
+        self.sources = {}
+        # This is sorted list of keys in self.modules. This is used to check if
+        # that list is still up-to-date. If it is not, we have to recalculate
+        # self.data and self.hashed. We don't need handling like this for
+        # self.sources, because we control how things are added to that map-
+        # ping. And any time we do, we invalidate the calculation. This does
+        # assume, though, that code does not change at runtime. So none of the
+        # checksums will be produced more than once.
+        self.loadedModules = []
+        # This is a reproducible string representation of all the data in
+        # self.modules and self.sources.
+        self.string = None
+        # This is a sha256 hash of self.string.
+        self.hashed = None
+        # The checksum algorithm used by this class.
+        self.algorithm = algorithm
+
+    def _checksumFile(self, file):
+        return checksumFile(file, self.algorithm)
+
+    def _checksumString(self, string):
+        state = self.algorithm()
+        state.update(string.encode('utf-8'))
+        return state.hexdigest()
+
+    def add(self, file):
+        if file in self.sources:
+            return
+        self.hashed = self.string = None
+        # We add the file into the mapping. But we only produce its checksum
+        # when it is needed.
+        self.sources[file] = None
+        #self.sources[file] = checksumFile(file, hashlib.sha256)
+        #print('DEBUG:', file, self.sources[file])
+
+    def _needsUpdate(self):
+        if self.string is None:
+            return True
+        if self.hashed is None:
+            return True
+        ms = list(self.modules.keys())
+        ms.sort()
+        return self.loadedModules != ms
+
+    def _moduleCode(self, module):
+        try:
+            code = inspect.getsource(module)
+        except TypeError:
+            code = '<built-in-module>'
+        except OSError:
+            code = '<code-unavailable>'
+        return code
+
+    def _update(self):
+        if self._needsUpdate() == False:
+            return
+
+        for file in self.sources:
+            if self.sources[file] is None:
+                self.sources[file] = self._checksumFile(file)
+
+        for name, module in sys.modules.items():
+            if name not in self.modules:
+                code = self._moduleCode(module)
+                csum = self._checksumString(code)
+                self.modules[name] = csum
+
+        ms = list(self.modules.keys())
+        ms.sort()
+        self.loadedModules = ms
+
+        self.string = ''
+        for f in self.sources:
+            self.string += self.sources[f] + ' ' + f + '\n'
+
+        for m in ms:
+            self.string += self.modules[m] + ' ' + m + '\n'
+
+        self.hashed = self._checksumString(self.string)
+
+    def data(self):
+        self._update()
+        return self.string
+
+    def get(self):
+        self._update()
+        return self.hashed
+
+sourceCodeState = SourceCodeState()
