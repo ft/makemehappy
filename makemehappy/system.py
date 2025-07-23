@@ -658,6 +658,10 @@ class System:
             self.log.info("Cleaning selected instance(s):")
             self.cleanInstances(self.args.instances)
 
+    def cmdCombinations(self):
+        print('system combinations: Not implemented yet!')
+        return False
+
     def deploy(self):
         m.manifest.prefix(self.args.destination)
 

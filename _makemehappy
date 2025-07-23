@@ -327,6 +327,7 @@ _makemehappy-system() {
             commands=(
                 build:'perform config/build/install/test on system'
                 clean:'clean build trees'
+                combinations:'inspect system combination builds'
                 deploy:'run system deployment'
                 db:'link compile command db to system root'
                 list:'list specified instances'
