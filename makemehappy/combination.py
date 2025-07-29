@@ -42,6 +42,9 @@ import makemehappy.utilities as mmh
 
 from pathlib import Path
 
+COMBINATION_STATE_FILE_VERSION = 0
+OUTPUT_STATE_FILE_VERSION = 0
+
 class InvalidCombinationGenerator(Exception):
     pass
 
@@ -76,8 +79,6 @@ class Combination:
         self.checksumCache = {}
         self.printer = None
         self.verbose = None
-        self.COMBINATION_STATE_FILE_VERSION = 0
-        self.OUTPUT_STATE_FILE_VERSION = 0
 
     def _validOuputs(self, lst):
         if isinstance(lst, list) is False:
@@ -142,7 +143,8 @@ class Combination:
             self.data = mmh.load(self.stateFile)
         else:
             self.data = {}
-        self.data['version'] = self.COMBINATION_STATE_FILE_VERSION
+        self.data['version'] = COMBINATION_STATE_FILE_VERSION
+        self.data['combination'] = self.name
         self.data['timestamp'] = datetime.datetime.now(datetime.UTC)
         self.data['id'] = self.data['id'] + 1 if 'id' in self.data else 0
         self.data['mmh'] = self.mmhstate
@@ -186,7 +188,7 @@ class Combination:
     def addOutputState(self, ident, start, end, output, result):
         fn = self.out / ('.' + output.name + '.yaml')
         data = {}
-        data['version'] = self.OUTPUT_STATE_FILE_VERSION
+        data['version'] = OUTPUT_STATE_FILE_VERSION
         data['id'] = ident
         data['fresh'] = ident
         data['mmh'] = self.mmhstate
@@ -233,7 +235,7 @@ class Combination:
         if data is None:
             self.printer(f'{name}: Output meta-data could not be read')
             return False
-        if data['version'] != self.OUTPUT_STATE_FILE_VERSION:
+        if data['version'] != OUTPUT_STATE_FILE_VERSION:
             self.printer(f'{name}: Output meta-data incompatible')
             return False
         if data['mmh'] != self.data['mmh']:
@@ -376,7 +378,7 @@ class Registry:
 
         The "run" function must return a boolean value, that indicates whether
         or not processing the combination succeeded or not."""
-        self.log.info(f'Registering build-combination {name}' +
+        self.log.info(f'Registering build-combination {name} ' +
                       f'with {len(parents)} dependencies.')
         self.combinations[name] = Combination(name, parents, cbs, kwargs)
 
@@ -413,3 +415,118 @@ class Registry:
                         self.finish(name, None if rc else 'failed')
 
 combination = Registry()
+
+def _checksumFile(file):
+    return mmh.checksumFile(file, hashlib.sha256)
+
+def findOutputs(base):
+    rv = []
+    for candidate in Path(base).rglob('.*.yaml'):
+        if candidate.name == '.mmh-state.yaml':
+            continue
+        rv.append(candidate)
+    return rv
+
+def checkDependencies(lst):
+    deps = []
+    summary = 'intact'
+    for entry in lst:
+        p = Path(entry['file'])
+        data = { 'file': p }
+        if p.exists() == False:
+            summary = 'broken'
+            data['state'] = 'missing'
+            data['integrity'] = None
+            deps.append(data)
+            continue
+        chksum = _checksumFile(p)
+        data['integrity'] = 'broken'
+        data['expect'] = entry['checksum']
+        data['actual'] = chksum
+        if data['actual'] == data['expect']:
+            data['integrity'] = 'intact'
+        else:
+            summary = 'broken'
+        deps.append(data)
+    return (len(deps), summary, deps)
+
+def evaluateOutput(cdata, odata):
+    file = Path(odata['output']['file'])
+    isActive = cdata['id'] == odata['id']
+    isFresh = isActive and odata['id'] == odata['fresh']
+
+    state = 'stale'
+    if file.exists() == False:
+        state = 'missing'
+    elif isFresh:
+        state = 'fresh'
+    elif isActive:
+        state = 'active'
+
+    if state != 'missing':
+        chksum = _checksumFile(file)
+        integrity = 'broken'
+        if chksum == odata['output']['checksum']:
+            integrity = 'intact'
+    else:
+        integrity = None
+
+    (dn, ds, deps) = checkDependencies(odata['inputs'])
+
+    return { 'combination':  cdata,
+             'output':       odata,
+             'id':           odata['id'],
+             'fresh':        odata['fresh'],
+             'file':         file,
+             'name':         file.name,
+             'creation':     odata['output']['mtime'],
+             'isActive':     isActive,
+             'isFresh':      isFresh,
+             'state':        state,
+             'integrity':    integrity,
+             'dep-summary':  f'{dn}, {ds}',
+             'dependencies': deps }
+
+def renderOutput(data):
+    print(f"  {data['name']}")
+    label = 'state'
+    print(f"    {label:.<14}: {data['state']} (id: {data['fresh']})")
+    label = 'creation'
+    print(f"    {label:.<14}: {data['creation']}")
+    if data['integrity'] is not None:
+        label = 'integrity'
+        print(f"    {label:.<14}: {data['integrity']}")
+    label = 'dependencies'
+    print(f"    {label:.<14}: {data['dep-summary']}")
+
+def combinationOverview(prefix, root, start):
+    for state in Path(start).rglob('.mmh-state.yaml'):
+        cdata = mmh.load(state)
+        if cdata['version'] != COMBINATION_STATE_FILE_VERSION:
+            # We don't understand the state file version, but we can get the
+            # label for the combination we can't read from the name of the
+            # pathnames. So lets do that, let the user know and continue.
+            label = state.relative_to(root).parent
+            print(f'{label}: Incompatible state version: {cdata['version']}')
+            continue
+        label = prefix + '/' + cdata['combination']
+        print(f'Outputs produced by {label}:')
+        outputs = findOutputs(state.parent)
+        for output in outputs:
+            odata = mmh.load(output)
+            if odata['version'] != OUTPUT_STATE_FILE_VERSION:
+                # Similarly to the unsupported combination format version, with
+                # the output state, we can also guess the output file name from
+                # the name of the state file. Again, do that and continue.
+                label = output.stem[1:]
+                print(f'  {label}: Incompatible output version:',
+                      f'{odata['version']}')
+                continue
+            renderOutput(evaluateOutput(cdata, odata))
+
+def combinationTool(root, log, args):
+    prefix = 'combination'
+    root = Path(root)
+    start = root / prefix
+    combinationOverview(prefix, root, start)
+    return True

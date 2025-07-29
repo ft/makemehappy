@@ -659,8 +659,7 @@ class System:
             self.cleanInstances(self.args.instances)
 
     def cmdCombinations(self):
-        print('system combinations: Not implemented yet!')
-        return False
+        return comb.combinationTool(self.buildRoot(), self.log, self.args)
 
     def deploy(self):
         m.manifest.prefix(self.args.destination)
