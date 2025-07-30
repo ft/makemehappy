@@ -196,7 +196,14 @@ class Combination:
         data['time'] = { 'start': start,
                          'microseconds': round((end - start) / us) }
         data['inputs'] = self.checksumFileDictList(output.inputs)
-        data['output'] = self.checksumFileDict(self.out / output.name)
+        # We have to remove a possible entry in the checksum cache for the
+        # output file if it exists after running the generator. isUpToDate()
+        # may have produced a checksum for the output file, and that would
+        # produce an invalid state file.
+        final = self.out / output.name
+        if final in self.checksumCache:
+            del self.checksumCache[final]
+        data['output'] = self.checksumFileDict(final)
         data['result'] = result
         self.verbose(f'Generating output state: {fn}, id = {ident}')
         mmh.dump(fn, data)
