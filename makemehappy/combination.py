@@ -378,8 +378,9 @@ class Registry:
 
         The "run" function must return a boolean value, that indicates whether
         or not processing the combination succeeded or not."""
-        self.log.info(f'Registering build-combination {name} ' +
-                      f'with {len(parents)} dependencies.')
+        if mmh.verbosity > 0:
+            self.log.info(f'Registering build-combination {name} ' +
+                          f'with {len(parents)} dependencies.')
         self.combinations[name] = Combination(name, parents, cbs, kwargs)
 
     def listParents(self, lst):
