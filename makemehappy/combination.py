@@ -436,8 +436,7 @@ def checkDependencies(lst):
         data = { 'file': p }
         if p.exists() == False:
             summary = 'broken'
-            data['state'] = 'missing'
-            data['integrity'] = None
+            data['integrity'] = 'missing'
             deps.append(data)
             continue
         chksum = _checksumFile(p)
@@ -498,7 +497,32 @@ def renderOutput(data):
         label = 'integrity'
         print(f"    {label:.<14}: {data['integrity']}")
     label = 'dependencies'
-    print(f"    {label:.<14}: {data['dep-summary']}")
+    if mmh.verbosity > 0:
+        print(f"    {label:.<14}:")
+        for dep in data['dependencies']:
+            state = dep['integrity']
+            l = 'file'
+            print(f'      {l:.<10}: {dep["file"]}')
+            if state == 'missing':
+                l = 'state'
+                print(f'      {l:.<10}: {state}')
+            elif state == 'intact':
+                l = 'state'
+                print(f'      {l:.<10}: {state}')
+                l = 'checksum'
+                print(f'      {l:.<10}: {dep["actual"]}')
+            elif state == 'broken':
+                l = 'state'
+                print(f'      {l:.<10}: {state}')
+                l = 'expected'
+                print(f'      {l:.<10}: {dep["expect"]}')
+                l = 'actual'
+                print(f'      {l:.<10}: {dep["actual"]}')
+            else:
+                print(f'      Unknown state: {state}')
+            print('   ', '-' * 80)
+    else:
+        print(f"    {label:.<14}: {data['dep-summary']}")
 
 def _combinationInterate(prefix, root, start, before = None, perOutput = None):
     for state in Path(start).rglob('.mmh-state.yaml'):
