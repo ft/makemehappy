@@ -546,7 +546,7 @@ def renderOutput(data):
     else:
         print(f"    {label:.<14}: {data['dep-summary']}")
 
-def _combinationInterate(prefix, root, start, before = None, perOutput = None):
+def _combinationIterate(prefix, root, start, before = None, perOutput = None):
     for state in Path(start).rglob('.mmh-state.yaml'):
         cdata = mmh.load(state)
         if cdata['version'] != COMBINATION_STATE_FILE_VERSION:
@@ -588,9 +588,9 @@ def combinationOverview(prefix, root, start):
                    cdata, combination, odata, output):
         renderOutput(evaluateOutput(cdata, odata))
 
-    return _combinationInterate(prefix, root, start,
-                                before = _before,
-                                perOutput = _perOutput)
+    return _combinationIterate(prefix, root, start,
+                               before = _before,
+                               perOutput = _perOutput)
 
 def combinationGC(prefix, root, start):
     def _perOutput(prefix, root, start, state,
@@ -614,8 +614,8 @@ def combinationGC(prefix, root, start):
             return False
         return True
 
-    return _combinationInterate(prefix, root, start,
-                                perOutput = _perOutput)
+    return _combinationIterate(prefix, root, start,
+                               perOutput = _perOutput)
 
 def combinationCleanup(prefix, root, start):
     rc = True
