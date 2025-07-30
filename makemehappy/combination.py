@@ -472,10 +472,13 @@ def evaluateOutput(cdata, odata):
 
     if state != 'missing':
         chksum = _checksumFile(file)
+        expect = odata['output']['checksum']
         integrity = 'broken'
-        if chksum == odata['output']['checksum']:
+        if chksum == expect:
             integrity = 'intact'
     else:
+        chksum = None
+        expect = None
         integrity = None
 
     (dn, ds, deps) = checkDependencies(odata['inputs'])
@@ -491,6 +494,8 @@ def evaluateOutput(cdata, odata):
              'isFresh':      isFresh,
              'state':        state,
              'integrity':    integrity,
+             'checksum':     chksum,
+             'expected':     expect,
              'dep-summary':  f'{dn}, {ds}',
              'dependencies': deps }
 
@@ -503,6 +508,16 @@ def renderOutput(data):
     if data['integrity'] is not None:
         label = 'integrity'
         print(f"    {label:.<14}: {data['integrity']}")
+        if data['integrity'] != 'intact':
+            label = 'file'
+            print(f"    {label:.<14}: {data['file']}")
+            label = 'expected'
+            print(f"    {label:.<14}: {data['expected']}")
+            label = 'actual'
+            print(f"    {label:.<14}: {data['checksum']}")
+        elif mmh.verbosity > 0:
+            label = 'checksum'
+            print(f"    {label:.<14}: {data['checksum']}")
     label = 'dependencies'
     if mmh.verbosity > 0:
         print(f"    {label:.<14}:")
