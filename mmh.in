@@ -399,6 +399,10 @@ sys_combinations.add_argument(
     help = "Remove combination outputs")
 
 sys_combinations.add_argument(
+    "-C", "--cleanup-dubious", action = 'store_true',
+    help = "Remove combination outputs that are not fully intact")
+
+sys_combinations.add_argument(
     "-g", "--garbage-collect", action = 'store_true',
     help = "Remove stale combination outputs")
 

@@ -496,6 +496,7 @@ def evaluateOutput(cdata, odata):
              'integrity':    integrity,
              'checksum':     chksum,
              'expected':     expect,
+             'dep-state':    ds,
              'dep-summary':  f'{dn}, {ds}',
              'dependencies': deps }
 
@@ -617,6 +618,42 @@ def combinationGC(prefix, root, start):
     return _combinationIterate(prefix, root, start,
                                perOutput = _perOutput)
 
+def combinationCleanupDubious(prefix, root, start):
+    def _outputIntact(data):
+        # State must be fresh or active, integrity must of 'intact', and
+        # dep-state must be 'intact'. Everything else is dubious.
+        if data['state'] != 'fresh' and data['state'] != 'active':
+            print(f'  Output state dubious: {data["state"]}')
+            return False
+        if data['integrity'] is None or data['integrity'] != 'intact':
+            print(f'  Output integrity dubious: {data["integrity"]}')
+            return False
+        if data['dep-state'] != 'intact':
+            print(f'  Dependency state dubious: {data["dep-state"]}')
+            return False
+        return True
+    def _perOutput(prefix, root, start, state,
+                   cdata, combination, odata, output):
+        data = evaluateOutput(cdata, odata)
+        if _outputIntact(data):
+            return True
+        file = data['file']
+        meta = file.parent / ('.' + file.name + '.yaml')
+
+        try:
+            if file.exists():
+                print(f'    Removing combination output: {file}')
+                file.unlink()
+            print(f'    Removing output meta: {meta}')
+            meta.unlink()
+        except Exception as e:
+            print(f'  Error: {e}')
+            return False
+        return True
+
+    return _combinationIterate(prefix, root, start,
+                               perOutput = _perOutput)
+
 def combinationCleanup(prefix, root, start):
     rc = True
     for state in Path(start).rglob('.mmh-state.yaml'):
@@ -684,6 +721,10 @@ def combinationTool(root, log, args):
 
     if args.cleanup_outputs:
         return combinationCleanup(prefix, root, start)
+
+    if args.cleanup_dubious:
+        print('Scanning for dubious combination outputs...')
+        return combinationCleanupDubious(prefix, root, start)
 
     if args.list_combinations:
         return combinationList(prefix, root, start)
