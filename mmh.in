@@ -394,6 +394,10 @@ sys_combinations = sub_system.add_parser(
     'combinations', aliases = [ 'com' ],
     help = 'Inspect system combination builds')
 
+sys_combinations.add_argument(
+    "-g", "--garbage-collect", action = 'store_true',
+    help = "Remove stale combination outputs")
+
 sys_combinations.add_argument('instances', default = [ ], nargs = '*')
 
 # deploy

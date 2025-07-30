@@ -353,6 +353,12 @@ _makemehappy-system() {
                            '*:: :__makemehappy-system-instances' \
                     && ret=0
                 ;;
+            (combinations|com)
+                _arguments -C -s -w : \
+                           '(-h --help)'{-h,--help}'[display help message]' \
+                           '(-g --garbage-collect)'{-g,--garbage-collect}'[remove stale combination outputs]' \
+                    && ret=0
+                ;;
             (deploy) ___makemehappy-system-deploy && ret=0 ;;
             (db)
                 _arguments -C -s -w : \

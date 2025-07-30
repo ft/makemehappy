@@ -499,7 +499,7 @@ def renderOutput(data):
     label = 'dependencies'
     print(f"    {label:.<14}: {data['dep-summary']}")
 
-def combinationOverview(prefix, root, start):
+def _combinationInterate(prefix, root, start, before = None, perOutput = None):
     for state in Path(start).rglob('.mmh-state.yaml'):
         cdata = mmh.load(state)
         if cdata['version'] != COMBINATION_STATE_FILE_VERSION:
@@ -509,8 +509,11 @@ def combinationOverview(prefix, root, start):
             label = state.relative_to(root).parent
             print(f'{label}: Incompatible state version: {cdata['version']}')
             continue
-        label = prefix + '/' + cdata['combination']
-        print(f'Outputs produced by {label}:')
+        combination = prefix + '/' + cdata['combination']
+        if before is not None:
+            rv = before(prefix, root, start, state, cdata, combination)
+            if rv == False:
+                return False
         outputs = findOutputs(state.parent)
         for output in outputs:
             odata = mmh.load(output)
@@ -522,11 +525,58 @@ def combinationOverview(prefix, root, start):
                 print(f'  {label}: Incompatible output version:',
                       f'{odata['version']}')
                 continue
-            renderOutput(evaluateOutput(cdata, odata))
+            if perOutput is not None:
+                rv = perOutput(prefix, root, start, state,
+                               cdata, combination,
+                               odata, output)
+                if rv == False:
+                    return False
+    return True
+
+def combinationOverview(prefix, root, start):
+    def _before(prefix, root, start, state, cdata, combination):
+        print(f'Outputs produced by {combination}:')
+
+    def _perOutput(prefix, root, start, state,
+                   cdata, combination, odata, output):
+        renderOutput(evaluateOutput(cdata, odata))
+
+    return _combinationInterate(prefix, root, start,
+                                before = _before,
+                                perOutput = _perOutput)
+
+def combinationGC(prefix, root, start):
+    def _perOutput(prefix, root, start, state,
+                   cdata, combination, odata, output):
+        data = evaluateOutput(cdata, odata)
+        if data['state'] != 'stale' and data['state'] != 'missing':
+            return True
+        file = data['file']
+        meta = file.parent / ('.' + file.name + '.yaml')
+
+        if data['state'] == 'stale':
+            print(f'Removing stale output: {file}')
+        else:
+            print(f'Removing output meta: {meta}')
+        try:
+            if file.exists():
+                file.unlink()
+            meta.unlink()
+        except Exception as e:
+            print(f'  Error: {e}')
+            return False
+        return True
+
+    return _combinationInterate(prefix, root, start,
+                                perOutput = _perOutput)
 
 def combinationTool(root, log, args):
     prefix = 'combination'
     root = Path(root)
     start = root / prefix
-    combinationOverview(prefix, root, start)
-    return True
+
+    if args.garbage_collect:
+        print('Scanning for stale combination outputs...')
+        return combinationGC(prefix, root, start)
+
+    return combinationOverview(prefix, root, start)
