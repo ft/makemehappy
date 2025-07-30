@@ -395,6 +395,10 @@ sys_combinations = sub_system.add_parser(
     help = 'Inspect system combination builds')
 
 sys_combinations.add_argument(
+    "-c", "--cleanup-outputs", action = 'store_true',
+    help = "Remove combination outputs")
+
+sys_combinations.add_argument(
     "-g", "--garbage-collect", action = 'store_true',
     help = "Remove stale combination outputs")
 

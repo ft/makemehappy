@@ -617,6 +617,24 @@ def combinationGC(prefix, root, start):
     return _combinationInterate(prefix, root, start,
                                 perOutput = _perOutput)
 
+def combinationCleanup(prefix, root, start):
+    rc = True
+    for state in Path(start).rglob('.mmh-state.yaml'):
+        combination = state.parent
+        outputs = findOutputs(state.parent)
+        for meta in outputs:
+            p = meta.parent
+            file = p / meta.stem[1:]
+            print(f'rm {file} (and {meta.name})')
+            try:
+                if file.exists():
+                    file.unlink()
+                meta.unlink()
+            except Exception as e:
+                print(f'  Error: {e}')
+                rc = False
+    return rc
+
 def combinationTool(root, log, args):
     prefix = 'combination'
     root = Path(root)
@@ -625,5 +643,8 @@ def combinationTool(root, log, args):
     if args.garbage_collect:
         print('Scanning for stale combination outputs...')
         return combinationGC(prefix, root, start)
+
+    if args.cleanup_outputs:
+        return combinationCleanup(prefix, root, start)
 
     return combinationOverview(prefix, root, start)
