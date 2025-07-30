@@ -635,6 +635,44 @@ def combinationCleanup(prefix, root, start):
                 rc = False
     return rc
 
+def combinationList(prefix, root, start):
+    rc = False
+    for state in Path(start).rglob('.mmh-state.yaml'):
+        rc = True
+        print(state.parent)
+    return rc
+
+def outputList(prefix, root, start):
+    rc = False
+    for state in Path(start).rglob('.mmh-state.yaml'):
+        combination = state.parent
+        outputs = findOutputs(state.parent)
+        for meta in outputs:
+            rc = True
+            p = meta.parent
+            file = p / meta.stem[1:]
+            print(file)
+    return rc
+
+def combinationQuery(prefix, root, start):
+    rc = False
+    prefix = 'combination'
+    for key in combination.combinations:
+        rc = True
+        print(prefix + '/' + key)
+    return rc
+
+def outputQuery(prefix, root, start):
+    rc = False
+    prefix = 'combination'
+    for key in combination.combinations:
+        rc = True
+        c = combination.combinations[key]
+        c.generate()
+        for output in c.outputs:
+            print(output)
+    return rc
+
 def combinationTool(root, log, args):
     prefix = 'combination'
     root = Path(root)
@@ -646,5 +684,14 @@ def combinationTool(root, log, args):
 
     if args.cleanup_outputs:
         return combinationCleanup(prefix, root, start)
+
+    if args.list_combinations:
+        return combinationList(prefix, root, start)
+
+    if args.list_outputs:
+        return outputList(prefix, root, start)
+
+    if args.query_combinations:
+        return combinationQuery(prefix, root, start)
 
     return combinationOverview(prefix, root, start)
