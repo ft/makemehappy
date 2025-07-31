@@ -555,7 +555,7 @@ def _combinationIterate(prefix, root, start, before = None, perOutput = None):
             # label for the combination we can't read from the name of the
             # pathnames. So lets do that, let the user know and continue.
             label = state.relative_to(root).parent
-            print(f'{label}: Incompatible state version: {cdata['version']}')
+            print(f'{label}: Incompatible state version: {cdata["version"]}')
             continue
         combination = prefix + '/' + cdata['combination']
         if before is not None:
@@ -571,7 +571,7 @@ def _combinationIterate(prefix, root, start, before = None, perOutput = None):
                 # the name of the state file. Again, do that and continue.
                 label = output.stem[1:]
                 print(f'  {label}: Incompatible output version:',
-                      f'{odata['version']}')
+                      f'{odata["version"]}')
                 continue
             if perOutput is not None:
                 rv = perOutput(prefix, root, start, state,
