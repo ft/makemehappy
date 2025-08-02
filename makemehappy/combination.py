@@ -252,8 +252,11 @@ class Combination:
         if chksum != data['output']['checksum']:
             self.printer(f'{name}: Output file is inconsistent')
             return False
-        oldInputs = list(map(lambda x: x['file'], data['inputs']))
         newInputs = list(map(str, output.inputs))
+        if newInputs == []:
+            self.printer(f'{name}: No dependencies, rebuilding always.')
+            return False
+        oldInputs = list(map(lambda x: x['file'], data['inputs']))
         if newInputs != oldInputs:
             self.printer(f'{name}: Input file spec has changed')
             return False
