@@ -284,7 +284,7 @@ def loadPython(log, fn, localenv = None):
     sourceCodeState.add(fn)
     with open(fn, mode = "r", encoding = "utf-8") as fragment:
         code = fragment.read()
-        exec(code, None, localenv)
+        exec(code, {}, localenv)
 
 def checksumFile(filename, variant = hashlib.md5, buffersize = 2**13):
     state = variant()
