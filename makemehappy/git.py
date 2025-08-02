@@ -35,6 +35,18 @@ def commitHash(path, commit = 'HEAD'):
         ['git', '-C', path, 'rev-parse', commit])
     return stdout if (rc == 0) else None
 
+def commitDateHuman(path, commit = 'HEAD'):
+    (stdout, stderr, rc) = mmh.stdoutProcess(
+        ['git', '-C', path, 'show', '-s',
+         '--date=format:%Y-%m-%d',
+         '--format=%cd', commit])
+    return stdout if (rc == 0) else None
+
+def commitDateUnix(path, commit = 'HEAD'):
+    (stdout, stderr, rc) = mmh.stdoutProcess(
+        ['git', '-C', path, 'show', '-s', '--format=%ct', commit])
+    return int(stdout) if (rc == 0) else None
+
 def _authorish(path, getname, getmail, commit):
     (stdout, stderr, rc) = mmh.stdoutProcess(
         ['git', '-C', path, 'show', '--quiet',
@@ -103,6 +115,8 @@ class GitInformation:
             return
         self.dirty = isDirty(self.path)
         self.commit = commitHash(self.path)
+        self.dateHuman = commitDateHuman(self.path)
+        self.dateUnix = commitDateUnix(self.path)
         self._tag = latestTag(self.path, self.tagpattern)
         if self._tag is None:
             self.tag = 'noversion'
