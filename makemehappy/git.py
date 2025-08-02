@@ -1,6 +1,7 @@
 import re
 
 import makemehappy.utilities as mmh
+import makemehappy.version as v
 
 def toplevel(path = '.'):
     (stdout, stderr, rc) = mmh.stdoutProcess(
@@ -109,6 +110,11 @@ class GitInformation:
         if self.valid is None:
             self.update()
 
+    def _isRelease(self):
+        return (self.dirty == False       and
+                self.tag   != "noversion" and
+                self.increment == 0)
+
     def update(self):
         self.valid = isWorktree(self.path)
         if not self.valid:
@@ -130,6 +136,24 @@ class GitInformation:
             self.increment = commitsSinceTag(self.path, self._tag)
         self.author = author(self.path)
         self.committer = committer(self.path)
+
+    def dict(self):
+        self.version_data = v.Version(self.version())
+        return {
+            'valid':      self.valid,
+            'release':    self._isRelease(),
+            'dirty':      self.dirty,
+            'commit':     self.commit,
+            'human-date': self.dateHuman,
+            'unix-date':  self.dateUnix,
+            'tag':        self.tag,
+            'major':      self.version_data.digits[0],
+            'minor':      self.version_data.digits[1],
+            'patch':      self.version_data.digits[2],
+            'increment':  self.increment,
+            'author':     self.author,
+            'committer':  self.committer
+        }
 
     def version(self):
         self._ensure()
