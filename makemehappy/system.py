@@ -542,7 +542,9 @@ class System:
                                                  self.args.instances)
         if ('evaluate' in self.data):
             mmh.loadPython(self.log, self.data['evaluate'],
-                           { 'system_instances': self.instances })
+                           { 'system_instances': self.instances,
+                             'build_prefix':     self.buildRoot(),
+                             'logging':          self.log})
         if (len(self.args.instances) > 0):
             error = False
             lst = []
