@@ -58,7 +58,7 @@ class CombinationOutput:
         try:
             return self.callback(self.inputs, outdir / self.name)
         except Exception as e:
-            return False
+            return e
 
 class Combination:
     def __init__(self, name, parents, gen, kwargs):
@@ -222,11 +222,11 @@ class Combination:
         endtime = datetime.datetime.now(datetime.UTC)
         if isinstance(rv, Exception):
             self.log.error(f'Caught exception: {rv}')
-            return False
+            return (False, starttime, endtime)
         elif rv != True:
             self.log.error(f'Output runner did not return success.' +
                            f' Instead: {rv}')
-            return False
+            return (False, starttime, endtime)
         return ((rv == True), starttime, endtime)
 
     def isUpToDate(self, ident, output):
