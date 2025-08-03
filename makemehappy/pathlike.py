@@ -75,7 +75,7 @@ class InputFile:
             self.path = p
         else:
             self.path = Path(p)
-        self.matchobj = None
+        self.matchobj = matchobj
 
     def group(self, n):
         if self.matchobj is None:
