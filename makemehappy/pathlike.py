@@ -85,6 +85,9 @@ class InputFile:
     def is_file(self):
         return self.path.is_file()
 
+    def __lt__(self, rhs):
+        return self.path < rhs.path
+
     def __repr__(self):
         s = str(self.path)
         return f'InputFile({s})'
