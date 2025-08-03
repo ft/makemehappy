@@ -639,4 +639,27 @@ def withVersion(vcs):
         return f.with_stem(old + '-' + vcs.version())
     return _transform
 
+# Here's a function that turns a result of a ManifestEntry to a list of matched
+# files. The machinery of matching files can be useful elsewhere, and this is a
+# utility to help with that.
+#
+# Example:
+#
+#     % ls *.txt
+#     bar.txt foo.txt some-garbage.txt zool.txt
+#
+#     import makemehappy.manifest as m
+#     m.matches(m.glob('*.txt').filter(m.remove('garbage')))
+#   → [ 'bar.txt', 'foo.txt', 'zool.txt' ]
+def matches(mentry):
+    (a, b, c, lst) = mentry.run(0)
+    return list(map(lambda x: x[0], lst))
+
+# pairs() is similar to matches, but it returns the list of full input/output
+# file pairs. This allows users to meaningfully use .transform() as well as
+# .filter().
+def pairs(mentry):
+    (a, b, c, lst) = mentry.run(0)
+    return lst
+
 manifest = Manifest()
