@@ -503,8 +503,8 @@ def evaluateOutput(cdata, odata):
              'dep-summary':  f'{dn}, {ds}',
              'dependencies': deps }
 
-def renderOutput(data):
-    print(f"  {data['name']}")
+def renderOutput(data, n, idx):
+    print(f"  {data['name']} ({idx + 1}/{n})")
     label = 'state'
     print(f"    {label:.<14}: {data['state']} (id: {data['fresh']})")
     label = 'creation'
@@ -551,7 +551,9 @@ def renderOutput(data):
         print(f"    {label:.<14}: {data['dep-summary']}")
 
 def _combinationIterate(prefix, root, start, before = None, perOutput = None):
-    for state in Path(start).rglob('.mmh-state.yaml'):
+    candidates = list(Path(start).rglob('.mmh-state.yaml'))
+    cn = len(candidates)
+    for (cidx, state) in enumerate(candidates):
         cdata = mmh.load(state)
         if cdata['version'] != COMBINATION_STATE_FILE_VERSION:
             # We don't understand the state file version, but we can get the
@@ -561,12 +563,14 @@ def _combinationIterate(prefix, root, start, before = None, perOutput = None):
             print(f'{label}: Incompatible state version: {cdata["version"]}')
             continue
         combination = prefix + '/' + cdata['combination']
+        outputs = findOutputs(state.parent)
+        on = len(outputs)
         if before is not None:
-            rv = before(prefix, root, start, state, cdata, combination)
+            rv = before(prefix, root, start, state, cdata,
+                        combination, cn, cidx, on)
             if rv == False:
                 return False
-        outputs = findOutputs(state.parent)
-        for output in outputs:
+        for (oidx, output) in enumerate(outputs):
             odata = mmh.load(output)
             if odata['version'] != OUTPUT_STATE_FILE_VERSION:
                 # Similarly to the unsupported combination format version, with
@@ -579,18 +583,18 @@ def _combinationIterate(prefix, root, start, before = None, perOutput = None):
             if perOutput is not None:
                 rv = perOutput(prefix, root, start, state,
                                cdata, combination,
-                               odata, output)
+                               odata, output, cn, cidx, on, oidx)
                 if rv == False:
                     return False
     return True
 
 def combinationOverview(prefix, root, start):
-    def _before(prefix, root, start, state, cdata, combination):
-        print(f'Outputs produced by {combination}:')
+    def _before(prefix, root, start, state, cdata, combination, cn, cidx, on):
+        print(f'Outputs produced by {combination} ({cidx + 1}/{cn}, {on}):')
 
     def _perOutput(prefix, root, start, state,
-                   cdata, combination, odata, output):
-        renderOutput(evaluateOutput(cdata, odata))
+                   cdata, combination, odata, output, cn, cidx, on, oidx):
+        renderOutput(evaluateOutput(cdata, odata), on, oidx)
 
     return _combinationIterate(prefix, root, start,
                                before = _before,
@@ -598,7 +602,7 @@ def combinationOverview(prefix, root, start):
 
 def combinationGC(prefix, root, start):
     def _perOutput(prefix, root, start, state,
-                   cdata, combination, odata, output):
+                   cdata, combination, odata, output, cn, cidx, on, oidx):
         data = evaluateOutput(cdata, odata)
         if data['state'] != 'stale' and data['state'] != 'missing':
             return True
@@ -636,7 +640,7 @@ def combinationCleanupDubious(prefix, root, start):
             return False
         return True
     def _perOutput(prefix, root, start, state,
-                   cdata, combination, odata, output):
+                   cdata, combination, odata, output, cn, cidx, on, oidx):
         data = evaluateOutput(cdata, odata)
         if _outputIntact(data):
             return True
@@ -684,6 +688,7 @@ def combinationList(prefix, root, start):
 
 def outputList(prefix, root, start):
     rc = False
+    n = 1
     for state in Path(start).rglob('.mmh-state.yaml'):
         combination = state.parent
         outputs = findOutputs(state.parent)
