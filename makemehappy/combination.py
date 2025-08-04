@@ -502,6 +502,7 @@ def evaluateOutput(cdata, odata):
              'file':         file,
              'name':         file.name,
              'creation':     odata['output']['mtime'],
+             'duration':     float(odata['time']['microseconds']) / 1000000.,
              'isActive':     isActive,
              'isFresh':      isFresh,
              'state':        state,
@@ -518,6 +519,8 @@ def renderOutput(data, n, idx):
     print(f"    {label:.<14}: {data['state']} (id: {data['fresh']})")
     label = 'creation'
     print(f"    {label:.<14}: {data['creation']}")
+    label = 'duration'
+    print(f"    {label:.<14}: {data['duration']} (seconds)")
     if data['integrity'] is not None:
         label = 'integrity'
         print(f"    {label:.<14}: {data['integrity']}")
