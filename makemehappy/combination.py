@@ -38,6 +38,7 @@ import datetime
 import hashlib
 import os
 import re
+import makemehappy.colour as colour
 import makemehappy.pathlike as p
 import makemehappy.utilities as mmh
 
@@ -514,16 +515,36 @@ def evaluateOutput(cdata, odata):
              'dependencies': deps }
 
 def renderOutput(data, n, idx):
-    print(f"  {data['name']} ({idx + 1}/{n})")
+    coff = colour.reset
+    print(colour.bold + colour.fg['magenta'] +
+          f"  {data['name']}" +
+          colour.reset,
+          f'({idx + 1}/{n})')
+
     label = 'state'
-    print(f"    {label:.<14}: {data['state']} (id: {data['fresh']})")
+    if data['state'] == 'fresh':
+        c = colour.fg['green']
+    elif data['state'] == 'active':
+        c = colour.bold + colour.fg['cyan']
+    elif data['state'] == 'stale':
+        c = colour.fg['yellow']
+    else:
+        c = colour.fg['red']
+    print(f"    {label:.<14}: {c}{data['state']}{coff} (id: {data['fresh']})")
+
     label = 'creation'
     print(f"    {label:.<14}: {data['creation']}")
+
     label = 'duration'
     print(f"    {label:.<14}: {data['duration']} (seconds)")
+
     if data['integrity'] is not None:
+        if data['integrity'] == 'intact':
+            c = colour.fg['green']
+        else:
+            c = colour.fg['red']
         label = 'integrity'
-        print(f"    {label:.<14}: {data['integrity']}")
+        print(f"    {label:.<14}: {c}{data['integrity']}{coff}")
         if data['integrity'] != 'intact':
             label = 'file'
             print(f"    {label:.<14}: {data['file']}")
@@ -543,24 +564,28 @@ def renderOutput(data, n, idx):
             print(f'      {l:.<10}: {dep["file"]}')
             if state == 'missing':
                 l = 'state'
-                print(f'      {l:.<10}: {state}')
+                print(f'      {l:.<10}: {colour.fg["yellow"]}{state}{coff}')
             elif state == 'intact':
                 l = 'state'
-                print(f'      {l:.<10}: {state}')
+                print(f'      {l:.<10}: {colour.fg["green"]}{state}{coff}')
                 l = 'checksum'
                 print(f'      {l:.<10}: {dep["actual"]}')
             elif state == 'broken':
                 l = 'state'
-                print(f'      {l:.<10}: {state}')
+                print(f'      {l:.<10}: {colour.fg["red"]}{state}{coff}')
                 l = 'expected'
                 print(f'      {l:.<10}: {dep["expect"]}')
                 l = 'actual'
                 print(f'      {l:.<10}: {dep["actual"]}')
             else:
-                print(f'      Unknown state: {state}')
+                print(f'      Unknown state: {colour.fg["red"]}{state}{coff}')
             print('   ', '-' * 80)
     else:
-        print(f"    {label:.<14}: {data['dep-summary']}")
+        if data['dep-state'] == 'intact':
+            c = colour.fg['green']
+        else:
+            c = colour.fg['red']
+        print(f"    {label:.<14}: {c}{data['dep-summary']}{coff}")
 
 def _regex_filter(patterns, full, ifmatch, ifnotmatch):
     ps = list(map(re.compile, patterns))
@@ -652,9 +677,12 @@ def combinationOverview(args, prefix, root, start):
         if args.exclude:
             filtered = True
             print(f'Removing: {args.exclude}')
+
         matching = 'Matching o' if filtered else 'O'
-        print(f'{matching}utputs produced by {combination}',
-              f'({cidx + 1}/{cn}, {on}):')
+        print(colour.fg["green"] +
+              f'{matching}utputs produced by {combination}' +
+              colour.fg_off,
+              f'({cidx + 1}/{cn}, {on})')
 
     def _perOutput(prefix, root, start, state,
                    cdata, combination, odata, output, cn, cidx, on, oidx):
