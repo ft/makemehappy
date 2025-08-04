@@ -588,6 +588,7 @@ def _fremove(*patterns):
 def _combinationIterate(prefix, root, start, patterns, excludes,
                         before = None, perOutput = None):
     candidates = list(Path(start).rglob('.mmh-state.yaml'))
+    candidates.sort()
     cn = len(candidates)
     for (cidx, state) in enumerate(candidates):
         cdata = mmh.load(state)
@@ -614,6 +615,7 @@ def _combinationIterate(prefix, root, start, patterns, excludes,
         if excludes is not None:
             outputs = list(filter(_remove(*excludes), outputs))
 
+        outputs.sort()
         on = len(outputs)
         if before is not None:
             rv = before(prefix, root, start, state, cdata,
@@ -722,9 +724,12 @@ def combinationCleanupDubious(prefix, root, start):
 
 def combinationCleanup(prefix, root, start):
     rc = True
-    for state in Path(start).rglob('.mmh-state.yaml'):
+    candidates = list(Path(start).rglob('.mmh-state.yaml'))
+    candidates.sort()
+    for state in candidates:
         combination = state.parent
         outputs = findOutputs(state.parent)
+        outputs.sort()
         for meta in outputs:
             p = meta.parent
             file = p / meta.stem[1:]
@@ -740,7 +745,9 @@ def combinationCleanup(prefix, root, start):
 
 def combinationList(prefix, root, start):
     rc = False
-    for state in Path(start).rglob('.mmh-state.yaml'):
+    candidates = list(Path(start).rglob('.mmh-state.yaml'))
+    candidates.sort()
+    for state in candidates:
         rc = True
         print(state.parent)
     return rc
@@ -748,13 +755,16 @@ def combinationList(prefix, root, start):
 def outputList(args, prefix, root, start):
     rc = False
     n = 1
-    for state in Path(start).rglob('.mmh-state.yaml'):
+    candidates = list(Path(start).rglob('.mmh-state.yaml'))
+    candidates.sort()
+    for state in candidates:
         combination = state.parent
         outputs = findOutputs(state.parent)
         if args.pattern is not None:
             outputs = list(filter(_fonly(*args.pattern), outputs))
         if args.exclude is not None:
             outputs = list(filter(_fremove(*args.exclude), outputs))
+        outputs.sort()
         for meta in outputs:
             rc = True
             p = meta.parent
@@ -765,20 +775,11 @@ def outputList(args, prefix, root, start):
 def combinationQuery(prefix, root, start):
     rc = False
     prefix = 'combination'
-    for key in combination.combinations:
+    candidates = list(map(str, combination.combinations.keys()))
+    candidates.sort()
+    for key in candidates:
         rc = True
         print(prefix + '/' + key)
-    return rc
-
-def outputQuery(prefix, root, start):
-    rc = False
-    prefix = 'combination'
-    for key in combination.combinations:
-        rc = True
-        c = combination.combinations[key]
-        c.generate()
-        for output in c.outputs:
-            print(output)
     return rc
 
 def combinationTool(root, log, args):
