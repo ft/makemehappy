@@ -316,8 +316,9 @@ _makemehappy-system() {
     _arguments -C -s -w : \
                '*::: :->args' \
                '(-h --help)'{-h,--help}'[display help message]' \
-               '(-s --single-instance)'{-s,--single-instance}'[Build a single instance in the build directory root]' \
-               '(-a --all-instances)'{-a,--all-instances}'[Force building all system instances]' \
+               '(-s --single-instance)'{-s,--single-instance}'[build a single instance in the build directory root]' \
+               '(-a --all-instances)'{-a,--all-instances}'[force building all system instances]' \
+               '(-c --no-combinations)'{-c,--no-combinations}'[do not build any combinations]' \
         && ret=0
 
     if [[ -n $state ]]; then
