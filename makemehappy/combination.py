@@ -37,6 +37,7 @@
 import datetime
 import hashlib
 import os
+import re
 import makemehappy.pathlike as p
 import makemehappy.utilities as mmh
 
@@ -550,7 +551,34 @@ def renderOutput(data, n, idx):
     else:
         print(f"    {label:.<14}: {data['dep-summary']}")
 
-def _combinationIterate(prefix, root, start, before = None, perOutput = None):
+def _regex_filter(patterns, full, ifmatch, ifnotmatch):
+    ps = list(map(re.compile, patterns))
+
+    def _filter(f):
+        if full:
+            string = str(Path(f.parent) / f.stem[1:])
+        else:
+            string = str(f.stem[1:])
+        for pat in ps:
+            if re.search(pat, string):
+                return ifmatch
+        return ifnotmatch
+    return _filter
+
+def _only(*patterns):
+    return _regex_filter(patterns, False, True, False)
+
+def _remove(*patterns):
+    return _regex_filter(patterns, False, False, True)
+
+def _fonly(*patterns):
+    return _regex_filter(patterns, True, True, False)
+
+def _fremove(*patterns):
+    return _regex_filter(patterns, True, False, True)
+
+def _combinationIterate(prefix, root, start, patterns, excludes,
+                        before = None, perOutput = None):
     candidates = list(Path(start).rglob('.mmh-state.yaml'))
     cn = len(candidates)
     for (cidx, state) in enumerate(candidates):
@@ -564,6 +592,20 @@ def _combinationIterate(prefix, root, start, before = None, perOutput = None):
             continue
         combination = prefix + '/' + cdata['combination']
         outputs = findOutputs(state.parent)
+
+        # We can't use the filter generators from makemehappy.manifest here,
+        # because what findOutputs() generates is a list of .FOO.yaml files,
+        # which are not the output files, but state data of the output files.
+        # We could read those, and ask them what the output file would be. But
+        # that's expensive, and wouldn't really solve the problem either. What
+        # we can do, is write similar filter functions as only and remove from
+        # the manifest module, and determine the output file name from the
+        # state file and match on that.
+        if patterns is not None:
+            outputs = list(filter(_only(*patterns), outputs))
+        if excludes is not None:
+            outputs = list(filter(_remove(*excludes), outputs))
+
         on = len(outputs)
         if before is not None:
             rv = before(prefix, root, start, state, cdata,
@@ -588,15 +630,24 @@ def _combinationIterate(prefix, root, start, before = None, perOutput = None):
                     return False
     return True
 
-def combinationOverview(prefix, root, start):
+def combinationOverview(args, prefix, root, start):
     def _before(prefix, root, start, state, cdata, combination, cn, cidx, on):
-        print(f'Outputs produced by {combination} ({cidx + 1}/{cn}, {on}):')
+        filtered = False
+        if args.pattern:
+            filtered = True
+            print(f'Matching: {args.pattern}')
+        if args.exclude:
+            filtered = True
+            print(f'Removing: {args.exclude}')
+        matching = 'Matching o' if filtered else 'O'
+        print(f'{matching}utputs produced by {combination}',
+              f'({cidx + 1}/{cn}, {on}):')
 
     def _perOutput(prefix, root, start, state,
                    cdata, combination, odata, output, cn, cidx, on, oidx):
         renderOutput(evaluateOutput(cdata, odata), on, oidx)
 
-    return _combinationIterate(prefix, root, start,
+    return _combinationIterate(prefix, root, start, args.pattern, args.exclude,
                                before = _before,
                                perOutput = _perOutput)
 
@@ -686,12 +737,16 @@ def combinationList(prefix, root, start):
         print(state.parent)
     return rc
 
-def outputList(prefix, root, start):
+def outputList(args, prefix, root, start):
     rc = False
     n = 1
     for state in Path(start).rglob('.mmh-state.yaml'):
         combination = state.parent
         outputs = findOutputs(state.parent)
+        if args.pattern is not None:
+            outputs = list(filter(_fonly(*args.pattern), outputs))
+        if args.exclude is not None:
+            outputs = list(filter(_fremove(*args.exclude), outputs))
         for meta in outputs:
             rc = True
             p = meta.parent
@@ -738,9 +793,9 @@ def combinationTool(root, log, args):
         return combinationList(prefix, root, start)
 
     if args.list_outputs:
-        return outputList(prefix, root, start)
+        return outputList(args, prefix, root, start)
 
     if args.query_combinations:
         return combinationQuery(prefix, root, start)
 
-    return combinationOverview(prefix, root, start)
+    return combinationOverview(args, prefix, root, start)

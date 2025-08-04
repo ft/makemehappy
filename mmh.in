@@ -418,6 +418,14 @@ sys_combinations.add_argument(
     "-q", "--query-combinations", action = 'store_true',
     help = "Query specified combinations")
 
+sys_combinations.add_argument(
+    "-p", "--pattern", action = 'append',
+    help = "Select output names by pattern")
+
+sys_combinations.add_argument(
+    "-x", "--exclude", action = 'append',
+    help = "Exclude output names by pattern")
+
 sys_combinations.add_argument('instances', default = [ ], nargs = '*')
 
 # deploy
