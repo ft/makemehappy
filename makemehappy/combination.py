@@ -218,7 +218,8 @@ class Combination:
         mmh.dump(fn, data)
 
     def dispatch(self, ident, output):
-        self.printer(f'{output.name}: Running generator...')
+        if mmh.verbosity > 0:
+            self.printer(f'{output.name}: Running generator...')
         starttime = datetime.datetime.now(datetime.UTC)
         rv = output.run(self.out)
         endtime = datetime.datetime.now(datetime.UTC)
@@ -226,8 +227,7 @@ class Combination:
             self.log.error(f'Caught exception: {rv}')
             return (False, starttime, endtime)
         elif rv is None:
-            self.log.info('Runner signalled that it did not need ' +
-                          'to do anything.')
+            self.log.info(f'{output.name}: Nothing to do.')
             return (None, starttime, endtime)
         elif rv != True:
             self.log.error(f'Output runner did not return success.' +
