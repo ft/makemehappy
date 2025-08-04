@@ -212,6 +212,7 @@ class Combination:
     def updateOutputState(self, ident, output):
         (fn, data) = self.loadOutputState(output)
         data['id'] = ident
+        data['mmh'] = self.mmhstate
         self.verbose(f'Generating output state: {fn}, id = {ident}, ' +
                      f'fresh = {data["fresh"]}')
         mmh.dump(fn, data)
@@ -224,6 +225,10 @@ class Combination:
         if isinstance(rv, Exception):
             self.log.error(f'Caught exception: {rv}')
             return (False, starttime, endtime)
+        elif rv is None:
+            self.log.info('Runner signalled that it did not need ' +
+                          'to do anything.')
+            return (None, starttime, endtime)
         elif rv != True:
             self.log.error(f'Output runner did not return success.' +
                            f' Instead: {rv}')
@@ -287,6 +292,9 @@ class Combination:
                 self.updateOutputState(ident, output)
                 continue
             (rv, s, e) = self.dispatch(ident, output)
+            if rv is None:
+                self.updateOutputState(ident, output)
+                continue
             if rv != True:
                 self.status = False
             self.addOutputState(ident, s, e, output, rv)
