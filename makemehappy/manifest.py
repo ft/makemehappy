@@ -630,7 +630,9 @@ def remove(*patterns):
 
 def withDashString(string):
     def _transform(f):
-        if not isinstance(f, Path):
+        if isinstance(f, p.InputFile):
+            f = f.path
+        elif not isinstance(f, Path):
             f = Path(f)
         old = f.stem
         return f.with_stem(old + '-' + string)
@@ -638,7 +640,9 @@ def withDashString(string):
 
 def withVersion(vcs):
     def _transform(f):
-        if not isinstance(f, Path):
+        if isinstance(f, p.InputFile):
+            f = f.path
+        elif not isinstance(f, Path):
             f = Path(f)
         old = f.stem
         return f.with_stem(old + '-' + vcs.version())
