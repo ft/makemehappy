@@ -409,6 +409,10 @@ class Registry:
     def listCombinations(self):
         return list(self.combinations)
 
+    def listNames(self):
+        return list(map(lambda c: 'combination/' + c,
+                        self.combinations.keys()))
+
     def execute(self):
         for name in self.combinations:
             c = self.combinations[name]

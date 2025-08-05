@@ -415,6 +415,7 @@ class System:
     def __init__(self, log, version, cfg, args, combinations):
         self.stats = cut.ExecutionStatistics(cfg, log)
         self.stats.checkpoint('system-initialisation')
+        self.active_combinations = []
         self.version = version
         self.log = log
         self.cfg = cfg
@@ -538,38 +539,46 @@ class System:
         fillData(self.data)
         self.instances = makeInstances(self.data)
         self.zephyr_aliases = z.generateZephyrAliases(self.data)
-        self.args.instances = mmh.patternsToList(self.instances,
-                                                 self.args.instances)
         if ('evaluate' in self.data):
             mmh.loadPython(self.log, self.data['evaluate'],
                            { 'system_instances': self.instances,
                              'build_prefix':     self.buildRoot(),
                              'logging':          self.log})
-        if (len(self.args.instances) > 0):
-            error = False
-            lst = []
-            prefix = 'combination/'
-            offset = len(prefix)
-            for instance in self.args.instances:
-                if instance.startswith(prefix):
-                    name = instance[offset:]
-                    if name not in self.combinations.combinations:
-                        self.log.error("Unknown combination: {}", instance)
-                        error = True
-                    else:
-                        for p in self.combinations.combinations[name].parents:
-                            if p not in lst:
-                                lst.append(p)
-                else:
-                    lst.append(instance)
-            for instance in lst:
-                if (not instance in self.instances):
-                    self.log.error("Unknown instance: {}", instance)
-                    error = True
-            self.args.instances = list(set(lst))
-            self.args.instances.sort()
-            if (error):
-                raise(InvalidSystemSpec())
+
+        ics = mmh.patternsToList(self.instances +
+                                 self.combinations.listNames(),
+                                 self.args.instances)
+        error = False
+        lst = []
+        prefix = 'combination/'
+        offset = len(prefix)
+        self.active_combinations = list(
+            filter(lambda x: x.startswith('combination/'), ics))
+        self.args.instances = list(
+            filter(lambda x: x.startswith('combination/') == False, ics))
+
+        for combination in self.active_combinations:
+            name = combination[offset:]
+            if name not in self.combinations.combinations:
+                self.log.error("Unknown combination: {}", instance)
+                error = True
+            else:
+                for p in self.combinations.combinations[name].parents:
+                    if p not in lst:
+                        lst.append(p)
+
+        lst.extend(self.args.instances)
+        for instance in lst:
+            if (instance not in self.instances):
+                self.log.error("Unknown instance: {}", instance)
+                error = True
+
+        if (error):
+            raise InvalidSystemSpec()
+
+        self.args.instances = list(set(lst))
+        self.args.instances.sort()
+
         if ('evaluate' in self.data):
             h.startup_hook(cfg = self.cfg, data = self.data)
 
