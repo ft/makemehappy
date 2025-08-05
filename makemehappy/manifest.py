@@ -102,7 +102,7 @@ class ManifestEntry:
         return self
 
     def _transform(self, f):
-        new = f
+        new = p.InputFile(f.name, f.matchobj)
         for t in self.transformers:
             new = t(new)
 
