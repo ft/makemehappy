@@ -540,7 +540,12 @@ def genZephyr(builddir):
 
 def renameZephyr(name):
     def _rename(f):
-        fp = Path(f)
+        if isinstance(f, p.InputFile):
+            fp = f.path
+        elif isinstance(f, Path):
+            fp = f
+        else:
+            fp = Path(f)
         # 'autoconf.h' and '.config' are a little weird. The other zephyr style
         # file names are easy to rename.
         if fp.name == 'autoconf.h':
