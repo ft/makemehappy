@@ -696,7 +696,7 @@ def combinationOverview(args, prefix, root, start):
                                before = _before,
                                perOutput = _perOutput)
 
-def combinationGC(prefix, root, start):
+def combinationGC(args, prefix, root, start):
     def _perOutput(prefix, root, start, state,
                    cdata, combination, odata, output, cn, cidx, on, oidx):
         data = evaluateOutput(cdata, odata)
@@ -718,10 +718,10 @@ def combinationGC(prefix, root, start):
             return False
         return True
 
-    return _combinationIterate(prefix, root, start,
+    return _combinationIterate(prefix, root, start, args.pattern, args.exclude,
                                perOutput = _perOutput)
 
-def combinationCleanupDubious(prefix, root, start):
+def combinationCleanupDubious(args, prefix, root, start):
     def _outputIntact(data):
         # State must be fresh or active, integrity must of 'intact', and
         # dep-state must be 'intact'. Everything else is dubious.
@@ -754,16 +754,20 @@ def combinationCleanupDubious(prefix, root, start):
             return False
         return True
 
-    return _combinationIterate(prefix, root, start,
+    return _combinationIterate(prefix, root, start, args.pattern, args.exclude,
                                perOutput = _perOutput)
 
-def combinationCleanup(prefix, root, start):
+def combinationCleanup(args, prefix, root, start):
     rc = True
     candidates = list(Path(start).rglob('.mmh-state.yaml'))
     candidates.sort()
     for state in candidates:
         combination = state.parent
         outputs = findOutputs(state.parent)
+        if args.pattern is not None:
+            outputs = list(filter(_fonly(*args.pattern), outputs))
+        if args.exclude is not None:
+            outputs = list(filter(_fremove(*args.exclude), outputs))
         outputs.sort()
         for meta in outputs:
             p = meta.parent
@@ -824,14 +828,14 @@ def combinationTool(root, log, args):
 
     if args.garbage_collect:
         print('Scanning for stale combination outputs...')
-        return combinationGC(prefix, root, start)
+        return combinationGC(args, prefix, root, start)
 
     if args.cleanup_outputs:
-        return combinationCleanup(prefix, root, start)
+        return combinationCleanup(args, prefix, root, start)
 
     if args.cleanup_dubious:
         print('Scanning for dubious combination outputs...')
-        return combinationCleanupDubious(prefix, root, start)
+        return combinationCleanupDubious(args, prefix, root, start)
 
     if args.list_combinations:
         return combinationList(prefix, root, start)
