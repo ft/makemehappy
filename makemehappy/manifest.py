@@ -177,6 +177,16 @@ class ManifestEntryMismatch:
         return (f'Index {self.index} ({self.entry.string}) yielded ' +
                 f'{self.actual} files, but {self.expected} were expected.')
 
+# Manifest entries can also throw. Depending on how the deployment system was
+# configured (strict vs lenient), this may fail the deployment process.
+class ManifestException:
+    def __init__(self, idx, exception):
+        self.index = idx
+        self.exception = exception
+
+    def __str__(self):
+        return (f'Index {self.index} raised {self.exception}')
+
 # In Manifests, the destination file names specified have the property that
 # they must be unique. Otherwise there would be more than one input mapped to
 # the same output, resulting in at least one source file not being represented
@@ -241,11 +251,15 @@ class Manifest:
     def extend(self, entries):
         self.entries.extend(mmh.flatten(entries))
 
-    def collect(self):
+    def collect(self, log):
         self.collection = []
         for n, entry in enumerate(self.entries):
-            new = entry.run(n)
-            self.collection.append(new)
+            try:
+                new = entry.run(n)
+                self.collection.append(new)
+            except Exception as e:
+                log.warning(f'Exception in collector at index {n}')
+                self.collection.append((n, entry, 0, ManifestException(n, e)))
 
     def validate(self):
         for n, entry in enumerate(self.entries):
@@ -264,6 +278,9 @@ class Manifest:
         rv = []
         for (idx, entry, n, pairs) in self.collection:
             exp = entry.expectedMatches
+            if isinstance(pairs, ManifestException):
+                rv.append(pairs)
+                continue
             if exp:
                 if exp != n:
                     rv.append(ManifestEntryMismatch(idx, entry, exp, n))
@@ -287,6 +304,8 @@ class Manifest:
         check = {}
         for entry in self.collection:
             (index, me, n, pairs) = entry
+            if isinstance(pairs, ManifestException):
+                continue
             for pair in pairs:
                 (_, file) = pair
                 if file not in check:
@@ -398,6 +417,10 @@ class Manifest:
             if verbose:
                 print()
             print(f'Index {idx}: {entry.string}, {n} files to deploy...')
+            if isinstance(pairs, ManifestException):
+                if verbose:
+                    print(f'  {pairs}')
+                continue
             for (infile, outfile) in pairs:
                 outfiles.append(outfile)
                 if verbose:

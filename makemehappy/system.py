@@ -700,7 +700,7 @@ class System:
             return True
 
         self.setupDirectory()
-        m.manifest.collect()
+        m.manifest.collect(self.log)
 
         if (self.args.listCollection):
             col = m.manifest.listCollection()
