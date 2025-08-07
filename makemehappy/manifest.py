@@ -416,7 +416,8 @@ class Manifest:
         for (idx, entry, n, pairs) in self.collection:
             if verbose:
                 print()
-            print(f'Index {idx}: {entry.string}, {n} files to deploy...')
+            print(f'Index {idx}: {entry.string}, {n} file' +
+                  ('' if n == 1 else 's'), 'to deploy...')
             if isinstance(pairs, ManifestException):
                 if verbose:
                     print(f'  {pairs}')
