@@ -462,76 +462,8 @@ class System:
         d = self.args.directory
         if (os.path.exists(d)):
             self.log.info('Build directory {} exists: Examining...'.format(d))
-            state = os.path.join(d, 'MakeMeHappy.yaml')
-            if (os.path.exists(state)):
-                data = mmh.load(state)
-                if (self.args.force == True):
-                    data['version'] = self.version
-                    mmh.dump(state, data)
-                if (mmh.matchingVersion(self.version, data) == False):
-                    fv = None
-                    if (not data is None and 'version' in data):
-                        fv = data['version']
-                    self.log.error("{}: Version mismatch: {} != {}".format(state, self.version, fv))
-                    self.log.error("If suitable ‘--force’ to force using the file!")
-                    raise(InvalidBuildTree())
-                if (self.mode == None):
-                    self.mode = data['mode']
-                    self.log.info('Using mode from state: {}'.format(self.mode))
-                elif (data['mode'] != self.mode):
-                    self.log.error(
-                        'Build directory {} uses {} mode; Current mode: {}'
-                        .format(d, data['mode'], self.mode))
-                    raise(InvalidBuildTree())
-                else:
-                    self.log.info('Build tree matching current mode: {}. Good!'
-                                  .format(self.mode))
-                if (self.mode == 'system-single'):
-                    if (self.singleInstance == None):
-                        self.singleInstance = data['single-instance']
-                    elif (data['single-instance'] != self.singleInstance):
-                        self.log.error(
-                            'Single-instance build tree {} set up for {}. Specified {}.'
-                            .format(self.args.directory,
-                                    data['single-instance'],
-                                    self.singleInstance))
-                        raise(InvalidBuildTree())
-                elif (self.mode == 'system-multi'):
-                    if ('instances' in data):
-                        if (self.args.all_instances):
-                            self.log.info('Force selection of all instances.')
-                            data.pop('instances', None)
-                            self.args.instances = []
-                            mmh.dump(state, data)
-                        elif (len(self.args.instances) == 0):
-                            self.log.info('Using system instances from state file.')
-                            self.args.instances = data['instances']
-                        elif (self.args.instances != data['instances']):
-                            self.log.info('Updating system instances from command line.')
-                            data['instances'] = self.args.instances
-                            mmh.dump(state, data)
-                        else:
-                            self.log.info('Command line instances match state file.')
-                    elif (len(self.args.instances) > 0):
-                        self.log.info('Adding system instances from command line.')
-                        data['instances'] = self.args.instances
-                        mmh.dump(state, data)
-            else:
-                self.log.error('Failed to load build state from {}'.format(state))
-                raise(InvalidBuildTree())
         else:
             os.makedirs(d, mode=0o755, exist_ok=True)
-            if (self.mode == None):
-                self.mode = 'system-multi'
-            data = { 'mode'    : self.mode,
-                     'version' : self.version }
-            if (self.mode == 'system-multi' and len(self.args.instances) > 0):
-                data['instances'] = self.args.instances
-            if (self.singleInstance != None):
-                data['single-instance'] = self.singleInstance
-            state = os.path.join(d, 'MakeMeHappy.yaml')
-            self.log.info('Creating build directory state file')
-            mmh.dump(state, data)
 
     def load(self):
         self.log.info("Loading system specification: {}".format(self.spec))

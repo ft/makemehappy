@@ -148,10 +148,6 @@ ap.add_argument(
     help = "ignore errors in dependency evaluation")
 
 ap.add_argument(
-    "-F", "--force", action = "store_true",
-    help = "force using MakeMeHappy.yaml")
-
-ap.add_argument(
     "-V", "--version", action = "store_true",
     help = "show program version")
 
@@ -246,13 +242,6 @@ ap_focus.add_argument(
 ap_prepare = subp.add_parser(
     'prepare',
     help = 'Generate toplevel of module build-tree')
-
-# reset-setup
-ap_reset = subp.add_parser(
-    'reset-setup', aliases = [ 'reset' ],
-    help = 'Reset build-tree meta-data')
-
-ap_reset.set_defaults(sub_command = 'reset-setup')
 
 # revision-overrides
 ap_revisions = subp.add_parser(
@@ -559,64 +548,6 @@ if (cmdargs.sub_command is None):
 elif (cmdargs.sub_command != False):
     log.info("Starting up using '{}' command".format(cmdargs.sub_command))
 
-def needMMHYAML():
-    if cmdargs.sub_command == 'reset-setup':
-        return False
-    if cmdargs.sub_command == 'system':
-        return False
-    if cmdargs.directory is None:
-        return False
-    return mmh.noParameters(cmdargs)
-
-cmdargs.fromyaml = False
-if needMMHYAML():
-    fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
-    if (os.path.exists(fn)):
-        data = mmh.load(fn)
-        if (cmdargs.force == True):
-            data['version'] = version
-            mmh.dump(fn, data)
-        cmdargs.fromyaml = True
-        if (mmh.matchingVersion(version, data)):
-            if ('parameters' in data):
-                p = data['parameters']
-                log.info('Loading parameters from {}'.format(fn))
-                if 'architectures' in p:
-                    cmdargs.architectures = p['architectures']
-                if 'buildconfigs' in p:
-                    cmdargs.buildconfigs = p['buildconfigs']
-                if 'buildtools' in p:
-                    cmdargs.buildtools = p['buildtools']
-                if not cmdargs.all_instances and 'instances' in p:
-                    cmdargs.instances = p['instances']
-                if 'toolchains' in p:
-                    cmdargs.toolchains = p['toolchains']
-                if 'cmake' in p:
-                    cmdargs.cmake = p['cmake']
-            if ('cmake' in data):
-                p = data['cmake']
-                log.info('Loading cmake-information from {}'.format(fn))
-                if 'module-path' in p:
-                    cmdargs.modulePath = p['module-path']
-                if 'toolchain-path' in p:
-                    cmdargs.toolchainPath = p['toolchain-path']
-            if ('zephyr' in data):
-                p = data['zephyr']
-                log.info('Loading zephyr-information from {}'.format(fn))
-                if 'board-root' in p:
-                    cmdargs.boardRoot = p['board-root']
-                if 'dts-root' in p:
-                    cmdargs.dtsRoot = p['dts-root']
-                if 'soc-root' in p:
-                    cmdargs.socRoot = p['soc-root']
-        else:
-            fv = None
-            if (data is not None and 'version' in data):
-                fv = data['version']
-            log.error("{}: Version mismatch: {} != {}".format(fn, version, fv))
-            log.error("If suitable ‘--force’ to force using the file!")
-            mmh_exit(1)
-
 def adjustConfig(cfg, args):
     layer = {}
     adjustments = 0
@@ -750,7 +681,6 @@ def do_prepare():
         cut.linkIntoRoot()
         cut.changeToRoot()
         cut.loadDependencies()
-        cut.cmakeIntoYAML()
         cut.generateToplevel()
         cut.setEnvironment()
         return cut
@@ -812,17 +742,7 @@ elif (cmdargs.sub_command == "generate-toplevel"):
     cut.loadSources()
     cut.changeToRoot()
     cut.loadDependencies()
-    cut.cmakeIntoYAML()
     cut.generateToplevel()
-
-elif (cmdargs.sub_command == "reset-setup"):
-    if cmdargs.directory is None:
-        print("reset-argument only works with -d!")
-        mmh_exit(1)
-
-    fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
-    data = { 'version': version }
-    mmh.dump(fn, data)
 
 elif (cmdargs.sub_command == "list-instances"):
     if cmdargs.directory is None:
@@ -865,7 +785,6 @@ elif (cmdargs.sub_command == "run-instance"):
     prevdir = os.getcwd()
     cut.changeToRoot()
     cut.loadDependencies()
-    cut.cmakeIntoYAML()
     cut.setEnvironment()
     cut.build()
 

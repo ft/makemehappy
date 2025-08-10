@@ -12,7 +12,6 @@ _makemehappy_aliasmap=(
     get       download-source
     init      build-tree-init
     list      list-instances
-    reset     reset-setup
     run       run-instance
     result    show-result
     revs      revision-overrides
@@ -236,14 +235,6 @@ _makemehappy-prepare() {
     __makemehappy-nothing-else
 }
 
-_makemehappy-reset-setup() {
-    if [[ -n ${makemehappy_describe} ]]; then
-        print "Reset build-tree meta-data"
-        return
-    fi
-    __makemehappy-nothing-else
-}
-
 _makemehappy-revision-overrides() {
     if [[ -n ${makemehappy_describe} ]]; then
         print "Show and test revision overrides"
@@ -416,7 +407,6 @@ _makemehappy() {
                '(-B --buildtools)'{-B,--buildtools}'[select build-tools to use]:build-tool:__makemehappy-buildtools' \
                '(-C --buildconfigs)'{-C,--buildconfigs}'[select build-configurations to use]:build-configuration:__makemehappy-buildconfigurations' \
                '(-d --directory)'{-d,--directory}'[specify build directory]:build directory:_path_files -g "*(/)"' \
-               '(-F --force)'{-F,--force}'[force using MakeMeHappy.yaml]' \
                '(-f --log-file)'{-f,--log-file}'[specify log file]:file name:_path_files' \
                '(-h --help)'{-h,--help}'[display help message]' \
                '(-R --raise-exceptions)'{-R,--raise-exceptions}'[Raise toplevel exceptions in case of errors.]' \

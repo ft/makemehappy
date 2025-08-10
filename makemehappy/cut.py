@@ -875,49 +875,6 @@ def isSatisfied(deps, done, name):
             return False
     return True
 
-def outputMMHYAML(version, fn, data, args):
-    if (data == None):
-        data = {}
-    data.pop('definition', None)
-    data.pop('root', None)
-    data['version'] = version
-    data['mode'] = 'module'
-    data['parameters'] = {}
-    if (len(args.instances) > 0):
-        data['parameters']['instances'] = args.instances
-    if (args.architectures != None):
-        data['parameters']['architectures'] = args.architectures
-    if (args.buildconfigs != None):
-        data['parameters']['buildconfigs'] = args.buildconfigs
-    if (args.buildtools != None):
-        data['parameters']['buildtools'] = args.buildtools
-    if (args.toolchains != None):
-        data['parameters']['toolchains'] = args.toolchains
-    if (args.cmake != None):
-        data['parameters']['cmake'] = args.cmake
-    if not data['parameters']:
-        data.pop('parameters', None)
-    if (args.all_instances and 'instances' in data):
-        del(data['instances'])
-    mmh.dump(fn, data)
-
-def updateMMHYAML(log, root, version, args):
-    fn = os.path.join(root, 'MakeMeHappy.yaml')
-    data = None
-
-    if (os.path.exists(fn)):
-        data = mmh.load(fn)
-
-    if (not mmh.matchingVersion(version, data)):
-        log.info('Creating instance config: {}'.format(fn))
-        outputMMHYAML(version, fn, data, args)
-        return
-
-    if (not mmh.noParameters(args) or args.all_instances):
-        log.info('Updating instance config: {}'.format(fn))
-        outputMMHYAML(version, fn, data, args)
-        return
-
 class CircularDependency(Exception):
     pass
 
@@ -999,8 +956,6 @@ class CodeUnderTest:
                               seed = yaml.dump(self.moduleData),
                               modName = self.name(),
                               dirName = args.directory)
-        if (args.fromyaml == False or args.all_instances == True):
-            updateMMHYAML(self.log, self.root.root, version, args)
 
     def setEnvironment(self):
         if (has('environment', self.moduleData, dict) == False):
@@ -1009,19 +964,6 @@ class CodeUnderTest:
         mmh.setEnvironment(self.log,
                            self.args.environment_overrides,
                            self.moduleData['environment'])
-
-    def cmakeIntoYAML(self):
-        self.log.info("Updating MakeMeHappy.yaml with CMake information")
-        fn = os.path.join('MakeMeHappy.yaml')
-        data = mmh.load(fn)
-        data['cmake'] = {}
-        data['cmake']['module-path'] = self.extensions.modulePath()
-        data['cmake']['toolchain-path'] = self.extensions.toolchainPath()
-        data['zephyr'] = {}
-        data['zephyr']['board-root'] = self.zephyr.boardRoot()
-        data['zephyr']['dts-root'] = self.zephyr.dtsRoot()
-        data['zephyr']['soc-root'] = self.zephyr.socRoot()
-        mmh.dump(fn, data)
 
     def populateRoot(self):
         self.root.populate()
