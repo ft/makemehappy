@@ -1048,6 +1048,12 @@ elif (cmdargs.sub_command == "system"):
         if (cmdargs.system == 'com'):
             cmdargs.system = 'combinations'
 
+        if cmdargs.system == 'combinations' and len(cmdargs.instances) > 0:
+            cmdargs.combinationspec = cmdargs.instances
+            cmdargs.instances = []
+        else:
+            cmdargs.combinationspec = None
+
         system = ms.System(log, version, cfg, cmdargs, comb.combination)
         system.load()
 

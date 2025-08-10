@@ -617,8 +617,10 @@ def _fonly(*patterns):
 def _fremove(*patterns):
     return _regex_filter(patterns, True, False, True)
 
-def _combinationIterate(prefix, root, start, patterns, excludes,
+def _combinationIterate(prefix, root, start, args,
                         before = None, perOutput = None):
+    patterns = args.pattern
+    excludes = args.exclude
     candidates = list(Path(start).rglob('.mmh-state.yaml'))
     candidates.sort()
     cn = len(candidates)
@@ -692,7 +694,7 @@ def combinationOverview(args, prefix, root, start):
                    cdata, combination, odata, output, cn, cidx, on, oidx):
         renderOutput(evaluateOutput(cdata, odata), on, oidx)
 
-    return _combinationIterate(prefix, root, start, args.pattern, args.exclude,
+    return _combinationIterate(prefix, root, start, args,
                                before = _before,
                                perOutput = _perOutput)
 
@@ -718,7 +720,7 @@ def combinationGC(args, prefix, root, start):
             return False
         return True
 
-    return _combinationIterate(prefix, root, start, args.pattern, args.exclude,
+    return _combinationIterate(prefix, root, start, args,
                                perOutput = _perOutput)
 
 def combinationCleanupDubious(args, prefix, root, start):
@@ -754,7 +756,7 @@ def combinationCleanupDubious(args, prefix, root, start):
             return False
         return True
 
-    return _combinationIterate(prefix, root, start, args.pattern, args.exclude,
+    return _combinationIterate(prefix, root, start, args,
                                perOutput = _perOutput)
 
 def combinationCleanup(args, prefix, root, start):
@@ -782,7 +784,7 @@ def combinationCleanup(args, prefix, root, start):
                 rc = False
     return rc
 
-def combinationList(prefix, root, start):
+def combinationList(args, prefix, root, start):
     rc = False
     candidates = list(Path(start).rglob('.mmh-state.yaml'))
     candidates.sort()
@@ -811,7 +813,7 @@ def outputList(args, prefix, root, start):
             print(file)
     return rc
 
-def combinationQuery(prefix, root, start):
+def combinationQuery(args, prefix, root, start):
     rc = False
     prefix = 'combination'
     candidates = list(map(str, combination.combinations.keys()))
@@ -838,12 +840,12 @@ def combinationTool(root, log, args):
         return combinationCleanupDubious(args, prefix, root, start)
 
     if args.list_combinations:
-        return combinationList(prefix, root, start)
+        return combinationList(args, prefix, root, start)
 
     if args.list_outputs:
         return outputList(args, prefix, root, start)
 
     if args.query_combinations:
-        return combinationQuery(prefix, root, start)
+        return combinationQuery(args, prefix, root, start)
 
     return combinationOverview(args, prefix, root, start)
