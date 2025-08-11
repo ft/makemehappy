@@ -617,6 +617,19 @@ def _fonly(*patterns):
 def _fremove(*patterns):
     return _regex_filter(patterns, True, False, True)
 
+def _combinationProcessOutput(perOutput, output):
+    odata = mmh.load(output)
+    if odata['version'] != OUTPUT_STATE_FILE_VERSION:
+        # Similarly to the unsupported combination format version, with
+        # the output state, we can also guess the output file name from
+        # the name of the state file. Again, do that and continue.
+        label = output.stem[1:]
+        print(f'  {label}: Incompatible output version:',
+                f'{odata["version"]}')
+        return None
+
+    return perOutput(output, odata)
+
 def _combinationIterate(prefix, root, start, args,
                         before = None, perOutput = None):
     patterns = args.pattern
@@ -651,27 +664,25 @@ def _combinationIterate(prefix, root, start, args,
 
         outputs.sort()
         on = len(outputs)
+
         if before is not None:
             rv = before(prefix, root, start, state, cdata,
                         combination, cn, cidx, on)
             if rv == False:
                 return False
+
+        if perOutput is None:
+            def _perOutput(*args, **kwargs):
+                return True
+        else:
+            def _perOutput(output, odata):
+                return perOutput(prefix, root, start, state,
+                                 cdata, combination,
+                                 odata, output,
+                                 cn, cidx, on, oidx)
         for (oidx, output) in enumerate(outputs):
-            odata = mmh.load(output)
-            if odata['version'] != OUTPUT_STATE_FILE_VERSION:
-                # Similarly to the unsupported combination format version, with
-                # the output state, we can also guess the output file name from
-                # the name of the state file. Again, do that and continue.
-                label = output.stem[1:]
-                print(f'  {label}: Incompatible output version:',
-                      f'{odata["version"]}')
-                continue
-            if perOutput is not None:
-                rv = perOutput(prefix, root, start, state,
-                               cdata, combination,
-                               odata, output, cn, cidx, on, oidx)
-                if rv == False:
-                    return False
+            if _combinationProcessOutput(_perOutput, output) == False:
+                return False
     return True
 
 def combinationOverview(args, prefix, root, start):
@@ -691,7 +702,9 @@ def combinationOverview(args, prefix, root, start):
               f'({cidx + 1}/{cn}, {on})')
 
     def _perOutput(prefix, root, start, state,
-                   cdata, combination, odata, output, cn, cidx, on, oidx):
+                   cdata, combination,
+                   odata, output,
+                   cn, cidx, on, oidx):
         renderOutput(evaluateOutput(cdata, odata), on, oidx)
 
     return _combinationIterate(prefix, root, start, args,
