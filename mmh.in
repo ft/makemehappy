@@ -265,9 +265,6 @@ ap_run = subp.add_parser(
 
 ap_run.set_defaults(sub_command = 'run-instance')
 ap_run.add_argument('instances', nargs = '*')
-ap_run.add_argument(
-    "-a", "--all-instances", action = "store_true",
-    help = "Force building all module instances")
 
 # show-result
 ap_result = subp.add_parser(
@@ -332,9 +329,6 @@ ap_system.set_defaults(sub_command = 'system')
 ap_system.add_argument(
     "-s", "--single-instance", action = "store_true",
     help = "Build a single instance in the build directory root")
-ap_system.add_argument(
-    "-a", "--all-instances", action = "store_true",
-    help = "Force building all system instances")
 ap_system.add_argument(
     "-c", "--no-combinations", action = "store_true",
     help = "Do not build any combinations")
@@ -482,9 +476,6 @@ if ('instances' not in cmdargs):
 
 if ('single_instance' not in cmdargs):
     cmdargs.single_instance = None
-
-if ('all_instances' not in cmdargs):
-    cmdargs.all_instances = False
 
 if (cmdargs.version):
     print("{} ({}) version {}".format(fullname, name, version))

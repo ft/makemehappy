@@ -281,7 +281,6 @@ _makemehappy-run-instance() {
     _arguments -C -s -w : \
                '*::: :__makemehappy-module-instances' \
                '(-h --help)'{-h,--help}'[display help message]' \
-               '(-a --all-instances)'{-a,--all-instances}'[Force building all system instances]' \
         && ret=0
 }
 
@@ -341,7 +340,6 @@ _makemehappy-system() {
                '*::: :->args' \
                '(-h --help)'{-h,--help}'[display help message]' \
                '(-s --single-instance)'{-s,--single-instance}'[build a single instance in the build directory root]' \
-               '(-a --all-instances)'{-a,--all-instances}'[force building all system instances]' \
                '(-c --no-combinations)'{-c,--no-combinations}'[do not build any combinations]' \
         && ret=0
 
