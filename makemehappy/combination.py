@@ -918,19 +918,19 @@ def combinationTool(root, log, args):
                         renderOutput(evaluateOutput(cdata, odata), None, None),
                         file)
                 rc = rc and new
-            elif p.is_dir() == False and p.exists():
-                print(f'Existing file is not a combination output: {p}')
             elif _isCombinationDir(thing):
                 # Naming directories directly is fine as well. But we like with
                 # files, we're not matching those for you.
                 lst = [ Path(thing) / '.mmh-state.yaml' ]
                 new = combinationOverview(args, prefix, root, start, lst)
                 rc = rc and new
-            elif p.is_dir():
-                print(f'Existing directoy is not a combination root: {p}')
             else:
                 # Combination names can contain patterns. We'll resolve those.
-                csm = mmh.patternsToList(cs, [thing])
+                csm = mmh.patternsToList(cs, [thing], returnPattern = False)
+                if len(csm) == 0:
+                    print(f'Pattern yielded no matches: {thing}')
+                    rc = False
+                    continue
                 lst = list(filter(lambda x: x.exists(),
                                   map(lambda c: root / c / '.mmh-state.yaml',
                                       csm)))

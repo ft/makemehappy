@@ -171,15 +171,17 @@ def expandFile(tmpl):
     exp = mako.Template(tmpl).render(system = curdir)
     return exp
 
-def maybeMatch(lst, pat):
+def maybeMatch(lst, pat, returnPattern = True):
     m = fnmatch.filter(lst, pat)
-    if (len(m) == 0):
-        return [ pat ]
+    if len(m) == 0:
+        if returnPattern:
+            return [ pat ]
+        return []
     else:
         return m
 
-def patternsToList(lst, pats):
-    return flatten([ maybeMatch(lst, x) for x in pats ])
+def patternsToList(lst, pats, returnPattern = True):
+    return flatten([ maybeMatch(lst, x, returnPattern) for x in pats ])
 
 def trueKey(d, k):
     return (k in d and d[k])
