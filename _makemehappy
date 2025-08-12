@@ -111,8 +111,9 @@ __makemehappy-system-combinations () {
 __makemehappy-system-combination-dirs () {
     local expl
     local -a dirs ignored
+    local md=${mmhdir:-build}
     ignored=(${line:#${words[CURRENT]}})
-    dirs=( ${${(f)"$(command mmh -q system combinations -l 2>/dev/null)"}%%:*} )
+    dirs=( ${${(f)"$(command mmh -q -d "$md" system combinations -l 2>/dev/null)"}%%:*} )
     _wanted system-combination-directories expl 'system combination directories' \
             compadd -F ignored "${dirs[@]}"
 }
@@ -120,8 +121,9 @@ __makemehappy-system-combination-dirs () {
 __makemehappy-system-combination-files () {
     local expl
     local -a files ignored
+    local md=${mmhdir:-build}
     ignored=(${line:#${words[CURRENT]}})
-    files=( ${${(f)"$(command mmh -q system combinations -L 2>/dev/null)"}%%:*} )
+    files=( ${${(f)"$(command mmh -q -d "$md" system combinations -L 2>/dev/null)"}%%:*} )
     _wanted system-combination-files expl 'system combination files' \
             compadd -F ignored "${files[@]}"
 }
