@@ -521,9 +521,12 @@ def evaluateOutput(cdata, odata):
 def renderOutput(data, n, idx):
     coff = colour.reset
     print(colour.bold + colour.fg['magenta'] +
-          f"  {data['name']}" +
-          colour.reset,
-          f'({idx + 1}/{n})')
+        f"  {data['name']}" +
+        colour.reset, end = '')
+    if n is not None:
+        print(f' ({idx + 1}/{n})')
+    else:
+        print('')
 
     label = 'state'
     if data['state'] == 'fresh':
@@ -631,11 +634,15 @@ def _combinationProcessOutput(perOutput, output):
     return perOutput(output, odata)
 
 def _combinationIterate(prefix, root, start, args,
-                        before = None, perOutput = None):
+                        before = None, perOutput = None,
+                        cs = None):
     patterns = args.pattern
     excludes = args.exclude
-    candidates = list(Path(start).rglob('.mmh-state.yaml'))
-    candidates.sort()
+    if cs is None:
+        candidates = list(Path(start).rglob('.mmh-state.yaml'))
+        candidates.sort()
+    else:
+        candidates = cs
     cn = len(candidates)
     for (cidx, state) in enumerate(candidates):
         cdata = mmh.load(state)
@@ -685,7 +692,7 @@ def _combinationIterate(prefix, root, start, args,
                 return False
     return True
 
-def combinationOverview(args, prefix, root, start):
+def combinationOverview(args, prefix, root, start, cs = None):
     def _before(prefix, root, start, state, cdata, combination, cn, cidx, on):
         filtered = False
         if args.pattern:
@@ -709,7 +716,8 @@ def combinationOverview(args, prefix, root, start):
 
     return _combinationIterate(prefix, root, start, args,
                                before = _before,
-                               perOutput = _perOutput)
+                               perOutput = _perOutput,
+                               cs = cs)
 
 def combinationGC(args, prefix, root, start):
     def _perOutput(prefix, root, start, state,
@@ -826,15 +834,44 @@ def outputList(args, prefix, root, start):
             print(file)
     return rc
 
-def combinationQuery(args, prefix, root, start):
-    rc = False
+def _allCombinations():
     prefix = 'combination'
-    candidates = list(map(str, combination.combinations.keys()))
+    candidates = list(map(lambda x: prefix + '/' + str(x),
+                          combination.combinations.keys()))
     candidates.sort()
-    for key in candidates:
-        rc = True
-        print(prefix + '/' + key)
-    return rc
+    return candidates
+
+def combinationQuery(args, root, start):
+    for c in _allCombinations():
+        print(c)
+    return True
+
+def _isCombinationFile(string):
+    p = Path(string)
+    m = p.parent / ('.' + p.name + '.yaml')
+    return (p.exists()            and
+            (p.is_dir() == False) and
+            m.exists())
+
+def _isCombinationDir(string):
+    p = Path(string)
+    m = p / '.mmh-state.yaml'
+    return (p.exists() and
+            p.is_dir() and
+            m.exists())
+
+def _findCombinationData(root, output):
+    needle = '.mmh-state.yaml'
+    root = root.absolute()
+    output = Path(output).absolute()
+    current = output.parent
+    while True:
+        test = current / needle
+        if test.exists:
+            return mmh.load(test)
+        if current == root:
+            return None
+        current = current.parent
 
 def combinationTool(root, log, args):
     prefix = 'combination'
@@ -859,6 +896,45 @@ def combinationTool(root, log, args):
         return outputList(args, prefix, root, start)
 
     if args.query_combinations:
-        return combinationQuery(args, prefix, root, start)
+        return combinationQuery(args, root, start)
 
+    if args.combinationspec is not None:
+        rc = True
+        cs = _allCombinations()
+        for thing in args.combinationspec:
+            p = Path(thing)
+            if _isCombinationFile(thing):
+                # Naming files directly is fine. But we will not do any pattern
+                # pattern matching for those. If you want that, use your
+                # shell's pattern matching features.
+                cdata = _findCombinationData(root, thing)
+                if cdata is None:
+                    rc = False
+                    continue
+                thing = Path(thing)
+                file = thing.parent / ('.' + thing.name + '.yaml')
+                new = _combinationProcessOutput(
+                    lambda output, odata:
+                        renderOutput(evaluateOutput(cdata, odata), None, None),
+                        file)
+                rc = rc and new
+            elif p.is_dir() == False and p.exists():
+                print(f'Existing file is not a combination output: {p}')
+            elif _isCombinationDir(thing):
+                # Naming directories directly is fine as well. But we like with
+                # files, we're not matching those for you.
+                lst = [ Path(thing) / '.mmh-state.yaml' ]
+                new = combinationOverview(args, prefix, root, start, lst)
+                rc = rc and new
+            elif p.is_dir():
+                print(f'Existing directoy is not a combination root: {p}')
+            else:
+                # Combination names can contain patterns. We'll resolve those.
+                csm = mmh.patternsToList(cs, [thing])
+                lst = list(filter(lambda x: x.exists(),
+                                  map(lambda c: root / c / '.mmh-state.yaml',
+                                      csm)))
+                new = combinationOverview(args, prefix, root, start, lst)
+                rc = rc and new
+        return rc
     return combinationOverview(args, prefix, root, start)
