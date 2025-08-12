@@ -381,6 +381,7 @@ _makemehappy-system() {
             (combinations|com)
                 _arguments -C -s -w : \
                            '(-h --help)'{-h,--help}'[display help message]' \
+                           '(-j --json)'{-j,--json}'[produce JSON output instead of terminal markup]' \
                            '(-g --garbage-collect)'{-g,--garbage-collect}'[remove stale combination outputs]' \
                            '(-c --cleanup-outputs)'{-c,--cleanup-outputs}'[remove combination outputs]' \
                            '(-C --cleanup-dubious)'{-C,--cleanup-dubious}'[remove combination outputs that are not fully intact]' \

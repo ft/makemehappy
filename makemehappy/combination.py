@@ -36,6 +36,7 @@
 
 import datetime
 import hashlib
+import json
 import os
 import re
 import makemehappy.colour as colour
@@ -441,6 +442,29 @@ class Registry:
 
 combination = Registry()
 
+class CombinationJSON:
+    def __init__(self):
+        self.store = []
+
+    def push(self, thing):
+        self.store.append(thing)
+
+    def normalise(self):
+        self.store.sort(key = lambda x: str(x['file']))
+        new = []
+        for entry in self.store:
+            if entry not in new:
+                new.append(entry)
+        self.store = new
+
+    def json(self):
+        self.normalise()
+        return json.dumps(self.store, sort_keys = True, indent = 4)
+
+    def print(self):
+        print(self.json())
+        pass
+
 def _checksumFile(file):
     return mmh.checksumFile(file, hashlib.sha256)
 
@@ -719,6 +743,45 @@ def combinationOverview(args, prefix, root, start, cs = None):
                                perOutput = _perOutput,
                                cs = cs)
 
+def _internalToJSON(data):
+    cleandeps = []
+    for entry in data['dependencies']:
+        dep = {}
+        for key in entry:
+            dep[key] = str(entry[key])
+        cleandeps.append(dep)
+    new = {
+        'combination': {
+            'name': data['combination']['combination'],
+            'id':   data['combination']['id']
+        },
+        'file':             str(data['file']),
+        'name':             data['name'],
+        'actual':           data['checksum'],
+        'expected':         data['expected'],
+        'state':            data['state'],
+        'integrity':        data['integrity'],
+        'fresh':            data['fresh'],
+        'id':               data['id'],
+        'duration':         data['duration'],
+        'dependencies':     cleandeps,
+        'dependency-state': data['dep-state'],
+        'creation-unix':    data['creation'].timestamp(),
+        'creation-utc':     str(data['creation'])
+    }
+    return new
+
+def combinationDumpJSON(args, prefix, root, start, js, cs = None):
+    def _perOutput(prefix, root, start, state,
+                   cdata, combination,
+                   odata, output,
+                   cn, cidx, on, oidx):
+        js.push(_internalToJSON(evaluateOutput(cdata, odata)))
+
+    return _combinationIterate(prefix, root, start, args,
+                               perOutput = _perOutput,
+                               cs = cs)
+
 def combinationGC(args, prefix, root, start):
     def _perOutput(prefix, root, start, state,
                    cdata, combination, odata, output, cn, cidx, on, oidx):
@@ -878,6 +941,9 @@ def combinationTool(root, log, args):
     root = Path(root)
     start = root / prefix
 
+    if args.json:
+        js = CombinationJSON()
+
     if args.garbage_collect:
         print('Scanning for stale combination outputs...')
         return combinationGC(args, prefix, root, start)
@@ -936,5 +1002,9 @@ def combinationTool(root, log, args):
                                       csm)))
                 new = combinationOverview(args, prefix, root, start, lst)
                 rc = rc and new
+        return rc
+    if args.json:
+        rc = combinationDumpJSON(args, prefix, root, start, js)
+        js.print()
         return rc
     return combinationOverview(args, prefix, root, start)

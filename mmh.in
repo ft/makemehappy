@@ -409,6 +409,10 @@ sys_combinations.add_argument(
     "-x", "--exclude", action = 'append',
     help = "Exclude output names by pattern")
 
+sys_combinations.add_argument(
+    "-j", "--json", action = 'store_true',
+    help = "Produce JSON output instead of terminal markup")
+
 sys_combinations.add_argument('instances', default = [ ], nargs = '*')
 
 # deploy
