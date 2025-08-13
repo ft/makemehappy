@@ -171,6 +171,7 @@ class Combination:
     def checksumFileDict(self, fn):
         checksum = self._checksumFile(fn) if fn.exists() else False
         return { 'file': str(fn),
+                 'size': fn.stat().st_size,
                  'mtime': datetime.datetime.fromtimestamp(
                      os.path.getmtime(fn), datetime.UTC),
                  'checksum': checksum }
@@ -530,6 +531,7 @@ def evaluateOutput(cdata, odata):
              'id':           odata['id'],
              'fresh':        odata['fresh'],
              'file':         file,
+             'size':         odata['output']['size'],
              'name':         file.name,
              'creation':     odata['output']['mtime'],
              'duration':     float(odata['time']['microseconds']) / 1000000.,
@@ -758,6 +760,7 @@ def _internalToJSON(data):
             'id':   data['combination']['id']
         },
         'file':             str(data['file']),
+        'size':             data['size'],
         'name':             data['name'],
         'actual':           data['checksum'],
         'expected':         data['expected'],
