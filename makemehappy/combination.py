@@ -576,6 +576,9 @@ def renderOutput(data, n, idx):
         c = colour.fg['red']
     print(f"    {label:.<14}: {c}{data['state']}{coff} (id: {data['fresh']})")
 
+    label = 'size'
+    print(f"    {label:.<14}: {data['size']}")
+
     label = 'creation'
     print(f"    {label:.<14}: {data['creation']}")
 
