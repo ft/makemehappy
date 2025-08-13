@@ -448,6 +448,7 @@ class CombinationJSON:
 
     def push(self, thing):
         self.store.append(thing)
+        return True
 
     def normalise(self):
         self.store.sort(key = lambda x: str(x['file']))
@@ -617,6 +618,7 @@ def renderOutput(data, n, idx):
         else:
             c = colour.fg['red']
         print(f"    {label:.<14}: {c}{data['dep-summary']}{coff}")
+    return True
 
 def _regex_filter(patterns, full, ifmatch, ifnotmatch):
     ps = list(map(re.compile, patterns))
@@ -979,16 +981,28 @@ def combinationTool(root, log, args):
                     continue
                 thing = Path(thing)
                 file = thing.parent / ('.' + thing.name + '.yaml')
-                new = _combinationProcessOutput(
-                    lambda output, odata:
-                        renderOutput(evaluateOutput(cdata, odata), None, None),
+                if args.json:
+                    new = _combinationProcessOutput(
+                        lambda output, odata:
+                            js.push(_internalToJSON(evaluateOutput(cdata,
+                                                                   odata))),
+                        file)
+                else:
+                    new = _combinationProcessOutput(
+                        lambda output, odata:
+                            renderOutput(evaluateOutput(cdata, odata),
+                                         None, None),
                         file)
                 rc = rc and new
             elif _isCombinationDir(thing):
                 # Naming directories directly is fine as well. But we like with
                 # files, we're not matching those for you.
                 lst = [ Path(thing) / '.mmh-state.yaml' ]
-                new = combinationOverview(args, prefix, root, start, lst)
+                if args.json:
+                    new = combinationDumpJSON(args, prefix, root, start,
+                                              js, lst)
+                else:
+                    new = combinationOverview(args, prefix, root, start, lst)
                 rc = rc and new
             else:
                 # Combination names can contain patterns. We'll resolve those.
@@ -1000,8 +1014,15 @@ def combinationTool(root, log, args):
                 lst = list(filter(lambda x: x.exists(),
                                   map(lambda c: root / c / '.mmh-state.yaml',
                                       csm)))
-                new = combinationOverview(args, prefix, root, start, lst)
+                if args.json:
+                    new = combinationDumpJSON(args, prefix, root, start, js, lst)
+                else:
+                    new = combinationOverview(args, prefix, root, start, lst)
                 rc = rc and new
+
+        if args.json:
+            js.print()
+
         return rc
     if args.json:
         rc = combinationDumpJSON(args, prefix, root, start, js)
