@@ -51,8 +51,18 @@ OUTPUT_STATE_FILE_VERSION = 0
 class InvalidCombinationGenerator(Exception):
     pass
 
+class CombinationOutputDotfile(Exception):
+    pass
+
+class CombinationOutputReserved(Exception):
+    pass
+
 class CombinationOutput:
     def __init__(self, callback, name, inputs):
+        if name.startswith('.'):
+            raise CombinationOutputDotfile(name)
+        if name == 'mmh-state':
+            raise CombinationOutputReserved(name)
         self.callback = callback
         self.name = name
         self.inputs = inputs
