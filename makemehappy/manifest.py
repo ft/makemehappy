@@ -102,17 +102,21 @@ class ManifestEntry:
         return self
 
     def _transform(self, f):
-        new = p.InputFile(f.name, f.matchobj)
+        new = p.InputFile(str(f), f.matchobj)
         for t in self.transformers:
             new = t(new)
 
         if isinstance(new, p.InputFile):
             final = Path(new.name)
+        elif isinstance(new, Path):
+            final = new.name
         else:
-            final = Path(new)
+            final = Path(new).name
 
         if self.destinationDir is not None:
-            final = self.destinationDir / final
+            final = Path(self.destinationDir) / final
+        else:
+            final = Path(final)
 
         return final
 
