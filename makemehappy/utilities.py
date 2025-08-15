@@ -541,7 +541,7 @@ class SourceCodeState:
 
         self.string = ''
         for f in self.sources:
-            self.string += self.sources[f] + ' ' + f + '\n'
+            self.string += self.sources[f] + ' ' + str(f) + '\n'
 
         for m in ms:
             self.string += self.modules[m] + ' ' + m + '\n'

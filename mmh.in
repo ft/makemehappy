@@ -651,6 +651,12 @@ if cmdargs.query is not None:
     print(" ".join(res))
     mmh_exit(0)
 
+if cmdargs.disable_user_directory == False:
+    for fnc in [ mmh.xdgFile, mmh.dotFile ]:
+        cfgpy = Path(fnc('config.py'))
+        if cfgpy.exists():
+            mmh.loadPython(cfgpy)
+
 def requireModuleDefinition(args):
     if (os.path.isfile(args.module) == False):
         mmh.warn("Module definition does not exist: {}".format(args.module))
