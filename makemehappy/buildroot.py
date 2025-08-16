@@ -63,7 +63,14 @@ class BuildRoot:
 
     def cd(self):
         self.log.info("Changing into build-directory: {}".format(self.name()))
-        os.chdir(self.name())
+        os.chdir(self.calldir)
+        os.chdir(self.root)
+
+    def toCalldir(self, quiet = False):
+        if quiet == False:
+            self.log.info("Changing into call-directory: {}"
+                          .format(self.calldir))
+        os.chdir(self.calldir)
 
     def populate(self):
         for entry in self.initdirs:

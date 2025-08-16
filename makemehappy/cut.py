@@ -974,6 +974,9 @@ class CodeUnderTest:
     def changeToRoot(self):
         self.root.cd()
 
+    def changeToCalldir(self, quiet = False):
+        self.root.toCalldir(quiet)
+
     def dependencies(self):
         if (has('dependencies', self.moduleData, list)):
             return self.moduleData['dependencies']
