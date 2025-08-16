@@ -134,7 +134,7 @@ if cmdargs.log_to_file:
             cmdargs.log_file = 'build.log'
         else:
             cmdargs.log_file = cmdargs.directory + ".log"
-    h.init_hook('setup-log-file', args = cmdargs)
+    h.init_hook('setup-log-file', log = log, args = cmdargs)
     print(f'Logging to: {cmdargs.log_file}')
     log.handlers[0].setFile(cmdargs.log_file)
 else:
