@@ -686,6 +686,14 @@ class System:
                                    self.args.raise_exceptions)
         errorsn = len(errors)
         if errorsn == 0:
+            h.checkpoint_hook('post/deploy',
+                              log    = self.log,
+                              cfg    = self.cfg,
+                              data   = self.data,
+                              final  = m.manifest.final(),
+                              prefix = m.manifest._prefix,
+                              subdir = m.manifest._subdir,
+                              strict = self.args.strict)
             return True
 
         print(f'{errorsn} errors while deploying. Please check:')
