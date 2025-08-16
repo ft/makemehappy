@@ -120,7 +120,7 @@ if cmdargs.disable_user_directory == False:
     for fnc in [ mmh.xdgFile, mmh.dotFile ]:
         cfgpy = Path(fnc('config.py'))
         if cfgpy.exists():
-            mmh.loadPython(cfgpy)
+            mmh.loadPython(log, cfgpy)
 
 if (earlyExit):
     mmh_exit(1)
