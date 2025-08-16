@@ -127,11 +127,14 @@ if (earlyExit):
 
 if cmdargs.log_to_file:
     cmdargs.log_all = True
+    cmdargs.log_file_from_default = False
     if cmdargs.log_file is None:
+        cmdargs.log_file_from_default = True
         if cmdargs.directory is None:
             cmdargs.log_file = 'build.log'
         else:
             cmdargs.log_file = cmdargs.directory + ".log"
+    h.init_hook('setup-log-file', args = cmdargs)
     print(f'Logging to: {cmdargs.log_file}')
     log.handlers[0].setFile(cmdargs.log_file)
 else:

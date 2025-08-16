@@ -29,6 +29,9 @@ class Registry:
 
 hooks = Registry()
 
+def init_hook(cp, **kwargs):
+    hooks.run(f'init/{cp}', **kwargs)
+
 def checkpoint_hook(cp, **kwargs):
     hooks.run(f'checkpoint/{cp}', **kwargs)
 
