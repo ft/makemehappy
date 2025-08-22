@@ -1210,7 +1210,7 @@ class CodeUnderTest:
 
     def variables(self):
         if (has('variables', self.moduleData, dict)):
-            return self.moduleData['variables']
+            return mmh.expandFileDict(self.moduleData['variables'])
         return {}
 
     def targets(self):

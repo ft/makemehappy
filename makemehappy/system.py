@@ -147,6 +147,7 @@ class SystemInstanceBoard:
         self.tc = tc
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['boards'], 'name', self.board)
+        self.variables = mmh.expandFileDict(self.spec['variables'])
         self.systemdir = os.getcwd()
         self.env = None
         if ('environment' in self.spec):
@@ -168,7 +169,7 @@ class SystemInstanceBoard:
         self.sys.stats.systemBoard(tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
-        cargs = c.makeParamsFromDict(self.spec['variables'])
+        cargs = c.makeParamsFromDict(self.variables)
         if (self.sys.args.cmake != None):
             cargs += self.sys.args.cmake
 
@@ -201,6 +202,7 @@ class SystemInstanceZephyr:
         self.tc = tc
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['zephyr'], 'application', self.app)
+        self.variables = mmh.expandFileDict(self.spec['variables'])
         self.systemdir = os.getcwd()
         self.env = None
         if ('environment' in self.spec):
@@ -233,7 +235,7 @@ class SystemInstanceZephyr:
         if (not 'modules' in build):
             build['modules'] = [ ]
 
-        cargs = c.makeParamsFromDict(self.spec['variables'])
+        cargs = c.makeParamsFromDict(self.variables)
         if (self.sys.args.cmake != None):
             cargs += self.sys.args.cmake
 

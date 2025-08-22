@@ -167,9 +167,17 @@ def flatten(lst):
 def expandFile(tmpl):
     if tmpl is None:
         return None
+    if isinstance(tmpl, str) is False:
+        return tmpl
     curdir = os.getcwd()
     exp = mako.Template(tmpl).render(system = curdir)
     return exp
+
+def expandFileDict(kv):
+    rv = {}
+    for key in kv:
+        rv[key] = expandFile(kv[key])
+    return rv
 
 def maybeMatch(lst, pat, returnPattern = True):
     m = fnmatch.filter(lst, pat)
