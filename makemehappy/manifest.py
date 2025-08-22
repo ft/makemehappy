@@ -672,14 +672,7 @@ def withDashString(string):
     return _transform
 
 def withVersion(vcs):
-    def _transform(f):
-        if isinstance(f, p.InputFile):
-            f = f.path
-        elif not isinstance(f, Path):
-            f = Path(f)
-        old = f.stem
-        return f.with_stem(old + '-' + vcs.version())
-    return _transform
+    return withDashString(vcs.version())
 
 # Here's a function that turns a result of a ManifestEntry to a list of matched
 # files. The machinery of matching files can be useful elsewhere, and this is a
