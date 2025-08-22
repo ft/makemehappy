@@ -146,6 +146,8 @@ class Combination:
         else:
             self.outputs = [ self.gen ]
 
+        self.outputs = mmh.flatten(self.outputs)
+
         if self._validOutputs(self.outputs) is False:
             raise InvalidCombinationGenerator(self.outputs)
 
