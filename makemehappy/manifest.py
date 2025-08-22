@@ -385,17 +385,15 @@ class Manifest:
 
         rv = [ hl, f' {tindex:{width}} | {tfile}', hl ]
 
-        i = 0
         for (idx, entry, n, pairs) in self.collection:
             if isinstance(pairs, list) == False:
                 continue
             j = 0
             for (infile, outfile) in pairs:
-                rv.append(f' {i if j == 0 else "":{width}} |   {infile}')
+                rv.append(f' {idx if j == 0 else "":{width}} |   {infile}')
                 rv.append(f' {"":{width}} | → {outfile}')
                 j += 1
             rv.append(hl)
-            i += 1
 
         return rv
 
