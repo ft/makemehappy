@@ -600,7 +600,9 @@ def basenameZephyr(builddir):
 # zephyr. You should not construct ManifestEntry instances yourself.
 
 def file(g, root = '.'):
-    return ManifestEntry(lambda: genFile(g, root), f'file({g})', None, 1)
+    return ManifestEntry(lambda: genFile(g, root),
+                         f'file({g}, root = {root})',
+                         None, 1)
 
 def fromFile(f, file_root = '.', spec_root = '.'):
     return ManifestEntry(lambda: genFromFile(f, file_root, spec_root),
