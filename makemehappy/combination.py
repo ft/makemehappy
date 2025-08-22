@@ -93,7 +93,7 @@ class Combination:
         self.printer = None
         self.verbose = None
 
-    def _validOuputs(self, lst):
+    def _validOutputs(self, lst):
         if isinstance(lst, list) is False:
             return False
         return all(map(lambda x: isinstance(x, CombinationOutput), lst))
@@ -146,7 +146,7 @@ class Combination:
         else:
             self.outputs = [ self.gen ]
 
-        if self._validOuputs(self.outputs) is False:
+        if self._validOutputs(self.outputs) is False:
             raise InvalidCombinationGenerator(self.outputs)
 
     def addCombinationState(self):
