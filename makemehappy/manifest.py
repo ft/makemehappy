@@ -372,6 +372,9 @@ class Manifest:
         maxfile = len(tfile)
 
         for (idx, entry, n, pairs) in self.collection:
+            if isinstance(pairs, list) == False:
+                print(pairs)
+                continue
             for (infile, outfile) in pairs:
                 n = max(len(str(infile)), len(str(outfile)))
                 if n > maxfile:
@@ -384,6 +387,8 @@ class Manifest:
 
         i = 0
         for (idx, entry, n, pairs) in self.collection:
+            if isinstance(pairs, list) == False:
+                continue
             j = 0
             for (infile, outfile) in pairs:
                 rv.append(f' {i if j == 0 else "":{width}} |   {infile}')
