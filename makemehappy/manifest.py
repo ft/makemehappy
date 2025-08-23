@@ -661,18 +661,50 @@ def remove(*patterns):
 
 # Similarly, some common transformation functions.
 
-def withDashString(string):
+class InvalidAPI(Exception):
+    pass
+
+def withDashString(string, levels = None, suffixes = None):
+    if levels is not None and suffixes is not None:
+        raise InvalidAPI(__name__, levels, suffixes)
+
+    def _transformLevels(f, n):
+        sxs = list(reversed(list(reversed(f.suffixes))[:n]))
+        suffix = ''.join(sxs)
+        slen = len(suffix)
+        blen = len(f.name) - slen
+        base = f.name[:blen]
+        return Path(base + '-' + string + suffix)
+
+    def _transformSuffixes(f, sxs):
+        name = f.name
+        for sx in sxs:
+            if name.endswith(sx):
+                slen = len(sx)
+                blen = len(name) - slen
+                base = f.name[:blen]
+                return Path(base + '-' + string + sx)
+        return Path(name + '-' + string)
+
     def _transform(f):
         if isinstance(f, p.InputFile):
             f = f.path
         elif not isinstance(f, Path):
             f = Path(f)
-        old = f.stem
-        return f.with_stem(old + '-' + string)
+
+        if levels is None and suffixes is None:
+            return _transformLevels(f, 1)
+        elif suffixes is None:
+            return _transformLevels(f, levels)
+        else:
+            return _transformSuffixes(f, suffixes)
+
     return _transform
 
-def withVersion(vcs):
-    return withDashString(vcs.version())
+def withVersion(vcs, levels = None, suffixes = None):
+    return withDashString(vcs.version(),
+                          levels   = levels,
+                          suffixes = suffixes)
 
 # Here's a function that turns a result of a ManifestEntry to a list of matched
 # files. The machinery of matching files can be useful elsewhere, and this is a
