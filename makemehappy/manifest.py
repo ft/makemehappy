@@ -664,7 +664,7 @@ def remove(*patterns):
 class InvalidAPI(Exception):
     pass
 
-def withDashString(string, levels = None, suffixes = None):
+def withString(string, levels = None, suffixes = None):
     if levels is not None and suffixes is not None:
         raise InvalidAPI(__name__, levels, suffixes)
 
@@ -677,7 +677,7 @@ def withDashString(string, levels = None, suffixes = None):
         slen = len(suffix)
         blen = len(f.name) - slen
         base = f.name[:blen]
-        return Path(base + '-' + string + suffix)
+        return Path(base + string + suffix)
 
     def _transformSuffixes(f, sxs):
         name = f.name
@@ -686,8 +686,8 @@ def withDashString(string, levels = None, suffixes = None):
                 slen = len(sx)
                 blen = len(name) - slen
                 base = f.name[:blen]
-                return Path(base + '-' + string + sx)
-        return Path(name + '-' + string)
+                return Path(base + string + sx)
+        return Path(name + string)
 
     def _transform(f):
         if isinstance(f, p.InputFile):
@@ -703,6 +703,15 @@ def withDashString(string, levels = None, suffixes = None):
             return _transformSuffixes(f, suffixes)
 
     return _transform
+
+def withDashString(string, levels = None, suffixes = None):
+    if levels is not None and suffixes is not None:
+        raise InvalidAPI(__name__, levels, suffixes)
+
+    if string is None:
+        return (lambda x: x)
+
+    return withString('-' + string, levels, suffixes)
 
 def withVersion(vcs, levels = None, suffixes = None):
     return withDashString(vcs.version(),
