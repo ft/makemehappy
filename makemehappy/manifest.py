@@ -668,6 +668,9 @@ def withDashString(string, levels = None, suffixes = None):
     if levels is not None and suffixes is not None:
         raise InvalidAPI(__name__, levels, suffixes)
 
+    if string is None:
+        return (lambda x: x)
+
     def _transformLevels(f, n):
         sxs = list(reversed(list(reversed(f.suffixes))[:n]))
         suffix = ''.join(sxs)
