@@ -1,6 +1,8 @@
 modules:
     arm-cmsis:
       repository: https://github.com/ARM-software/CMSIS_5.git
+    arm-cmsis-6:
+      repository: https://github.com/ARM-software/CMSIS_6.git
     arm-cmsis-driver:
       repository: https://github.com/ARM-software/CMSIS-Driver.git
     arm-cmsis-freertos:
@@ -79,6 +81,9 @@ modules:
     zephyr-arm-cmsis:
       repository: https://github.com/zephyrproject-rtos/cmsis.git
       west: cmsis
+    zephyr-arm-cmsis-6:
+      repository: https://github.com/zephyrproject-rtos/CMSIS_6.git
+      west: cmsis_6
     zephyr-hal-altera:
       repository: https://github.com/zephyrproject-rtos/hal_altera.git
       west: hal_altera

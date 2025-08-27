@@ -4,6 +4,8 @@ import os
 import shutil
 import time
 
+from pathlib import Path
+
 def timeString():
     now = datetime.datetime.now()
     return now.strftime("%Y-%m-%d_%H:%M:%S.%f")
@@ -39,7 +41,7 @@ class BuildRoot:
             self.root = dirName
         else:
             self.root = dirName
-            os.mkdir(self.root, 0o755)
+            os.makedirs(self.root, mode=0o755, exist_ok=True)
 
         if existing:
             self.log.info("Using build-directory: {}".format(self.root))
@@ -61,13 +63,23 @@ class BuildRoot:
 
     def cd(self):
         self.log.info("Changing into build-directory: {}".format(self.name()))
-        os.chdir(self.name())
+        os.chdir(self.calldir)
+        os.chdir(self.root)
+
+    def toCalldir(self, quiet = False):
+        if quiet == False:
+            self.log.info("Changing into call-directory: {}"
+                          .format(self.calldir))
+        os.chdir(self.calldir)
 
     def populate(self):
         for entry in self.initdirs:
             self.log.info("    Populating build-directory: {}".format(entry))
-            os.mkdir(os.path.join(self.name(), entry))
+            os.makedirs(os.path.join(self.name(), entry),
+                        mode=0o755, exist_ok=True)
 
     def linkCodeUnderTest(self, directory = None):
         self.log.info("    Linking code-under-test: {}".format(self.calldir))
-        os.symlink(self.calldir, os.path.join(self.name(), 'code-under-test'))
+        lnk = Path(os.path.join(self.name(), 'code-under-test'))
+        if not Path.is_symlink(lnk):
+            os.symlink(self.calldir, lnk)

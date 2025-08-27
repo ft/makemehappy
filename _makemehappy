@@ -12,7 +12,6 @@ _makemehappy_aliasmap=(
     get       download-source
     init      build-tree-init
     list      list-instances
-    reset     reset-setup
     run       run-instance
     result    show-result
     revs      revision-overrides
@@ -68,6 +67,9 @@ __makemehappy-queries () {
         'architectures:List target architectures'
         'buildtools:List build tools'
         'buildconfigs:List build configurations'
+        'root:Find closest root-directory'
+        'root-module:Find closest module root-directory'
+        'root-system:Find closest system root-directory'
     )
     _describe -t makemehappy-queries       \
               'makemehappy query keywords' \
@@ -95,6 +97,35 @@ __makemehappy-system-instances () {
     instances=( ${${(f)"$(command mmh -q system list 2>/dev/null)"}%%:*} )
     _wanted system-instances expl 'system instances' \
             compadd -F ignored "${instances[@]}"
+}
+
+__makemehappy-system-combinations () {
+    local expl
+    local -a instances ignored
+    ignored=(${line:#${words[CURRENT]}})
+    instances=( ${${(f)"$(command mmh -q system combinations -q 2>/dev/null)"}%%:*} )
+    _wanted system-combinations expl 'system combinations' \
+            compadd -F ignored "${instances[@]}"
+}
+
+__makemehappy-system-combination-dirs () {
+    local expl
+    local -a dirs ignored
+    local md=${mmhdir:-build}
+    ignored=(${line:#${words[CURRENT]}})
+    dirs=( ${${(f)"$(command mmh -q -d "$md" system combinations -l 2>/dev/null)"}%%:*} )
+    _wanted system-combination-directories expl 'system combination directories' \
+            compadd -F ignored "${dirs[@]}"
+}
+
+__makemehappy-system-combination-files () {
+    local expl
+    local -a files ignored
+    local md=${mmhdir:-build}
+    ignored=(${line:#${words[CURRENT]}})
+    files=( ${${(f)"$(command mmh -q -d "$md" system combinations -L 2>/dev/null)"}%%:*} )
+    _wanted system-combination-files expl 'system combination files' \
+            compadd -F ignored "${files[@]}"
 }
 
 __makemehappy-toolchains() {
@@ -233,14 +264,6 @@ _makemehappy-prepare() {
     __makemehappy-nothing-else
 }
 
-_makemehappy-reset-setup() {
-    if [[ -n ${makemehappy_describe} ]]; then
-        print "Reset build-tree meta-data"
-        return
-    fi
-    __makemehappy-nothing-else
-}
-
 _makemehappy-revision-overrides() {
     if [[ -n ${makemehappy_describe} ]]; then
         print "Show and test revision overrides"
@@ -260,7 +283,6 @@ _makemehappy-run-instance() {
     _arguments -C -s -w : \
                '*::: :__makemehappy-module-instances' \
                '(-h --help)'{-h,--help}'[display help message]' \
-               '(-a --all-instances)'{-a,--all-instances}'[Force building all system instances]' \
         && ret=0
 }
 
@@ -293,6 +315,21 @@ _makemehappy-show-source() {
     __makemehappy-modules
 }
 
+___makemehappy-system-combinations() {
+    _alternative __makemehappy-system-combinations     \
+                 __makemehappy-system-combination-dirs \
+                 __makemehappy-system-combination-files
+}
+
+___makemehappy-system-deploy() {
+    _arguments -C -s -w : \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-l --list)'{-l,--list}'[list collection of in/out files]' \
+               '(-s --show)'{-s,--show}'[show manifest in human readable form]' \
+               '(-S --strict)'{-S,--strict}'[make all manifest issues into errors]' \
+               '1::system deploy prefix directory:_path_files -g "*(/)"' \
+}
+
 _makemehappy-system() {
     if [[ -n ${makemehappy_describe} ]]; then
         print "Commands for complete or partial system builds"
@@ -304,8 +341,8 @@ _makemehappy-system() {
     _arguments -C -s -w : \
                '*::: :->args' \
                '(-h --help)'{-h,--help}'[display help message]' \
-               '(-s --single-instance)'{-s,--single-instance}'[Build a single instance in the build directory root]' \
-               '(-a --all-instances)'{-a,--all-instances}'[Force building all system instances]' \
+               '(-s --single-instance)'{-s,--single-instance}'[build a single instance in the build directory root]' \
+               '(-c --no-combinations)'{-c,--no-combinations}'[do not build any combinations]' \
         && ret=0
 
     if [[ -n $state ]]; then
@@ -315,6 +352,8 @@ _makemehappy-system() {
             commands=(
                 build:'perform config/build/install/test on system'
                 clean:'clean build trees'
+                combinations:'inspect system combination builds'
+                deploy:'run system deployment'
                 db:'link compile command db to system root'
                 list:'list specified instances'
                 rebuild:'like "build" but skip config step'
@@ -326,12 +365,33 @@ _makemehappy-system() {
             compset -n 1
 
             case $line[1] in
-            (build|clean|rebuild)
+            (clean|rebuild)
                 _arguments -C -s -w : \
                            '(-h --help)'{-h,--help}'[display help message]' \
                            '*:: :__makemehappy-system-instances' \
                     && ret=0
                 ;;
+            (build)
+                _arguments -C -s -w : \
+                           '(-f --force-build)'{-f,--force-build}'[force all build phases]' \
+                           '(-h --help)'{-h,--help}'[display help message]' \
+                           '*:: :__makemehappy-system-instances' \
+                    && ret=0
+                ;;
+            (combinations|com)
+                _arguments -C -s -w : \
+                           '(-h --help)'{-h,--help}'[display help message]' \
+                           '(-j --json)'{-j,--json}'[produce JSON output instead of terminal markup]' \
+                           '(-g --garbage-collect)'{-g,--garbage-collect}'[remove stale combination outputs]' \
+                           '(-c --cleanup-outputs)'{-c,--cleanup-outputs}'[remove combination outputs]' \
+                           '(-C --cleanup-dubious)'{-C,--cleanup-dubious}'[remove combination outputs that are not fully intact]' \
+                           '(-l --list-combinations)'{-l,--list-combinations}'[list directories containing combination data]' \
+                           '(-L --list-outputs)'{-L,--list-outputs}'[list files generated by combinations]' \
+                           '(-q --query-combinations)'{-q,--query-combinations}'[query specified combinations]' \
+                           '*:: :___makemehappy-system-combinations' \
+                    && ret=0
+                ;;
+            (deploy) ___makemehappy-system-deploy && ret=0 ;;
             (db)
                 _arguments -C -s -w : \
                            '(-h --help)'{-h,--help}'[display help message]' \
@@ -345,6 +405,22 @@ _makemehappy-system() {
     fi
 
     return ret
+}
+
+_makemehappy-verify() {
+    if [[ -n ${makemehappy_describe} ]]; then
+        print "Verify checksum files in deployments"
+        return
+    fi
+
+    local curcontext=$curcontext state line ret=1
+
+    _arguments -C -s -w : \
+               '(-h --help)'{-h,--help}'[display help message]' \
+               '(-b --basename)'{-b,--basename}'[Basename for checksum files in directories]' \
+               '(-r --root-directory)'{-r,--root-directory}'[Root directory for files in checksum files]' \
+               '*:: :_path_files' \
+        && ret=0
 }
 
 # Main completion entry point
@@ -366,7 +442,6 @@ _makemehappy() {
                '(-B --buildtools)'{-B,--buildtools}'[select build-tools to use]:build-tool:__makemehappy-buildtools' \
                '(-C --buildconfigs)'{-C,--buildconfigs}'[select build-configurations to use]:build-configuration:__makemehappy-buildconfigurations' \
                '(-d --directory)'{-d,--directory}'[specify build directory]:build directory:_path_files -g "*(/)"' \
-               '(-F --force)'{-F,--force}'[force using MakeMeHappy.yaml]' \
                '(-f --log-file)'{-f,--log-file}'[specify log file]:file name:_path_files' \
                '(-h --help)'{-h,--help}'[display help message]' \
                '(-R --raise-exceptions)'{-R,--raise-exceptions}'[Raise toplevel exceptions in case of errors.]' \
@@ -376,6 +451,7 @@ _makemehappy() {
                '(-m --module)'{-m,--module}'[specify module definition file]:module definition file:_path_files' \
                '(-p --preserve)'{-p,--preserve}'[preserve build root instead of deleting it]' \
                '(-Q --query)'{-Q,--query}'[query module build information]:mmh query:__makemehappy-queries' \
+               '(-e --environment-overrides)'{-e,--environment-overrides}'[allow mmh to override existing environment variables]' \
                '(-E --ignore-dep-errors)'{-E,--ignore-dep-errors}'[ignore errors in dependency evaluation]' \
                '(-q --quiet)'{-q,--quiet}'[disable informational output]' \
                '*'{-r,--revision}'[specify revision override]:revision override' \

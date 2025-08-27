@@ -9,6 +9,7 @@ import itertools as it
 import makemehappy.utilities as mmh
 import makemehappy.build as build
 import makemehappy.git as git
+import makemehappy.hooks as h
 import makemehappy.version as v
 import makemehappy.yamlstack as ys
 import makemehappy.zephyr as z
@@ -553,9 +554,15 @@ def buildFailed(data):
 class InvalidTimeStampKind(Exception):
     pass
 
+def validDatumType(t):
+    return (t == 'build' or
+            t == 'system-board' or
+            t == 'system-zephyr' or
+            t == 'system-combination')
+
 def endoftime(datum):
     t = datum['type']
-    if (t == 'build' or t == 'system-board' or t == 'system-zephyr'):
+    if validDatumType(t):
         return datum['time-stamp']
     elif t == 'checkpoint':
         if 'testsuite-stamp' in datum:
@@ -622,6 +629,12 @@ class ExecutionStatistics:
                             'board':     board,
                             'buildcfg':  buildcfg,
                             'buildtool': buildtool,
+                            'time-stamp': datetime.datetime.now() } )
+
+    def systemCombination(self, name, parents):
+        self.data.append( { 'type':       'system-combination',
+                            'name':       name,
+                            'parents':    parents,
                             'time-stamp': datetime.datetime.now() } )
 
     def logConfigure(self, result):
@@ -806,6 +819,20 @@ class ExecutionStatistics:
         self.renderTestStepResult(datum)
         self.renderInstallStepResult(datum)
 
+    def renderSystemCombination(self, datum):
+        result = 'Success'
+        if ('build-result' not in datum):
+            result = 'Skipped'
+        elif buildFailed(datum):
+            result = 'Failure   ---!!!---'
+        maybeInfo(self.cfg, self.log, ''.ljust(100, '-'))
+        string = (f'    Combination: {datum["name"]}, Number' +
+                  f' of dependencies: {len(datum["parents"])}')
+        maybeInfo(self.cfg, self.log, '{string:100}     {result}'
+                  .format(string = string,
+                          result = result))
+        self.renderBuildStepResult(datum)
+
     def renderStatistics(self):
         maybeInfo(self.cfg, self.log, '')
         maybeInfo(self.cfg, self.log, 'Build Summary:')
@@ -827,6 +854,8 @@ class ExecutionStatistics:
                 self.renderSystemBoardResult(entry)
             elif t == 'system-zephyr':
                 self.renderSystemZephyrResult(entry)
+            elif t == 'system-combination':
+                self.renderSystemCombination(entry)
             elif t == 'checkpoint':
                 self.renderCheckpoint(entry)
             else:
@@ -845,49 +874,6 @@ def isSatisfied(deps, done, name):
         if not(dep in done):
             return False
     return True
-
-def outputMMHYAML(version, fn, data, args):
-    if (data == None):
-        data = {}
-    data.pop('definition', None)
-    data.pop('root', None)
-    data['version'] = version
-    data['mode'] = 'module'
-    data['parameters'] = {}
-    if (len(args.instances) > 0):
-        data['parameters']['instances'] = args.instances
-    if (args.architectures != None):
-        data['parameters']['architectures'] = args.architectures
-    if (args.buildconfigs != None):
-        data['parameters']['buildconfigs'] = args.buildconfigs
-    if (args.buildtools != None):
-        data['parameters']['buildtools'] = args.buildtools
-    if (args.toolchains != None):
-        data['parameters']['toolchains'] = args.toolchains
-    if (args.cmake != None):
-        data['parameters']['cmake'] = args.cmake
-    if not data['parameters']:
-        data.pop('parameters', None)
-    if (args.all_instances and 'instances' in data):
-        del(data['instances'])
-    mmh.dump(fn, data)
-
-def updateMMHYAML(log, root, version, args):
-    fn = os.path.join(root, 'MakeMeHappy.yaml')
-    data = None
-
-    if (os.path.exists(fn)):
-        data = mmh.load(fn)
-
-    if (not mmh.matchingVersion(version, data)):
-        log.info('Creating instance config: {}'.format(fn))
-        outputMMHYAML(version, fn, data, args)
-        return
-
-    if (not mmh.noParameters(args) or args.all_instances):
-        log.info('Updating instance config: {}'.format(fn))
-        outputMMHYAML(version, fn, data, args)
-        return
 
 class CircularDependency(Exception):
     pass
@@ -944,6 +930,9 @@ class CodeUnderTest:
         self.moduleData = mmh.load(self.module)
         if ('type' in self.moduleData):
             self.moduleType = self.moduleData['type']
+        if ('evaluate' in self.moduleData):
+            mmh.loadPython(self.log, self.moduleData['evaluate'])
+            h.startup_hook(cfg = self.cfg, data = self.moduleData)
 
     def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools):
         if toolchains is not None:
@@ -967,8 +956,6 @@ class CodeUnderTest:
                               seed = yaml.dump(self.moduleData),
                               modName = self.name(),
                               dirName = args.directory)
-        if (args.fromyaml == False or args.all_instances == True):
-            updateMMHYAML(self.log, self.root.root, version, args)
 
     def setEnvironment(self):
         if (has('environment', self.moduleData, dict) == False):
@@ -978,19 +965,6 @@ class CodeUnderTest:
                            self.args.environment_overrides,
                            self.moduleData['environment'])
 
-    def cmakeIntoYAML(self):
-        self.log.info("Updating MakeMeHappy.yaml with CMake information")
-        fn = os.path.join('MakeMeHappy.yaml')
-        data = mmh.load(fn)
-        data['cmake'] = {}
-        data['cmake']['module-path'] = self.extensions.modulePath()
-        data['cmake']['toolchain-path'] = self.extensions.toolchainPath()
-        data['zephyr'] = {}
-        data['zephyr']['board-root'] = self.zephyr.boardRoot()
-        data['zephyr']['dts-root'] = self.zephyr.dtsRoot()
-        data['zephyr']['soc-root'] = self.zephyr.socRoot()
-        mmh.dump(fn, data)
-
     def populateRoot(self):
         self.root.populate()
 
@@ -999,6 +973,9 @@ class CodeUnderTest:
 
     def changeToRoot(self):
         self.root.cd()
+
+    def changeToCalldir(self, quiet = False):
+        self.root.toCalldir(quiet)
 
     def dependencies(self):
         if (has('dependencies', self.moduleData, list)):
@@ -1035,28 +1012,43 @@ class CodeUnderTest:
         self.stats.checkpoint('load-dependencies')
         self.depstack = Stack(self.dependencies())
         self.deptrace = Trace()
-        mmh.maybeShowPhase(self.log, 'load-dependencies', 'mmh/preparation',
-                           self.args)
-        rc = fetch(self.cfg, self.log, self.sources, self.depstack, self.deptrace)
+        def rest():
+            rc = fetch(self.cfg, self.log, self.sources,
+                       self.depstack, self.deptrace)
 
-        if (rc == False):
-            self.log.error("Fatal error loading dependencies. Giving up!")
+            if (rc == False):
+                self.log.error("Fatal error loading dependencies. Giving up!")
+                return rc
+
+            self.deporder = self.calculateDependencyOrder()
+            self.extensions = CMakeExtensions(self.moduleData,
+                                              self.deptrace,
+                                              self.deporder)
+            self.zephyr = ZephyrExtensions(self.moduleData,
+                                           self.deptrace,
+                                           self.deporder)
+            if ('dependencies' in self.moduleData):
+                self.depEval.insertSome(self.moduleData['dependencies'],
+                                        self.moduleData['name'])
+            for dept in self.deptrace.data:
+                self.depEval.insertSome(dept['dependencies'], dept['name'])
+            self.depEval.evaluate()
+            self.fullDependencyLog()
+            return True
+        h.checkpoint_hook('pre/load-dependencies', args = self.args,
+                          cfg = self.cfg, data = self.moduleData)
+        rc = mmh.maybeShowPhase(self.log,
+                                'load-dependencies',
+                                'mmh/preparation',
+                                self.args,
+                                rest)
+        h.checkpoint_hook('post/load-dependencies', args = self.args,
+                          cfg = self.cfg, data = self.moduleData,
+                          success = rc)
+        if not rc:
+            if self.cfg.log_to_file:
+                print("Fatal error loading dependencies. Giving up!")
             exit(1)
-
-        self.deporder = self.calculateDependencyOrder()
-        self.extensions = CMakeExtensions(self.moduleData,
-                                          self.deptrace,
-                                          self.deporder)
-        self.zephyr = ZephyrExtensions(self.moduleData,
-                                       self.deptrace,
-                                       self.deporder)
-        if ('dependencies' in self.moduleData):
-            self.depEval.insertSome(self.moduleData['dependencies'],
-                                    self.moduleData['name'])
-        for dept in self.deptrace.data:
-            self.depEval.insertSome(dept['dependencies'], dept['name'])
-        self.depEval.evaluate()
-        self.fullDependencyLog()
 
     def dependencySummary(self):
         rv = {}
@@ -1218,7 +1210,7 @@ class CodeUnderTest:
 
     def variables(self):
         if (has('variables', self.moduleData, dict)):
-            return self.moduleData['variables']
+            return mmh.expandFileDict(self.moduleData['variables'])
         return {}
 
     def targets(self):

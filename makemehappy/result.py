@@ -23,10 +23,10 @@ error = re.compile(r'^ERROR: ')
 nobuild = re.compile(r'Module type is \'nobuild\'\. Doing nothing\.')
 
 def toolchain_to_category(tc):
-    if tc.startswith('ti-'):
-        return 'texas-instruments'
     if re.match(r'^.*clang', tc):
         return 'clang'
+    if tc.startswith('ti-'):
+        return 'texas-instruments'
     return 'gnu'
 
 # Data types being produced by scanners

@@ -1,21 +1,26 @@
 #!@@PYTHON@@
 
-import argparse
 import os
 import re
 import sys
 
-import makemehappy.git as git
-import makemehappy.utilities as mmh
-import makemehappy.result as result
-import makemehappy.system as ms
-
+from pathlib import Path
 from logbook import Logger
-from makemehappy.cut import CodeUnderTest
-from makemehappy.cut import fetchCheckout
-from makemehappy.cut import gitCheckout
-from makemehappy.yamlstack import ConfigStack, SourceStack
-from makemehappy.loghandler import MMHLogHandler
+
+import makemehappy.hooks     as h
+import makemehappy.utilities as mmh
+
+from makemehappy.cli         import ap
+from makemehappy.combination import combination
+from makemehappy.loghandler  import MMHLogHandler
+from makemehappy.program     import (Program, MMHException,
+                                     MissingModuleDefinition,
+                                     ProgramExit, UnknownSubCommand)
+from makemehappy.yamlstack   import (ConfigStack, SourceStack)
+
+### Foundational Setup ########################################################
+
+mmh.sourceCodeState.add(os.path.realpath(__file__))
 
 version = "@@VERSION@@"
 fullname = "MakeMeHappy"
@@ -24,12 +29,15 @@ commandReturnValue = 0
 
 log = Logger(fullname)
 log.handlers.append(MMHLogHandler())
+combination.setLog(log)
 
 etcdir = '@@ETCDIR@@'
 datadir = '@@DATADIR@@'
 
 cfg = ConfigStack(log, 'Configuration')
 src = SourceStack(log, 'Source Definition')
+
+### Run Command Line Parser ###################################################
 
 cmakeParameters = None
 cmakeSeparator = None
@@ -43,336 +51,23 @@ try:
 except ValueError:
     cmakeParameters = None
 
-ap = argparse.ArgumentParser()
-
-### Top Level Options
-
-ap.add_argument(
-    "-d", "--directory", default = None,
-    help = "specify the build-root directory")
-
-ap.add_argument(
-    "-m", "--module", default = "module.yaml",
-    help = "specify the file that contains the" +
-           " module description (defaults to module.yaml)")
-
-ap.add_argument(
-    "-y", "--system", default = "system.yaml",
-    dest = 'system_spec',
-    help = "specify the file that contains the" +
-           " system description (defaults to system.yaml)")
-
-ap.add_argument(
-    "-p", "--preserve", action = "store_true",
-    help = "preserve build root instead of deleting it." +
-           " In combination with -d, delete build root"  +
-           " before termination.")
-
-ap.add_argument(
-    "-q", "--quiet", action = "store_true",
-    help = "Disable informational output")
-
-ap.add_argument(
-    "-R", "--raise-exceptions", action = "store_true",
-    help = "Raise toplevel exceptions in case of errors.")
-
-ap.add_argument(
-    "-P", "--show-phases", action = "store_true",
-    help = "Show build phases even with --log-to-file.")
-
-ap.add_argument(
-    "-L", "--log-all", action = "store_true",
-    help = "send all output to logging facility")
-
-ap.add_argument(
-    "-l", "--log-to-file", action = "store_true",
-    help = "log output to file (implies --log-all)")
-
-ap.add_argument(
-    "-f", "--log-file", default = None,
-    help = "specify log-file name to use")
-
-ap.add_argument(
-    "-T", "--toolchains", default = None,
-    help = "select toolchains to include in build")
-
-ap.add_argument(
-    "-B", "--buildtools", default = None,
-    help = "select buildtools to include in build")
-
-ap.add_argument(
-    "-C", "--buildconfigs", default = None,
-    help = "select build configurations to include in build")
-
-ap.add_argument(
-    "-A", "--architectures", default = None,
-    help = "select architectures to include in build")
-
-ap.add_argument(
-    "-Q", "--query", default = None,
-    help = "query aspects about the program")
-
-ap.add_argument(
-    "-c", "--config", default = [], action = "append",
-    help = "add configuration to config-stack")
-
-ap.add_argument(
-    "-U", "--disable-user-directory",
-    default = False, action = "store_true",
-    help = "disable use of files in user-configuration directory")
-
-ap.add_argument(
-    "-r", "--revision", default = [], action = "append",
-    help = "add a revision-override specification")
-
-ap.add_argument(
-    "-s", "--source", default = [], action = "append",
-    help = "add a module source definition")
-
-ap.add_argument(
-    "-S", "--succeed", action = "store_true",
-    help = "force successful termination")
-
-ap.add_argument(
-    "-e", "--environment-overrides", action = "store_true",
-    help = "allow mmh to override existing environment variables")
-
-ap.add_argument(
-    "-E", "--ignore-dep-errors", action = "store_true",
-    help = "ignore errors in dependency evaluation")
-
-ap.add_argument(
-    "-F", "--force", action = "store_true",
-    help = "force using MakeMeHappy.yaml")
-
-ap.add_argument(
-    "-V", "--version", action = "store_true",
-    help = "show program version")
-
-ap.add_argument(
-    "-v", "--verbose", action = "store_true",
-    help = "produce verbose output")
-
-### Top-Level Commands
-
-subp = ap.add_subparsers(
-    dest = 'sub_command', metavar = 'Sub Commands')
-
-# build
-ap_build = subp.add_parser('build', help = 'Build a module in many instances')
-ap_build.add_argument('instances', default = [ ], nargs = '*')
-
-# init
-ap_init = subp.add_parser(
-    'build-tree-init', aliases = [ 'init' ],
-    help = 'Build a module')
-
-ap_init.set_defaults(sub_command = 'build-tree-init')
-
-# download
-ap_download = subp.add_parser(
-    'download-source', aliases = [ 'get' ],
-    help = 'Download sources for a module')
-
-ap_download.set_defaults(sub_command = 'download-source')
-ap_download.add_argument(
-    "-b", "--bare",
-    dest = 'clone_bare',
-    default = False,
-    action = 'store_true',
-    help = "Create bare git repository when downloading source")
-ap_download.add_argument(
-    "-r", "--release",
-    dest = 'use_release',
-    default = False,
-    action = 'store_true',
-    help = "Use latest release tag after cloning")
-ap_download.add_argument('modules', nargs = '+')
-
-# download-sources
-ap_sources = subp.add_parser(
-    'download-sources',
-    help = 'Download sources for ALL module')
-ap_sources.add_argument(
-    "-b", "--bare",
-    dest = 'clone_bare',
-    default = False,
-    action = 'store_true',
-    help = "Create bare git repository when downloading source")
-ap_sources.add_argument('destination', nargs = '?', default = '.')
-
-# dump-description
-ap_dump = subp.add_parser(
-    'dump-description', aliases = [ 'dump' ],
-    help = 'Show parsed instruction file data')
-
-ap_dump.set_defaults(sub_command = 'dump-description')
-
-# fetch-dependencies
-ap_fetch = subp.add_parser(
-    'fetch-dependencies', aliases = [ 'deps' ],
-    help = 'Download dependencies of a module')
-
-ap_fetch.set_defaults(sub_command = 'fetch-dependencies')
-
-# generate-toplevel
-ap_top = subp.add_parser(
-    'generate-toplevel', aliases = [ 'top' ],
-    help = 'Generate toplevel of module build-tree')
-
-ap_top.set_defaults(sub_command = 'generate-toplevel')
-
-# focus-instance
-ap_focus = subp.add_parser(
-    'focus-instance', aliases = [ 'focus' ],
-    help = "Focus a module instance's build-tree")
-
-ap_focus.set_defaults(sub_command = 'focus-instance')
-ap_focus.add_argument('instance', nargs = 1)
-ap_focus.add_argument(
-    "-l", "--link-name", default = 'focus',
-    help = "Change name of created symlink")
-ap_focus.add_argument(
-    "-n", "--no-compile-commands", action = 'store_true',
-    help = "Inhibit symlinking compile_commands.json")
-
-# prepare
-ap_prepare = subp.add_parser(
-    'prepare',
-    help = 'Generate toplevel of module build-tree')
-
-# reset-setup
-ap_reset = subp.add_parser(
-    'reset-setup', aliases = [ 'reset' ],
-    help = 'Reset build-tree meta-data')
-
-ap_reset.set_defaults(sub_command = 'reset-setup')
-
-# revision-overrides
-ap_revisions = subp.add_parser(
-    'revision-overrides', aliases = [ 'revs' ],
-    help = 'Show and test revision overrides')
-
-ap_revisions.set_defaults(sub_command = 'revision-overrides')
-ap_revisions.add_argument('modules', nargs = '*')
-
-# list-instances
-ap_list = subp.add_parser(
-    'list-instances', aliases = [ 'list' ],
-    help = 'List instances available in build-tree')
-
-ap_list.set_defaults(sub_command = 'list-instances')
-
-# run-instance
-ap_run = subp.add_parser(
-    'run-instance', aliases = [ 'run' ],
-    help = '(Re)run previously configured build-tree')
-
-ap_run.set_defaults(sub_command = 'run-instance')
-ap_run.add_argument('instances', nargs = '*')
-ap_run.add_argument(
-    "-a", "--all-instances", action = "store_true",
-    help = "Force building all module instances")
-
-# show-result
-ap_result = subp.add_parser(
-    'show-result', aliases = [ 'result' ],
-    help = 'Show result table from log-file')
-
-ap_result.set_defaults(sub_command = 'show-result')
-ap_result.add_argument(
-    "-f", "--full", action = "store_true",
-    dest = 'full_result',
-    help = "Replay full log with log-prefix stripped.")
-ap_result.add_argument(
-    "-g", "--grep", action = "store_true",
-    dest = 'grep_result',
-    help = "Scan log for incidents.")
-ap_result.add_argument(
-    "-j", "--json", action = "store_true",
-    dest = 'json_incidents',
-    help = "Report incidents from log file in JSON format.")
-ap_result.add_argument(
-    "-r", "--report", action = "store_true",
-    dest = 'report_incidents',
-    help = "Report incidents from log file.")
-ap_result.add_argument(
-    "-p", "--paged", action = "store_true",
-    dest = 'use_pager',
-    help = "Use pager to view result.")
-ap_result.add_argument(
-    "-q", "--quiet", action = "store_true",
-    dest = 'quiet_result',
-    help = "Do not show any result output.")
-ap_result.add_argument(
-    "-s", "--short", action = "store_true",
-    dest = 'short_result',
-    help = "Only show final short-form result.")
-ap_result.add_argument('file', nargs = 1)
-
-# show-source
-ap_show = subp.add_parser(
-    'show-source', aliases = [ 'show' ],
-    help = 'Show source location for module(s)')
-
-ap_show.set_defaults(sub_command = 'show-source')
-ap_show.add_argument('modules', nargs = '*')
-
-# system
-ap_system = subp.add_parser(
-    'system', help = 'Handle building production systems')
-
-ap_system.set_defaults(sub_command = 'system')
-ap_system.add_argument(
-    "-s", "--single-instance", action = "store_true",
-    help = "Build a single instance in the build directory root")
-ap_system.add_argument(
-    "-a", "--all-instances", action = "store_true",
-    help = "Force building all system instances")
-
-
-### System Commands
-
-sub_system = ap_system.add_subparsers(
-    dest = 'system', metavar = 'System Commands')
-
-# list
-sys_list = sub_system.add_parser(
-    'list', help = 'List all specified build instances')
-
-# db
-sys_db = sub_system.add_parser(
-    'db', help = 'Link compile command db to system root')
-
-sys_db.add_argument(
-    "-l", "--location", default = '.',
-    help = "specify the build-root directory")
-sys_db.add_argument('instances', default = [ ], nargs = '*')
-
-# build
-sys_build = sub_system.add_parser(
-    'build', help = 'Build all or specified build instances')
-
-sys_build.add_argument('instances', default = [ ], nargs = '*')
-
-# rebuild
-sys_rebuild = sub_system.add_parser(
-    'rebuild', help = 'Rebuild all or specified build instances')
-
-sys_rebuild.add_argument('instances', default = [ ], nargs = '*')
-
-# clean
-sys_clean = sub_system.add_parser(
-    'clean', help = 'Clean all or specified build instances')
-
-sys_clean.add_argument('instances', default = [ ], nargs = '*')
-
-### End of Argument Parser Spec
-
-
 cmdargs = ap.parse_args()
-# print(cmdargs)
-# print(cmdargs.sub_command)
+
+### Adjust Argument Setup #####################################################
+
+def mmh_exit(code):
+    h.finish_hook(cmdargs = cmdargs, exitcode = code)
+    if cmdargs.succeed:
+        exit(0)
+    exit(code)
+
+if (cmdargs.version):
+    print("{} ({}) version {}".format(fullname, name, version))
+    print()
+    print('  datadir = {}'.format(datadir))
+    print('  etcdir  = {}'.format(etcdir))
+    print()
+    mmh_exit(0)
 
 def mmh_search_in_dirs(stack, name):
     stack.push(os.path.join(datadir, name))
@@ -383,11 +78,6 @@ def mmh_search_in_dirs(stack, name):
 
 mmh_search_in_dirs(cfg, 'config.yaml')
 mmh_search_in_dirs(src, 'sources.yaml')
-
-def mmh_exit(code):
-    if cmdargs.succeed:
-        exit(0)
-    exit(code)
 
 if cmdargs.query is not None:
     log.disable()
@@ -410,17 +100,6 @@ if ('instances' not in cmdargs):
 if ('single_instance' not in cmdargs):
     cmdargs.single_instance = None
 
-if ('all_instances' not in cmdargs):
-    cmdargs.all_instances = False
-
-if (cmdargs.version):
-    print("{} ({}) version {}".format(fullname, name, version))
-    print()
-    print('  datadir = {}'.format(datadir))
-    print('  etcdir  = {}'.format(etcdir))
-    print()
-    mmh_exit(0)
-
 earlyExit = False
 def mmh_add_to_stack(lst, stack, desc):
     global earlyExit
@@ -437,16 +116,25 @@ def mmh_add_to_stack(lst, stack, desc):
 mmh_add_to_stack(cmdargs.config, cfg, "Config")
 mmh_add_to_stack(cmdargs.source, src, "Source")
 
+if cmdargs.disable_user_directory == False:
+    for fnc in [ mmh.xdgFile, mmh.dotFile ]:
+        cfgpy = Path(fnc('config.py'))
+        if cfgpy.exists():
+            mmh.loadPython(log, cfgpy)
+
 if (earlyExit):
     mmh_exit(1)
 
 if cmdargs.log_to_file:
     cmdargs.log_all = True
+    cmdargs.log_file_from_default = False
     if cmdargs.log_file is None:
+        cmdargs.log_file_from_default = True
         if cmdargs.directory is None:
             cmdargs.log_file = 'build.log'
         else:
             cmdargs.log_file = cmdargs.directory + ".log"
+    h.init_hook('setup-log-file', log = log, args = cmdargs)
     print(f'Logging to: {cmdargs.log_file}')
     log.handlers[0].setFile(cmdargs.log_file)
 else:
@@ -475,515 +163,27 @@ if (cmdargs.sub_command is None):
 elif (cmdargs.sub_command != False):
     log.info("Starting up using '{}' command".format(cmdargs.sub_command))
 
-def needMMHYAML():
-    if cmdargs.sub_command == 'reset-setup':
-        return False
-    if cmdargs.sub_command == 'system':
-        return False
-    if cmdargs.directory is None:
-        return False
-    return mmh.noParameters(cmdargs)
+### Run Main Program ##########################################################
 
-cmdargs.fromyaml = False
-if needMMHYAML():
-    fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
-    if (os.path.exists(fn)):
-        data = mmh.load(fn)
-        if (cmdargs.force == True):
-            data['version'] = version
-            mmh.dump(fn, data)
-        cmdargs.fromyaml = True
-        if (mmh.matchingVersion(version, data)):
-            if ('parameters' in data):
-                p = data['parameters']
-                log.info('Loading parameters from {}'.format(fn))
-                if 'architectures' in p:
-                    cmdargs.architectures = p['architectures']
-                if 'buildconfigs' in p:
-                    cmdargs.buildconfigs = p['buildconfigs']
-                if 'buildtools' in p:
-                    cmdargs.buildtools = p['buildtools']
-                if not cmdargs.all_instances and 'instances' in p:
-                    cmdargs.instances = p['instances']
-                if 'toolchains' in p:
-                    cmdargs.toolchains = p['toolchains']
-                if 'cmake' in p:
-                    cmdargs.cmake = p['cmake']
-            if ('cmake' in data):
-                p = data['cmake']
-                log.info('Loading cmake-information from {}'.format(fn))
-                if 'module-path' in p:
-                    cmdargs.modulePath = p['module-path']
-                if 'toolchain-path' in p:
-                    cmdargs.toolchainPath = p['toolchain-path']
-            if ('zephyr' in data):
-                p = data['zephyr']
-                log.info('Loading zephyr-information from {}'.format(fn))
-                if 'board-root' in p:
-                    cmdargs.boardRoot = p['board-root']
-                if 'dts-root' in p:
-                    cmdargs.dtsRoot = p['dts-root']
-                if 'soc-root' in p:
-                    cmdargs.socRoot = p['soc-root']
-        else:
-            fv = None
-            if (data is not None and 'version' in data):
-                fv = data['version']
-            log.error("{}: Version mismatch: {} != {}".format(fn, version, fv))
-            log.error("If suitable ‘--force’ to force using the file!")
-            mmh_exit(1)
+try:
+    prg = Program(log, cfg, src, cmdargs, version)
 
-def adjustConfig(cfg, args):
-    layer = {}
-    adjustments = 0
-    cfg.merge()
-    if args.log_all == True:
-        layer['log-all'] = not cfg.lookup('log-all')
-        adjustments = adjustments + 1
-    if args.log_to_file == True:
-        layer['log-to-file'] = not cfg.lookup('log-to-file')
-        adjustments = adjustments + 1
-    if args.ignore_dep_errors == True:
-        layer['fatal-dependencies'] = not cfg.lookup('fatal-dependencies')
-        adjustments = adjustments + 1
-    if args.use_pager == True:
-        layer['page-output'] = not cfg.lookup('page-output')
-        adjustments = adjustments + 1
-    if (len(args.revision) > 0):
-        layer['revision-overrides'] = []
-        if ('remove' not in layer):
-            layer['remove'] = {}
-        for rev in reversed(args.revision):
-            try:
-                (pat, value) = rev.split('=', 1)
-                if (value == '!main'):
-                    new = { 'name': pat, 'use-main-branch': True }
-                elif (value == '!latest'):
-                    new = { 'name': pat, 'use-latest-revision': True }
-                elif (m := re.match('^!latest:(.*)', value)):
-                    new = { 'name': pat, 'use-latest-revision': True,
-                            'use-latest-revision-pattern': m.group(1) }
-                elif (value == '!preserve'):
-                    new = { 'name': pat, 'preserve': True }
-                else:
-                    new = { 'name': pat, 'revision': value }
-
-                idx = mmh.findByName(layer['revision-overrides'], pat)
-                if (idx is not None):
-                    del layer['revision-overrides'][idx]
-
-                layer['revision-overrides'].append(new)
-
-                if ('revision-overrides' not in layer['remove']):
-                    layer['remove']['revision-overrides'] = []
-                layer['remove']['revision-overrides'].append(pat)
-            except ValueError:
-                log.error("cmdline: Invalid revision-spec: {}"
-                          .format(rev))
-
-                if (cmdargs.raise_exceptions):
-                    raise(e)
-                mmh_exit(1)
-            adjustments = adjustments + 1
-    if adjustments > 0:
-        layer['from-cmdline'] = True
-        cfg.pushLayer(layer)
-    cfg.merge()
-
-if cmdargs.query is not None:
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    if (os.path.isfile(cmdargs.module) == True):
-        cut.loadModule()
-    q = cmdargs.query
-    res = []
-    if (q == 'toolchains'):
-        res = cut.allToolchains()
-    elif (q == 'architectures'):
-        res = cut.allArchitectures()
-    elif (q == 'buildtools'):
-        res = cut.allBuildtools()
-    elif (q == 'buildconfigs'):
-        res = cut.allBuildConfigs()
+    if cmdargs.query is not None:
+        prg.query()
     else:
-        mmh.warn('Unknown query: {}'.format(q))
-        mmh_exit(1)
-    print(" ".join(res))
-    mmh_exit(0)
+        prg.dispatch()
 
-def requireModuleDefinition(args):
-    if (os.path.isfile(args.module) == False):
-        mmh.warn("Module definition does not exist: {}".format(args.module))
-        mmh_exit(1)
+except Exception as e:
+    if isinstance(e, ProgramExit):
+        exit(e.args[0])
+    if isinstance(e, MissingModuleDefinition):
+        print(f'Missing module definition: {e.args[0]}')
+        exit(1)
+    if isinstance(e, UnknownSubCommand):
+        print(f'Unknown sub-command: {e.args[0]}')
+        exit(1)
+    if cmdargs.raise_exceptions:
+        raise e
+    exit(1)
 
-def do_prepare():
-    try:
-        requireModuleDefinition(cmdargs)
-        cfg.load()
-        adjustConfig(cfg, cmdargs)
-        cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-        cut.loadModule()
-        if (cut.moduleType == 'nobuild'):
-            log.info("Module type is 'nobuild'. Doing nothing.")
-            mmh_exit(0)
-        cut.cliAdjust(toolchains    = cmdargs.toolchains,
-                      architectures = cmdargs.architectures,
-                      buildconfigs  = cmdargs.buildconfigs,
-                      buildtools    = cmdargs.buildtools)
-        cut.loadSources()
-        cut.initRoot(version, cmdargs)
-        cut.populateRoot()
-        cut.linkIntoRoot()
-        cut.changeToRoot()
-        cut.loadDependencies()
-        cut.cmakeIntoYAML()
-        cut.generateToplevel()
-        cut.setEnvironment()
-        return cut
-    except Exception as e:
-        if (len(e.args) > 0):
-            log.error(f'{type(e).__name__}: {e}')
-        else:
-            log.error(f'{type(e).__name__}')
-        if (cmdargs.raise_exceptions):
-            raise(e)
-        mmh_exit(1)
-
-if (cmdargs.sub_command == "build-tree-init"):
-    requireModuleDefinition(cmdargs)
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    cut.initRoot(version, cmdargs)
-    cut.populateRoot()
-    cut.linkIntoRoot()
-
-elif (cmdargs.sub_command == "fetch-dependencies"):
-    requireModuleDefinition(cmdargs)
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    cut.initRoot(version, cmdargs)
-    cut.loadModule()
-    cut.cliAdjust(toolchains    = cmdargs.toolchains,
-                  architectures = cmdargs.architectures,
-                  buildconfigs  = cmdargs.buildconfigs,
-                  buildtools    = cmdargs.buildtools)
-    cut.loadSources()
-    cut.changeToRoot()
-    cut.loadDependencies()
-
-elif (cmdargs.sub_command == "generate-toplevel"):
-    requireModuleDefinition(cmdargs)
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    cut.initRoot(version, cmdargs)
-    cut.loadModule()
-    cut.cliAdjust(toolchains    = cmdargs.toolchains,
-                  architectures = cmdargs.architectures,
-                  buildconfigs  = cmdargs.buildconfigs,
-                  buildtools    = cmdargs.buildtools)
-    cut.loadSources()
-    cut.changeToRoot()
-    cut.loadDependencies()
-    cut.cmakeIntoYAML()
-    cut.generateToplevel()
-
-elif (cmdargs.sub_command == "reset-setup"):
-    if cmdargs.directory is None:
-        print("reset-argument only works with -d!")
-        mmh_exit(1)
-
-    fn = os.path.join(cmdargs.directory, 'MakeMeHappy.yaml')
-    data = { 'version': version }
-    mmh.dump(fn, data)
-
-elif (cmdargs.sub_command == "list-instances"):
-    if cmdargs.directory is None:
-        print("list-instances only works with -d!")
-        mmh_exit(1)
-
-    requireModuleDefinition(cmdargs)
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    cut.loadModule()
-    if (cut.moduleType == 'nobuild'):
-        log.info("Module type is 'nobuild'. Doing nothing.")
-        mmh_exit(0)
-    cut.initRoot(version, cmdargs)
-    for inst in cut.listInstances():
-        print(inst)
-
-elif (cmdargs.sub_command == "run-instance"):
-    requireModuleDefinition(cmdargs)
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    cut = CodeUnderTest(log, cfg, cmdargs, src, cmdargs.module)
-    cut.loadModule()
-    if (cut.moduleType == 'nobuild'):
-        log.info("Module type is 'nobuild'. Doing nothing.")
-        mmh_exit(0)
-    cut.initRoot(version, cmdargs)
-    cut.cliAdjust(toolchains    = cmdargs.toolchains,
-                  architectures = cmdargs.architectures,
-                  buildconfigs  = cmdargs.buildconfigs,
-                  buildtools    = cmdargs.buildtools)
-    cut.loadSources()
-    cut.changeToRoot()
-    cut.loadDependencies()
-    cut.cmakeIntoYAML()
-    cut.setEnvironment()
-    cut.build()
-
-    cut.renderStatistics()
-    cut.renderDependencySummary(False)
-    buildSuccess = cut.wasSuccessful()
-    depSuccess = cut.dependenciesOkay()
-
-    if buildSuccess:
-        log.info('All {} builds succeeded.'.format(cut.countBuilds()))
-    else:
-        log.info('{} build(s) out of {} failed.'
-                 .format(cut.countFailed(), cut.countBuilds()))
-
-    if (not depSuccess):
-        log.info('Dependency Evaluation contained errors!')
-
-    if (not (buildSuccess and depSuccess)):
-        commandReturnValue = 1
-
-elif (cmdargs.sub_command == "focus-instance"):
-    instance = cmdargs.instance[0]
-    linkname = cmdargs.link_name
-    ccj = 'compile_commands.json'
-    d = cmdargs.directory
-
-    if cmdargs.directory is not None:
-        instance = os.path.join(d, 'build', instance)
-
-    ccjTarget = os.path.join(instance, ccj)
-
-    print("\nCreating Focus for Build Instance:")
-    if (cmdargs.no_compile_commands == False):
-        print(f'  {ccj} -> {ccjTarget}')
-        if (os.path.islink(ccj)):
-            os.remove(ccj)
-        os.symlink(ccjTarget, ccj)
-
-    print(f'  {linkname} -> {instance}')
-    if (os.path.islink(linkname)):
-        os.remove(linkname)
-    os.symlink(instance, linkname)
-    print("")
-
-elif (cmdargs.sub_command == "prepare"):
-    cut = do_prepare()
-    cut.renderDependencySummary(True)
-    depSuccess = cut.dependenciesOkay()
-    if (not depSuccess):
-        log.info('Dependency Evaluation contained errors!')
-        commandReturnValue = 1
-
-elif (cmdargs.sub_command == "build"):
-    cut = do_prepare()
-    cut.build()
-    if (cmdargs.preserve == False):
-        cut.cleanupRoot()
-
-    cut.renderStatistics()
-    cut.renderDependencySummary(False)
-    buildSuccess = cut.wasSuccessful()
-    depSuccess = cut.dependenciesOkay()
-
-    if buildSuccess:
-        log.info('All {} builds succeeded.'.format(cut.countBuilds()))
-    else:
-        log.info('{} build(s) out of {} failed.'
-                 .format(cut.countFailed(), cut.countBuilds()))
-
-    if (not depSuccess):
-        log.info('Dependency Evaluation contained errors!')
-
-    if (not (buildSuccess and depSuccess)):
-        commandReturnValue = 1
-
-elif (cmdargs.sub_command == "dump-description"):
-    data = mmh.load(cmdargs.module)
-    mmh.pp(data)
-
-elif (cmdargs.sub_command == "revision-overrides"):
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    if (len(cmdargs.modules) > 0):
-        print("\nEffective revision(s):")
-        for mod in cmdargs.modules:
-            rev = cfg.processOverrides(mod)
-            print(f'  {mod}: {rev}')
-        print("")
-    else:
-        lst = cfg.lookup('revision-overrides')
-        data = { 'revision-overrides': lst }
-        print("")
-        mmh.yp(data)
-        print("")
-
-elif (cmdargs.sub_command == "show-result"):
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    commandReturnValue = 0 if result.show(cfg, cmdargs) else 1
-
-elif (cmdargs.sub_command == "show-source"):
-    src.load()
-    src.merge()
-    names = cmdargs.modules
-    if (len(names) == 0):
-        names = src.allSources();
-
-    for name in names:
-        data = src.lookup(name)
-        print("{}: ".format(name), end='')
-        print(data)
-
-elif (cmdargs.sub_command == "download-source"):
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    src.load()
-    src.merge()
-
-    for module in cmdargs.modules:
-        meta = src.lookup(module)
-        source = meta['repository']
-        cmd = ['git', '-c', 'advice.detachedHead=false', 'clone', '--quiet' ]
-        if (cmdargs.clone_bare):
-            cmd.append('--bare')
-        cmd += [ source, module ]
-        mmh.loggedProcess(cfg, log, cmd)
-        olddir = os.getcwd()
-        os.chdir(module)
-        fetchCheckout(cfg, log, module, meta['main'])
-        if (cmdargs.use_release):
-            pat = '*'
-            if ('release-pattern' in meta):
-                pat = meta['release-pattern']
-            tag = git.latestTag('.', pat)
-            if tag is None:
-                log.fatal('Unable to find latest release tag for module {}'
-                          .format(module))
-                mmh_exit(1)
-
-            latest = gitCheckout(cfg, log, module, tag)
-            if latest is None:
-                log.fatal('Error checking out tag {} for module {}'
-                          .format(tag, module))
-                mmh_exit(1)
-        os.chdir(olddir)
-
-elif (cmdargs.sub_command == "download-sources"):
-    destination = cmdargs.destination
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    src.load()
-    src.merge()
-    loaded = {}
-    failed = {}
-    for source in src.data:
-        if 'modules' not in source:
-            continue
-        for module in source['modules']:
-            if (module in loaded):
-                log.info("Module {} already defined by {}",
-                         module, loaded[module]['source'])
-                continue
-            sf = os.path.join(source['root'], source['definition'])
-            dd = os.path.join(destination, module)
-            repo = source['modules'][module]['repository']
-            log.info("Downloading module {} from {}...", module, repo)
-            mmh.maybeShowPhase(log, f'{module}', 'download-sources', cmdargs)
-
-            cmd = ['git', '-c', 'advice.detachedHead=false',
-                   'clone', '--quiet' ]
-            if (cmdargs.clone_bare):
-                cmd.append('--bare')
-            cmd += [ repo, dd ]
-
-            rc = mmh.loggedProcess(cfg, log, cmd)
-            if (rc == 0):
-                log.info("Downloading module {} was successful.", module)
-            else:
-                log.error("Downloading module {} failed!", module)
-                failed[module] = {'source': sf, 'repository': repo }
-
-            olddir = os.getcwd()
-            os.chdir(module)
-            meta = src.lookup(module)
-            revision = fetchCheckout(cfg, log, module, meta['main'])
-            os.chdir(olddir)
-
-            loaded[module] = { 'source':     sf,
-                               'repository': repo,
-                               'revision':   revision}
-
-    for mod in sorted(loaded):
-        log.info("  Success: {} ({}) from {} [{}]",
-                 mod,
-                 loaded[mod]['revision'],
-                 loaded[mod]['repository'],
-                 loaded[mod]['source'])
-    if (len(failed) == 0):
-        log.info("Downloading ALL sources succeeded!")
-    else:
-        log.error("Downloading {} of {} sources failed!",
-                  len(failed), len(loaded))
-        commandReturnValue = 1
-        for fail in sorted(failed):
-            log.error("  Failure: {} from {} [{}]",
-                      fail,
-                      failed[fail]['repository'],
-                      failed[fail]['source'])
-
-elif (cmdargs.sub_command == "system"):
-    if (('system' not in cmdargs) or (cmdargs.system is None)):
-        cmdargs.system = 'build'
-
-    if (cmdargs.directory is None):
-        cmdargs.directory = 'build'
-
-    if ('instances' not in cmdargs):
-        cmdargs.instances = [ ]
-
-    cfg.load()
-    adjustConfig(cfg, cmdargs)
-    try:
-        system = ms.System(log, version, cfg, cmdargs);
-        system.load()
-
-        if (cmdargs.system == 'build'):
-            system.build()
-        elif (cmdargs.system == 'rebuild'):
-            system.rebuild()
-        elif (cmdargs.system == 'clean'):
-            system.clean()
-        elif (cmdargs.system == 'list'):
-            system.listInstances()
-        elif (cmdargs.system == 'db'):
-            system.makeDBLink()
-    except Exception as e:
-        if (len(e.args) > 0):
-            log.error(f'{type(e).__name__}: {e}')
-        else:
-            log.error(f'{type(e).__name__}')
-        if (cmdargs.raise_exceptions):
-            raise(e)
-        commandReturnValue = 1
-
-elif (isinstance(cmdargs.sub_command, str)):
-    print("Not implemented yet: {}".format(cmdargs.sub_command))
-
-else:
-    mmh.warn("This should not happen. {}".format(cmdargs))
-    mmh_exit(1)
-
-mmh_exit(commandReturnValue)
+exit(0)

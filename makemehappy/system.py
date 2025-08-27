@@ -4,7 +4,12 @@ import os
 import makemehappy.utilities as mmh
 import makemehappy.cut as cut
 import makemehappy.cmake as c
+import makemehappy.combination as comb
+import makemehappy.hooks as h
+import makemehappy.manifest as m
 import makemehappy.zephyr as z
+
+from pathlib import Path
 
 defaults = { 'build-configs'      : [ 'debug', 'release' ],
              'build-system'       : None,
@@ -119,6 +124,22 @@ class InvalidBuildSpec(Exception):
 class SystemFailedSomeBuilds(Exception):
     pass
 
+def gotConfigureStamp(d):
+    f = Path(d) / '.mmh-configure-stamp'
+    return f.exists()
+
+def removeConfigureStamp(d):
+    root = Path(d)
+    if root.is_dir() == False:
+        return
+    f = root / '.mmh-configure-stamp'
+    if f.exists():
+        f.unlink()
+
+def touchConfigureStamp(d):
+    f = Path(d) / '.mmh-configure-stamp'
+    f.touch(mode = 0o666, exist_ok = True)
+
 class SystemInstanceBoard:
     def __init__(self, sys, board, tc, cfg):
         self.sys = sys
@@ -126,6 +147,7 @@ class SystemInstanceBoard:
         self.tc = tc
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['boards'], 'name', self.board)
+        self.variables = mmh.expandFileDict(self.spec['variables'])
         self.systemdir = os.getcwd()
         self.env = None
         if ('environment' in self.spec):
@@ -147,7 +169,7 @@ class SystemInstanceBoard:
         self.sys.stats.systemBoard(tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
-        cargs = c.makeParamsFromDict(self.spec['variables'])
+        cargs = c.makeParamsFromDict(self.variables)
         if (self.sys.args.cmake != None):
             cargs += self.sys.args.cmake
 
@@ -164,7 +186,10 @@ class SystemInstanceBoard:
             buildtool   = self.spec['build-tool'],
             buildsystem = self.spec['build-system'])
 
+        removeConfigureStamp(self.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
+        if (rc == 0):
+            touchConfigureStamp(self.builddir)
         self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
@@ -177,6 +202,7 @@ class SystemInstanceZephyr:
         self.tc = tc
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['zephyr'], 'application', self.app)
+        self.variables = mmh.expandFileDict(self.spec['variables'])
         self.systemdir = os.getcwd()
         self.env = None
         if ('environment' in self.spec):
@@ -209,7 +235,7 @@ class SystemInstanceZephyr:
         if (not 'modules' in build):
             build['modules'] = [ ]
 
-        cargs = c.makeParamsFromDict(self.spec['variables'])
+        cargs = c.makeParamsFromDict(self.variables)
         if (self.sys.args.cmake != None):
             cargs += self.sys.args.cmake
 
@@ -232,7 +258,10 @@ class SystemInstanceZephyr:
             modulepath  = build['zephyr-module-path'],
             modules     = build['modules'])
 
+        removeConfigureStamp(self.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
+        if (rc == 0):
+            touchConfigureStamp(self.builddir)
         self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
@@ -240,6 +269,7 @@ class SystemInstance:
     def __init__(self, sys, description):
         self.sys = sys
         self.desc = description
+        self.success = False
         if (description.startswith("zephyr/")):
             try:
                 (self.kind,
@@ -272,73 +302,128 @@ class SystemInstance:
 
     def configure(self):
         self.sys.log.info('Configuring system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase(self.sys.log, 'configure', self.desc, self.sys.args)
-        return self.instance.configure()
+        h.phase_hook('pre/configure', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        success = mmh.maybeShowPhase(self.sys.log, 'configure', self.desc,
+                                     self.sys.args, self.instance.configure)
+        h.phase_hook('post/configure', log = self.sys.log,
+                     args = self.sys.args, cfg = self.sys.cfg,
+                     data = self.sys.data, success = success)
+        return success
 
     def compile(self):
         self.sys.log.info('Compiling system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase(self.sys.log, 'compile', self.desc, self.sys.args)
-        cmd = c.cmake(['--build', self.instance.builddir ])
-        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
-        self.sys.stats.logBuild(rc)
-        return (rc == 0)
+        def rest():
+            cmd = c.cmake(['--build', self.instance.builddir ])
+            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
+                                   self.instance.env)
+            self.sys.stats.logBuild(rc)
+            return (rc == 0)
+        h.phase_hook('pre/compile', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        success = mmh.maybeShowPhase(self.sys.log, 'compile', self.desc,
+                                     self.sys.args, rest)
+        h.phase_hook('post/compile', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data,
+                     success = success)
+        return success
 
     def test(self):
         num = c.countTests(self.instance.builddir)
         if (num > 0):
             self.sys.log.info('Testing system instance: {}'.format(self.desc))
-            mmh.maybeShowPhase(self.sys.log, 'test', self.desc, self.sys.args)
-            cmd = c.test(self.instance.builddir)
-            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
-            self.sys.stats.logTestsuite(num, rc)
-            return (rc == 0)
+            def rest():
+                cmd = c.test(self.instance.builddir)
+                rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
+                                       self.instance.env)
+                self.sys.stats.logTestsuite(num, rc)
+                return (rc == 0)
+            h.phase_hook('pre/test', log = self.sys.log,
+                         args = self.sys.args, cfg = self.sys.cfg,
+                         data = self.sys.data)
+            success = mmh.maybeShowPhase(self.sys.log, 'test', self.desc,
+                                         self.sys.args, rest)
+            h.phase_hook('post/test', log = self.sys.log,
+                         args = self.sys.args, cfg = self.sys.cfg,
+                         data = self.sys.data, success = success)
+            return success
         return True
 
     def install(self):
         self.sys.log.info('Installing system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase(self.sys.log, 'install', self.desc, self.sys.args)
-        olddir = os.getcwd()
-        self.sys.log.info(
-            'Changing to directory {}.'.format(self.instance.builddir))
-        os.chdir(self.instance.builddir)
-        for component in mmh.get_install_components(
-                self.sys.log, self.instance.spec['install']):
-            cmd = c.install(component = component)
-            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
-            if (rc != 0):
-                break
-        self.sys.log.info('Changing back to directory {}.'.format(olddir))
-        os.chdir(olddir)
-        self.sys.stats.logInstall(rc)
-        return (rc == 0)
+        def rest():
+            olddir = os.getcwd()
+            self.sys.log.info(
+                'Changing to directory {}.'.format(self.instance.builddir))
+            os.chdir(self.instance.builddir)
+            rc = 0
+            for component in mmh.get_install_components(
+                    self.sys.log, self.instance.spec['install']):
+                cmd = c.install(component = component)
+                rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
+                                       self.instance.env)
+                if (rc != 0):
+                    break
+            self.sys.log.info('Changing back to directory {}.'.format(olddir))
+            os.chdir(olddir)
+            self.sys.stats.logInstall(rc)
+            return (rc == 0)
+        if self.instance.spec['install'] == False:
+            self.sys.log.info('System installation disabled')
+            return True
+        h.phase_hook('pre/install', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        success = mmh.maybeShowPhase(self.sys.log, 'install', self.desc,
+                                     self.sys.args, rest)
+        h.phase_hook('post/install', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        return success
 
     def clean(self):
         self.sys.log.info('Cleaning system instance: {}'.format(self.desc))
-        mmh.maybeShowPhase(self.sys.log, 'clean', self.desc, self.sys.args)
-        cmd = c.clean(self.instance.builddir)
-        rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.instance.env)
-        return (rc == 0)
+        def rest():
+            cmd = c.clean(self.instance.builddir)
+            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
+                                   self.instance.env)
+            return (rc == 0)
+        h.phase_hook('pre/clean', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        success = mmh.maybeShowPhase(self.sys.log, 'clean', self.desc,
+                                     self.sys.args, rest)
+        h.phase_hook('post/clean', log = self.sys.log, args = self.sys.args,
+                     cfg = self.sys.cfg, data = self.sys.data)
+        return success
 
     def build(self):
-        return (self.configure() and
-                self.compile()   and
-                self.test()      and
-                self.install())
+        if (not self.sys.args.force_build and
+           gotConfigureStamp(self.instance.builddir)):
+            return self.rebuild()
+        self.success = (self.configure() and
+                        self.compile()   and
+                        self.test()      and
+                        self.install())
+        return self.success
 
     def rebuild(self):
-        return (self.compile()   and
-                self.test()      and
-                self.install())
+        self.success = (self.compile()   and
+                        self.test()      and
+                        self.install())
+        return self.success
+
+    def succeeded(self):
+        return self.success
 
 class System:
-    def __init__(self, log, version, cfg, args):
+    def __init__(self, log, version, cfg, args, combinations):
         self.stats = cut.ExecutionStatistics(cfg, log)
         self.stats.checkpoint('system-initialisation')
+        self.active_combinations = []
         self.version = version
         self.log = log
         self.cfg = cfg
         self.args = args
         self.spec = args.system_spec
+        self.combinations = combinations
         self.singleInstance = None
         if (args.single_instance == None):
             self.mode = None
@@ -355,6 +440,23 @@ class System:
         else:
             self.mode = 'system-multi'
 
+        def combinationEntry(c):
+            log.info(f'Combination: {c}')
+            mmh.nextInstance()
+            if (args.log_to_file and args.show_phases):
+                string = mmh.extendPhasesNote(f'combination/{c}')
+                print(string, flush = True)
+
+        def combinationFinish(c, result):
+            if result is not None:
+                log.info(f'Combination: {c} {result}')
+            if (args.log_to_file and args.show_phases and result is not None):
+                string = mmh.extendPhasesNote(f'combination/{c} ...{result}')
+                print(string, flush = True)
+
+        self.combinations.setCallbacks(combinationEntry, combinationFinish)
+        self.combinations.setStats(self.stats)
+
     def buildRoot(self):
         return self.args.directory
 
@@ -362,76 +464,8 @@ class System:
         d = self.args.directory
         if (os.path.exists(d)):
             self.log.info('Build directory {} exists: Examining...'.format(d))
-            state = os.path.join(d, 'MakeMeHappy.yaml')
-            if (os.path.exists(state)):
-                data = mmh.load(state)
-                if (self.args.force == True):
-                    data['version'] = self.version
-                    mmh.dump(state, data)
-                if (mmh.matchingVersion(self.version, data) == False):
-                    fv = None
-                    if (not data is None and 'version' in data):
-                        fv = data['version']
-                    self.log.error("{}: Version mismatch: {} != {}".format(state, self.version, fv))
-                    self.log.error("If suitable ‘--force’ to force using the file!")
-                    raise(InvalidBuildTree())
-                if (self.mode == None):
-                    self.mode = data['mode']
-                    self.log.info('Using mode from state: {}'.format(self.mode))
-                elif (data['mode'] != self.mode):
-                    self.log.error(
-                        'Build directory {} uses {} mode; Current mode: {}'
-                        .format(d, data['mode'], self.mode))
-                    raise(InvalidBuildTree())
-                else:
-                    self.log.info('Build tree matching current mode: {}. Good!'
-                                  .format(self.mode))
-                if (self.mode == 'system-single'):
-                    if (self.singleInstance == None):
-                        self.singleInstance = data['single-instance']
-                    elif (data['single-instance'] != self.singleInstance):
-                        self.log.error(
-                            'Single-instance build tree {} set up for {}. Specified {}.'
-                            .format(self.args.directory,
-                                    data['single-instance'],
-                                    self.singleInstance))
-                        raise(InvalidBuildTree())
-                elif (self.mode == 'system-multi'):
-                    if ('instances' in data):
-                        if (self.args.all_instances):
-                            self.log.info('Force selection of all instances.')
-                            data.pop('instances', None)
-                            self.args.instances = []
-                            mmh.dump(state, data)
-                        elif (len(self.args.instances) == 0):
-                            self.log.info('Using system instances from state file.')
-                            self.args.instances = data['instances']
-                        elif (self.args.instances != data['instances']):
-                            self.log.info('Updating system instances from command line.')
-                            data['instances'] = self.args.instances
-                            mmh.dump(state, data)
-                        else:
-                            self.log.info('Command line instances match state file.')
-                    elif (len(self.args.instances) > 0):
-                        self.log.info('Adding system instances from command line.')
-                        data['instances'] = self.args.instances
-                        mmh.dump(state, data)
-            else:
-                self.log.error('Failed to load build state from {}'.format(state))
-                raise(InvalidBuildTree())
         else:
-            os.mkdir(d)
-            if (self.mode == None):
-                self.mode = 'system-multi'
-            data = { 'mode'    : self.mode,
-                     'version' : self.version }
-            if (self.mode == 'system-multi' and len(self.args.instances) > 0):
-                data['instances'] = self.args.instances
-            if (self.singleInstance != None):
-                data['single-instance'] = self.singleInstance
-            state = os.path.join(d, 'MakeMeHappy.yaml')
-            self.log.info('Creating build directory state file')
-            mmh.dump(state, data)
+            os.makedirs(d, mode=0o755, exist_ok=True)
 
     def load(self):
         self.log.info("Loading system specification: {}".format(self.spec))
@@ -439,16 +473,48 @@ class System:
         fillData(self.data)
         self.instances = makeInstances(self.data)
         self.zephyr_aliases = z.generateZephyrAliases(self.data)
-        self.args.instances = mmh.patternsToList(self.instances,
-                                                 self.args.instances)
-        if (len(self.args.instances) > 0):
-            error = False
-            for instance in self.args.instances:
-                if (not instance in self.instances):
-                    self.log.error("Unknown instance: {}", instance)
-                    error = True
-            if (error):
-                raise(InvalidSystemSpec())
+        if ('evaluate' in self.data):
+            mmh.loadPython(self.log, self.data['evaluate'],
+                           { 'system_instances': self.instances,
+                             'build_prefix':     self.buildRoot(),
+                             'logging':          self.log})
+
+        ics = mmh.patternsToList(self.instances +
+                                 self.combinations.listNames(),
+                                 self.args.instances)
+        error = False
+        lst = []
+        prefix = 'combination/'
+        offset = len(prefix)
+        self.active_combinations = list(
+            filter(lambda x: x.startswith('combination/'), ics))
+        self.args.instances = list(
+            filter(lambda x: x.startswith('combination/') == False, ics))
+
+        for combination in self.active_combinations:
+            name = combination[offset:]
+            if name not in self.combinations.combinations:
+                self.log.error("Unknown combination: {}", instance)
+                error = True
+            else:
+                for p in self.combinations.combinations[name].parents:
+                    if p not in lst:
+                        lst.append(p)
+
+        lst.extend(self.args.instances)
+        for instance in lst:
+            if (instance not in self.instances):
+                self.log.error("Unknown instance: {}", instance)
+                error = True
+
+        if (error):
+            raise InvalidSystemSpec()
+
+        self.args.instances = list(set(lst))
+        self.args.instances.sort()
+
+        if ('evaluate' in self.data):
+            h.startup_hook(cfg = self.cfg, data = self.data)
 
     def newInstance(self, desc):
         return SystemInstance(self, desc)
@@ -468,21 +534,28 @@ class System:
     def matchZephyrAlias(self, name):
         return self.zephyr_aliases.get(name, name)
 
-    def buildInstances(self, instances):
+    def _builder(self, fnc, instances):
         for i in instances:
             self.log.info("    {}".format(i))
+        cn = 0
+        if not self.args.no_combinations:
+            cn = self.combinations.countPossible(instances)
+        mmh.expectedInstances(len(instances) + cn)
         for instance in instances:
+            mmh.nextInstance()
             sys = self.newInstance(instance)
-            sys.build()
+            f = getattr(sys, fnc)
+            f()
+            if not self.args.no_combinations:
+                self.combinations.addParent(instance, self.buildRoot(), sys)
+                self.combinations.execute()
         return True
 
     def rebuildInstances(self, instances):
-        for i in instances:
-            self.log.info("    {}".format(i))
-        for instance in instances:
-            sys = self.newInstance(instance)
-            sys.rebuild()
-        return True
+        self._builder('rebuild', instances)
+
+    def buildInstances(self, instances):
+        self._builder('build', instances)
 
     def cleanInstances(self, instances):
         for v in instances:
@@ -530,10 +603,119 @@ class System:
             self.log.info("Cleaning selected instance(s):")
             self.cleanInstances(self.args.instances)
 
+    def cmdCombinations(self):
+        return comb.combinationTool(self.buildRoot(), self.log, self.args)
+
+    def deploy(self):
+        m.manifest.prefix(self.args.destination)
+
+        if ('manifest' in self.data):
+            mmh.loadPython(self.log, self.data['manifest'],
+                           { 'system_instances': self.instances,
+                             'build_prefix'    : self.buildRoot(),
+                             'logging'         : self.log })
+        else:
+            print('deploy: No manifest specified!')
+            self.log.error('deploy: No manifest specified!')
+            return False
+
+        m.manifest.withSpecification(self.data['manifest'])
+        m.manifest.validate()
+        final = m.manifest.final()
+
+        if (self.args.show):
+            spec = m.manifest.listSpec()
+            if spec is None:
+                print('Manifest yielded empty spec.')
+                return True
+            for line in spec:
+                print(line)
+            print(f'Deployment into: {final}')
+            return True
+
+        self.setupDirectory()
+        m.manifest.collect(self.log)
+
+        if (self.args.listCollection):
+            col = m.manifest.listCollection()
+            if col is None:
+                print('Manifest yielded empty file collection.')
+                return True
+            for line in col:
+                print(line)
+            print(f'Deployment into: {final}')
+            return True
+
+        uniquenessviolations = m.manifest.uniquenessViolations()
+        if len(uniquenessviolations) > 0:
+            self.log.error(f'{len(uniquenessviolations)} uniqueness ' +
+                           'violation(s) in manifest!')
+            for uv in uniquenessviolations:
+                self.log.error(str(uv) + ':')
+                for s in uv.strlist():
+                    self.log.error(' - ' + s)
+            return False
+
+        issues = m.manifest.issues()
+        if len(issues) > 0:
+            printi = self.log.error if self.args.strict else self.log.warn
+            printi(f'Found {len(issues)} issue(s) in manifest.')
+            for issue in issues:
+                printi('  - ' + str(issue))
+            if self.args.strict:
+                printi('All issues considered errors with --strict.')
+                return False
+
+        title = f'Deploying into {final}'
+
+        try:
+            finalExists = m.manifest.destinationExists()
+        except FileExistsError:
+            print('Destination exists, but is not a directory!')
+            print(f'Pathname: {final}')
+            return False
+
+        self.log.info(title)
+        print(title)
+
+        if finalExists and not self.args.keep:
+            print(f'Removing existing destination directory!')
+            m.manifest.removeDestination()
+
+        errors = m.manifest.deploy(self.args.verbose,
+                                   self.args.raise_exceptions)
+        errorsn = len(errors)
+        if errorsn == 0:
+            h.checkpoint_hook('post/deploy',
+                              log    = self.log,
+                              cfg    = self.cfg,
+                              data   = self.data,
+                              final  = m.manifest.final(),
+                              prefix = m.manifest._prefix,
+                              subdir = m.manifest._subdir,
+                              strict = self.args.strict)
+            return True
+
+        print(f'{errorsn} errors while deploying. Please check:')
+        for error in errors:
+            if isinstance(error, str):
+                print('  ' + error)
+                continue
+            msg = error.msg()
+            if isinstance(msg, list):
+                for line in msg:
+                    print(' ', line)
+            else:
+                print(' ', msg)
+
+        return False
+
     def listInstances(self):
         self.log.info("Generating list of all system build instances:")
         for v in self.instances:
             print(v)
+        for c in self.combinations.listCombinations():
+            print(f'combination/{c}')
 
     def makeDBLink(self):
         d = self.args.directory

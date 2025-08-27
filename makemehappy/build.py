@@ -5,6 +5,7 @@ import shutil
 import subprocess
 
 import makemehappy.cmake as c
+import makemehappy.hooks as h
 import makemehappy.utilities as mmh
 import makemehappy.zephyr as z
 
@@ -185,52 +186,66 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     else:
         cmakeArgs = args.cmake
 
-    mmh.maybeShowPhase(log, 'configure', instanceName(instance), args)
-    if (instance['type'] == 'cmake'):
-        cmd = c.configureLibrary(
-            log          = log,
-            args         = cmakeArgs,
-            architecture = instance['architecture'],
-            buildtool    = instance['buildtool'],
-            buildconfig  = instance['buildcfg'],
-            toolchain    = findToolchainByExtension(ext, instance['toolchain']),
-            sourcedir    = root,
-            builddir     = '.')
-    elif (instance['type'] == 'zephyr'):
-        if ('application' in instance and instance['application'] != None):
-            app = os.path.join('code-under-test', instance['application'])
-        else:
-            app = 'code-under-test'
+    def rest():
+        if (instance['type'] == 'cmake'):
+            cmd = c.configureLibrary(
+                log          = log,
+                args         = cmakeArgs,
+                architecture = instance['architecture'],
+                buildtool    = instance['buildtool'],
+                buildconfig  = instance['buildcfg'],
+                toolchain    = findToolchainByExtension(ext, instance['toolchain']),
+                sourcedir    = root,
+                builddir     = '.')
+        elif (instance['type'] == 'zephyr'):
+            if ('application' in instance and instance['application'] != None):
+                app = os.path.join('code-under-test', instance['application'])
+            else:
+                app = 'code-under-test'
 
-        cmd = c.configureZephyr(
-            log         = log,
-            args        = cmakeArgs,
-            ufw         = os.path.join(root, 'deps', 'ufw'),
-            zephyr_board= instance['zephyr_board'],
-            buildconfig = instance['buildcfg'],
-            toolchain   = instance['toolchain'],
-            sourcedir   = root,
-            builddir    = '.',
-            installdir  = './artifacts',
-            buildtool   = instance['buildtool'],
-            buildsystem = '',
-            appsource   = os.path.join(root, app),
-            kernel      = os.path.join(root, 'deps', 'zephyr-kernel'),
-            dtc         = instance['dtc-overlays'],
-            kconfig     = instance['kconfig'],
-            modulepath  = [ os.path.join(root, 'deps') ],
-            modules     = instance['modules'])
-    else:
-        raise(UnknownModuleType(instance['type']))
-    rc = mmh.loggedProcess(cfg, log, cmd)
-    stats.logConfigure(rc)
-    return (rc == 0)
+            cmd = c.configureZephyr(
+                log         = log,
+                args        = cmakeArgs,
+                ufw         = os.path.join(root, 'deps', 'ufw'),
+                zephyr_board= instance['zephyr_board'],
+                buildconfig = instance['buildcfg'],
+                toolchain   = instance['toolchain'],
+                sourcedir   = root,
+                builddir    = '.',
+                installdir  = './artifacts',
+                buildtool   = instance['buildtool'],
+                buildsystem = '',
+                appsource   = os.path.join(root, app),
+                kernel      = os.path.join(root, 'deps', 'zephyr-kernel'),
+                dtc         = instance['dtc-overlays'],
+                kconfig     = instance['kconfig'],
+                modulepath  = [ os.path.join(root, 'deps') ],
+                modules     = instance['modules'])
+        else:
+            raise(UnknownModuleType(instance['type']))
+        rc = mmh.loggedProcess(cfg, log, cmd)
+        stats.logConfigure(rc)
+        return (rc == 0)
+    h.phase_hook('pre/configure', log = log, args = args, cfg = cfg,
+                 data = instance)
+    success = mmh.maybeShowPhase(log, 'configure', instanceName(instance),
+                                 args, rest)
+    h.phase_hook('post/configure', log = log, args = args, cfg = cfg,
+                 data = instance, success = success)
+    return success
 
 def cmakeBuild(cfg, log, args, stats, instance):
-    mmh.maybeShowPhase(log, 'compile', instanceName(instance), args)
-    rc = mmh.loggedProcess(cfg, log, c.compile())
-    stats.logBuild(rc)
-    return (rc == 0)
+    def rest():
+        rc = mmh.loggedProcess(cfg, log, c.compile())
+        stats.logBuild(rc)
+        return (rc == 0)
+    h.phase_hook('pre/compile', log = log, args = args, cfg = cfg,
+                 data = instance)
+    success = mmh.maybeShowPhase(log, 'compile', instanceName(instance),
+                                 args, rest)
+    h.phase_hook('post/compile', log = log, args = args, cfg = cfg,
+                 data = instance, success = success)
+    return success
 
 def cmakeTest(cfg, log, args, stats, instance):
     # The last line of this command reads  like this: "Total Tests: N" …where N
@@ -238,10 +253,17 @@ def cmakeTest(cfg, log, args, stats, instance):
     # ly run ctest for real, if tests were registered using add_test().
     num = c.countTests()
     if (num > 0):
-        mmh.maybeShowPhase(log, 'test', instanceName(instance), args)
-        rc = mmh.loggedProcess(cfg, log, c.test())
-        stats.logTestsuite(num, rc)
-        return (rc == 0)
+        def rest():
+            rc = mmh.loggedProcess(cfg, log, c.test())
+            stats.logTestsuite(num, rc)
+            return (rc == 0)
+        h.phase_hook('pre/test', log = log, args = args, cfg = cfg,
+                     data = instance)
+        success = mmh.maybeShowPhase(log, 'test', instanceName(instance),
+                                     args, rest)
+        h.phase_hook('post/test', log = log, args = args, cfg = cfg,
+                     data = instance, success = success)
+        return success
     return True
 
 def cleanInstance(log, d):
@@ -260,16 +282,24 @@ def maybeInstall(cfg, log, args, stats, instance):
     if (instance['install'] == False):
         return True
 
-    mmh.maybeShowPhase(log, 'install', instanceName(instance), args)
-    for component in mmh.get_install_components(log, instance['install']):
-        cmd = c.install(component = component)
-        rc = mmh.loggedProcess(cfg, log, cmd)
-        if (rc != 0):
-            break
-    stats.logInstall(rc)
-    return (rc == 0)
+    def rest():
+        for component in mmh.get_install_components(log, instance['install']):
+            cmd = c.install(component = component)
+            rc = mmh.loggedProcess(cfg, log, cmd)
+            if (rc != 0):
+                break
+        stats.logInstall(rc)
+        return (rc == 0)
+    h.phase_hook('pre/install', log = log, args = args, cfg = cfg,
+                 data = instance)
+    success = mmh.maybeShowPhase(log, 'install', instanceName(instance),
+                                 args, rest)
+    h.phase_hook('post/install', log = log, args = args, cfg = cfg,
+                 data = instance, success = success)
+    return success
 
 def build(cfg, log, args, stats, ext, root, instance):
+    mmh.nextInstance()
     dname = instanceDirectory(stats, instance)
     dnamefull = os.path.join(root, 'build', dname)
     if (os.path.exists(dnamefull)):
@@ -303,6 +333,7 @@ def listInstances(log, mod, args):
 def allofthem(cfg, log, mod, ext, args):
     olddir = os.getcwd()
     instances = listInstances(log, mod, args)
+    mmh.expectedInstances(len(instances))
     log.info('Using {} build-instances:'.format(len(instances)))
     for instance in instances:
         log.info('    {}'.format(instanceName(instance)))

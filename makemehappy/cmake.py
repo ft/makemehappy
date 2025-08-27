@@ -1,10 +1,60 @@
 import os
+import re
 import subprocess
 
 import makemehappy.git as git
 import makemehappy.utilities as mmh
 import makemehappy.version as v
 import makemehappy.zephyr as z
+
+def cache_comment(line):
+    return (line.startswith("#") or
+            line.startswith("//"))
+
+def cache_match(line):
+    pattern = r'("?)(.+?)\1(?::\s*([a-zA-Z_-][a-zA-Z0-9_-]*)?)?\s*=\s*(.*)'
+    return re.match(pattern, line)
+
+false_ish = ('FALSE', 'OFF', 'N', 'NO',        '0', '', 'NOTFOUND')
+true_ish  = ( 'TRUE',  'ON', 'Y', 'YE', 'YES', '1')
+
+def cache_boolish(string):
+    return (string in false_ish or string in true_ish)
+
+def cache_bool(string):
+    return not (string in false_ish or string.endswith('-NOTFOUND'))
+
+def cache_value(t, v):
+    cmake_type = '' if t is None else t.upper()
+    upcase = v.upper()
+    if cmake_type == 'BOOL':
+        return cache_bool(upcase)
+    elif cmake_type == 'FILEPATH':
+        if upcase.endswith('-NOTFOUND'):
+            return None
+        else:
+            return v
+    elif ';' in v:
+        return v.split(';')
+    elif cmake_type == 'INTERNAL' or cmake_type == 'STATIC':
+        if cache_boolish(v):
+            return cache_bool(upcase)
+    return v
+
+def readCMakeCache(log, fn):
+    data = { '__input__': fn }
+    with open(fn, mode = 'r', encoding = 'utf-8') as cc:
+        for n, string in enumerate(cc):
+            line = string.strip()
+            if cache_comment(line) or line == '':
+                continue
+            m = cache_match(line)
+            if m is None:
+                log.warn(f'Invalid CMakeCache input ({n}): [{line}]')
+                continue
+            _, var, t, val = m.groups()
+            data[var] = cache_value(t, val)
+    return data
 
 def usetool(log, name):
     std = 'Ninja'
@@ -117,8 +167,12 @@ def configureZephyr(log, args, ufw,
 
     overlay = [ z.findTransformer(ufw, buildconfig) ]
 
-    if (kconfig != None):
+    if (isinstance(kconfig, list) != None):
         overlay.extend(kconfig)
+    elif (isinstance(kconfig, str) != None):
+        overlay.append(kconfig)
+    else:
+        log.error(f'Invalid kconfig spec: {kconfig}')
 
     overlayvariable = 'OVERLAY_CONFIG'
     if (zephyrWithExtraConfFile(log, mmh.expandFile(kernel))):
