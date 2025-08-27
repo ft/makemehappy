@@ -289,8 +289,8 @@ class Combination:
         self.printer(f'{name}: Output file is up-to-date')
         return True
 
-    def run(self, parents):
-        self.buildroot = Path(parents[0].buildroot)
+    def run(self, buildroot, parents):
+        self.buildroot = Path(buildroot)
         self.mmhstate = mmh.sourceCodeState.get()
         self.verbose(f'mmh program state: {self.mmhstate}')
         self.out = self.buildroot / 'combination' / self.name
@@ -340,6 +340,7 @@ class Registry:
     def __init__(self):
         self.combinations = {}
         self.parents = {}
+        self.buildroot = None
         self.entry = None
         self.finish = None
         self.log = None
@@ -347,6 +348,9 @@ class Registry:
 
     def __call__(self, *args, **kwargs):
         return self.register(*args, **kwargs)
+
+    def setBuildRoot(self, d):
+        self.buildroot = d
 
     def setCallbacks(self, entry, finish):
         self.entry = entry
@@ -448,7 +452,7 @@ class Registry:
                     c.done = True
                     self.finish(name, 'skipped')
                 else:
-                    rc = c.run(plst)
+                    rc = c.run(self.buildroot, plst)
                     self.stats.logBuild(0 if rc else 1)
                     if self.finish is not None:
                         self.finish(name, None if rc else 'failed')

@@ -456,6 +456,7 @@ class System:
 
         self.combinations.setCallbacks(combinationEntry, combinationFinish)
         self.combinations.setStats(self.stats)
+        self.combinations.setBuildRoot(self.args.directory)
 
     def buildRoot(self):
         return self.args.directory
