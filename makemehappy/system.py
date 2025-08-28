@@ -456,6 +456,7 @@ class System:
 
         self.combinations.setCallbacks(combinationEntry, combinationFinish)
         self.combinations.setStats(self.stats)
+        self.combinations.setBuildRoot(self.args.directory)
 
     def buildRoot(self):
         return self.args.directory
@@ -538,9 +539,17 @@ class System:
         for i in instances:
             self.log.info("    {}".format(i))
         cn = 0
+        an = len(self.active_combinations)
+        instn = len(instances)
         if not self.args.no_combinations:
             cn = self.combinations.countPossible(instances)
-        mmh.expectedInstances(len(instances) + cn)
+        mmh.expectedInstances(instn + cn)
+        if an > 0:
+            # When combinations were named on the command line, set all
+            # combinations not named to be assumed already done.
+            self.combinations.only(self.active_combinations)
+        # Run all combinations without dependencies first.
+        self.combinations.execute()
         for instance in instances:
             mmh.nextInstance()
             sys = self.newInstance(instance)
@@ -565,12 +574,19 @@ class System:
             sys.clean()
         return True
 
+    def withoutInstancesOrCombinations(self):
+        if len(self.args.instances) != 0:
+            return False
+        if len(self.active_combinations) != 0:
+            return False
+        return True
+
     def build(self):
         self.setupDirectory()
         if (self.singleInstance != None):
             self.log.info("Building single system instance:")
             self.buildInstances([ self.singleInstance ])
-        elif (len(self.args.instances) == 0):
+        elif self.withoutInstancesOrCombinations():
             self.log.info("Building full system:")
             self.buildInstances(self.instances)
         else:
@@ -583,7 +599,7 @@ class System:
         if (self.singleInstance != None):
             self.log.info("Re-Building single system instance:")
             self.rebuildInstances([ self.singleInstance ])
-        elif (len(self.args.instances) == 0):
+        elif self.withoutInstancesOrCombinations():
             self.log.info("Re-Building full system:")
             self.rebuildInstances(self.instances)
         else:
@@ -596,7 +612,7 @@ class System:
         if (self.singleInstance != None):
             self.log.info("Cleaning single system instance:")
             self.cleanInstances([ self.singleInstance ])
-        elif (len(self.args.instances) == 0):
+        elif len(self.args.instances) == 0:
             self.log.info("Cleaning up full system:")
             self.cleanInstances(self.instances)
         else:

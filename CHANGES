@@ -1,7 +1,22 @@
  User-visible changes in make-me-happy
 =======================================
 
-* v0.29 → v0.30 (2025-08-27):
+* v0.30 → v0.31 (released 2025-08-28):
+
+** Bugfixes
+
+- Fix handling of combination without dependencies.
+- Fix processing of unspecified combination builds.
+- Fix fallback version detection.
+
+** Diffstat
+
+    makemehappy/combination.py | 16 +++++++++++++---
+    makemehappy/system.py      | 24 ++++++++++++++++++++----
+    2 files changed, 33 insertions(+), 7 deletions(-)
+
+
+* v0.29 → v0.30 (released 2025-08-27):
 
 This release adds an experimental feature: The "evaluate" key for use in module
 and system specs. This features aims to  make mmh more flexible by allowing the
