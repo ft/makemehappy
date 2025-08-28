@@ -398,6 +398,12 @@ class Registry:
                 n = n + 1
         return n
 
+    def only(self, lst):
+        for name in self.combinations:
+            if 'combination/' + name not in lst:
+                c = self.combinations[name]
+                c.done = True
+
     def addParent(self, name, buildroot, data):
         self.parents[name] = ParentInstance(self.log, name, buildroot, data)
 
