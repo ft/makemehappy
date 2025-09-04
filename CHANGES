@@ -1,6 +1,18 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.31 → v0.32 (released 2025-09-04):
+
+** Bugfixes
+
+- Fix error thrown at the end of builds with failed instances.
+
+** Diffstat
+
+    makemehappy/program.py | 6 +++---
+    1 file changed, 3 insertions(+), 3 deletions(-)
+
+
 * v0.30 → v0.31 (released 2025-08-28):
 
 ** Bugfixes
