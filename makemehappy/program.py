@@ -204,9 +204,9 @@ class Program:
             self.log.info('All {} builds succeeded.'
                           .format(self.cut.countBuilds()))
         else:
-            selflog.info('{} build(s) out of {} failed.'
-                         .format(self.cut.countFailed(),
-                                 self.cut.countBuilds()))
+            self.log.info('{} build(s) out of {} failed.'
+                          .format(self.cut.countFailed(),
+                                  self.cut.countBuilds()))
 
         if depSuccess == False:
             self.log.info('Dependency Evaluation contained errors!')
