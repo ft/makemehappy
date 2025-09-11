@@ -478,9 +478,10 @@ class System:
         self.zephyr_aliases = z.generateZephyrAliases(self.data)
         if ('evaluate' in self.data):
             mmh.loadPython(self.log, self.data['evaluate'],
-                           { 'system_instances': self.instances,
-                             'build_prefix':     self.buildRoot(),
-                             'logging':          self.log})
+                           localenv = { 'system_instances': self.instances,
+                                        'build_prefix':     self.buildRoot(),
+                                        'logging':          self.log},
+                           force = self.args.load_insecure_files)
 
         ics = mmh.patternsToList(self.instances +
                                  self.combinations.listNames(),
@@ -629,9 +630,10 @@ class System:
 
         if ('manifest' in self.data):
             mmh.loadPython(self.log, self.data['manifest'],
-                           { 'system_instances': self.instances,
-                             'build_prefix'    : self.buildRoot(),
-                             'logging'         : self.log })
+                           localenv = { 'system_instances': self.instances,
+                                        'build_prefix':     self.buildRoot(),
+                                        'logging':          self.log},
+                           force = self.args.load_insecure_files)
         else:
             print('deploy: No manifest specified!')
             self.log.error('deploy: No manifest specified!')

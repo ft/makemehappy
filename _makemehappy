@@ -462,6 +462,7 @@ _makemehappy() {
                '(-U --disable-user-directory)'{-U,--disable-user-directory}'[disable use of files in user-configuration directory]' \
                '(-v --verbose)'{-v,--verbose}'[request verbose logging]' \
                '(-V --version)'{-V,--version}'[report makemehappy version]' \
+               '--load-insecure-files[load world-writeable files that contain code]' \
                '*:: :->subcommand_or_options' && ret=0
 
     [[ -z $state ]] && return ret
