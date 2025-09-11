@@ -119,6 +119,8 @@ def generateZephyrInstances(log, mod):
                             target['modules'] = []
                         if ('variables' not in target):
                             target['variables'] = []
+                        if ('snippets' not in target):
+                            target['snippets'] = []
                         if ('application' not in target):
                             target['application'] = None
                         if ('name' in mod.moduleData):
@@ -136,6 +138,7 @@ def generateZephyrInstances(log, mod):
                               'dtc-overlays': target['dtc-overlays'],
                               'kconfig'     : target['kconfig'],
                               'options'     : target['options'],
+                              'snippets'    : target['snippets'],
                               'variables'   : target['variables'],
                               'buildcfg'    : cfg,
                               'buildtool'   : tool,
@@ -227,7 +230,8 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
                 dtc         = instance['dtc-overlays'],
                 kconfig     = instance['kconfig'],
                 modulepath  = [ os.path.join(root, 'deps') ],
-                modules     = instance['modules'])
+                modules     = instance['modules'],
+                snippets    = instance['snippets'])
         else:
             raise(UnknownModuleType(instance['type']))
         rc = mmh.loggedProcess(cfg, log, cmd)

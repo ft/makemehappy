@@ -155,11 +155,11 @@ def configureZephyr(log, args, ufw,
                     zephyr_board, buildtool, buildconfig, buildsystem,
                     toolchain, sourcedir, builddir, installdir,
                     appsource, kernel, dtc, kconfig,
-                    modulepath, modules):
+                    modulepath, modules, snippets):
     modules = z.generateModules(modulepath, modules)
 
     for m in modules:
-        if (isinstance(m, dict)):
+        if isinstance(m, dict):
             log.error('Error in module spec:')
             for k in m:
                 log.error('  {}: {}', k, m[k])
@@ -167,12 +167,20 @@ def configureZephyr(log, args, ufw,
 
     overlay = [ z.findTransformer(ufw, buildconfig) ]
 
-    if (isinstance(kconfig, list) != None):
+    if isinstance(kconfig, list):
         overlay.extend(kconfig)
-    elif (isinstance(kconfig, str) != None):
+    elif isinstance(kconfig, str):
         overlay.append(kconfig)
     else:
         log.error(f'Invalid kconfig spec: {kconfig}')
+
+    _snippets = None
+    if isinstance(snippets, list):
+        _snippets = snippets
+    elif isinstance(snippets, str):
+        _snippets = [ snippets ]
+    else:
+        log.error(f'Invalid snippets spec: {snippets}')
 
     overlayvariable = 'OVERLAY_CONFIG'
     if (zephyrWithExtraConfFile(log, mmh.expandFile(kernel))):
@@ -190,6 +198,7 @@ def configureZephyr(log, args, ufw,
           makeParam('CMAKE_INSTALL_PREFIX',   installdir),
           makeParam('BOARD',                  zephyr_board),
           makeParam('ZEPHYR_MODULES',         modules),
+          makeParam('SNIPPET',                _snippets),
           makeParam('DTC_OVERLAY_FILE',       dtc),
           makeParam(overlayvariable,          overlay),
           makeParam('UFW_ZEPHYR_KERNEL',      mmh.expandFile(kernel)),

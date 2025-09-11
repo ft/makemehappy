@@ -20,6 +20,7 @@ defaults = { 'build-configs'      : [ 'debug', 'release' ],
              'ufw'                : '${system}/libraries/ufw',
              'dtc-overlays'       : [ ],
              'kconfig'            : [ ],
+             'snippets'           : [ ],
              'variables'          : {},
              'zephyr-kernel'      : '${system}/zephyr/kernel',
              'zephyr-module-path' : [ '${system}/zephyr/modules' ],
@@ -256,7 +257,8 @@ class SystemInstanceZephyr:
             dtc         = build['dtc-overlays'],
             kconfig     = build['kconfig'],
             modulepath  = build['zephyr-module-path'],
-            modules     = build['modules'])
+            modules     = build['modules'],
+            snippets    = build['snippets'])
 
         removeConfigureStamp(self.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
