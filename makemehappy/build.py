@@ -117,6 +117,8 @@ def generateZephyrInstances(log, mod):
                             target['options'] = []
                         if ('modules' not in target):
                             target['modules'] = []
+                        if ('variables' not in target):
+                            target['variables'] = []
                         if ('application' not in target):
                             target['application'] = None
                         if ('name' in mod.moduleData):
@@ -134,6 +136,7 @@ def generateZephyrInstances(log, mod):
                               'dtc-overlays': target['dtc-overlays'],
                               'kconfig'     : target['kconfig'],
                               'options'     : target['options'],
+                              'variables'   : target['variables'],
                               'buildcfg'    : cfg,
                               'buildtool'   : tool,
                               'install'     : install,
@@ -203,9 +206,13 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             else:
                 app = 'code-under-test'
 
+            cargs = c.makeParamsFromDict(instance['variables'])
+            if (cmakeArgs != None):
+                cargs += cmakeArgs
+
             cmd = c.configureZephyr(
                 log         = log,
-                args        = cmakeArgs,
+                args        = cargs,
                 ufw         = os.path.join(root, 'deps', 'ufw'),
                 zephyr_board= instance['zephyr_board'],
                 buildconfig = instance['buildcfg'],
