@@ -9,7 +9,12 @@
 …not just the default native build using make.
 ** DONE Determine inclusion-order for toplevel CMakeLists.txt
 * Secondary
-** TODO Add hook system to execute arbitrary code during operation
+** ACTIVE Add hook system to execute arbitrary code during operation
+
+Status: This basically exists now, for modules, systems, as well as user confi-
+guration. But the set of arguments and the processing of possible return values
+from hook functions is not finalised yet. Feel free to use them, but expect
+things to break in the future.
 
 Possible points of interest:
 
