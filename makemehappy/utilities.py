@@ -164,13 +164,18 @@ def flatten(lst):
     else:
         return [lst]
 
+def renderCMakeVariable(name):
+    return '${' + name + '}'
+
 def expandFile(tmpl):
     if tmpl is None:
         return None
     if isinstance(tmpl, str) is False:
         return tmpl
     curdir = os.getcwd()
-    exp = mako.Template(tmpl).render(system = curdir)
+    exp = mako.Template(tmpl).render(
+        system = curdir,
+        cmake = renderCMakeVariable)
     return exp
 
 def expandFileDict(kv):
