@@ -1047,7 +1047,7 @@ class CodeUnderTest:
                           cfg = self.cfg, data = self.moduleData,
                           success = rc)
         if not rc:
-            if self.cfg.log_to_file:
+            if self.args.log_to_file:
                 print("Fatal error loading dependencies. Giving up!")
             exit(1)
 
