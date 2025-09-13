@@ -1,12 +1,11 @@
 import mako.template as mako
 import re
 
+import makemehappy.utilities as mmh
+
 defaultCMakeVersion = "3.12.0"
 defaultProjectName = "MakeMeHappy"
 defaultLanguages = "C CXX ASM"
-
-def cmakeVariable(name):
-    return '${' + name + '}'
 
 def deprecatedTemplate(inc):
     return re.match(r'^[0-9a-z_]+$', inc) != None
@@ -84,7 +83,7 @@ class Toplevel:
             inc = new
         exp = mako.Template(inc).render(
             moduleroot = moduleroot,
-            cmake = cmakeVariable)
+            cmake = mmh.renderCMakeVariable)
         return exp
 
     def insertTemplate(self, fh, name, tp, variants, section, default = None):

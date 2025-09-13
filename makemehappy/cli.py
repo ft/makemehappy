@@ -106,6 +106,10 @@ ap.add_argument(
     "-v", "--verbose", action = "store_true",
     help = "produce verbose output")
 
+ap.add_argument(
+    "--load-insecure-files", action = "store_true",
+    help = "load world-writeable files that contain code")
+
 ### Top-Level Commands
 
 subp = ap.add_subparsers(

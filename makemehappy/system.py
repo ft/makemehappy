@@ -20,6 +20,7 @@ defaults = { 'build-configs'      : [ 'debug', 'release' ],
              'ufw'                : '${system}/libraries/ufw',
              'dtc-overlays'       : [ ],
              'kconfig'            : [ ],
+             'snippets'           : [ ],
              'variables'          : {},
              'zephyr-kernel'      : '${system}/zephyr/kernel',
              'zephyr-module-path' : [ '${system}/zephyr/modules' ],
@@ -256,7 +257,8 @@ class SystemInstanceZephyr:
             dtc         = build['dtc-overlays'],
             kconfig     = build['kconfig'],
             modulepath  = build['zephyr-module-path'],
-            modules     = build['modules'])
+            modules     = build['modules'],
+            snippets    = build['snippets'])
 
         removeConfigureStamp(self.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
@@ -476,9 +478,10 @@ class System:
         self.zephyr_aliases = z.generateZephyrAliases(self.data)
         if ('evaluate' in self.data):
             mmh.loadPython(self.log, self.data['evaluate'],
-                           { 'system_instances': self.instances,
-                             'build_prefix':     self.buildRoot(),
-                             'logging':          self.log})
+                           localenv = { 'system_instances': self.instances,
+                                        'build_prefix':     self.buildRoot(),
+                                        'logging':          self.log},
+                           force = self.args.load_insecure_files)
 
         ics = mmh.patternsToList(self.instances +
                                  self.combinations.listNames(),
@@ -627,9 +630,10 @@ class System:
 
         if ('manifest' in self.data):
             mmh.loadPython(self.log, self.data['manifest'],
-                           { 'system_instances': self.instances,
-                             'build_prefix'    : self.buildRoot(),
-                             'logging'         : self.log })
+                           localenv = { 'system_instances': self.instances,
+                                        'build_prefix':     self.buildRoot(),
+                                        'logging':          self.log},
+                           force = self.args.load_insecure_files)
         else:
             print('deploy: No manifest specified!')
             self.log.error('deploy: No manifest specified!')

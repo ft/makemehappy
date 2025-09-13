@@ -931,7 +931,8 @@ class CodeUnderTest:
         if ('type' in self.moduleData):
             self.moduleType = self.moduleData['type']
         if ('evaluate' in self.moduleData):
-            mmh.loadPython(self.log, self.moduleData['evaluate'])
+            mmh.loadPython(self.log, self.moduleData['evaluate'],
+                           force = self.args.load_insecure_files)
             h.startup_hook(cfg = self.cfg, data = self.moduleData)
 
     def cliAdjust(self, toolchains, architectures, buildconfigs, buildtools):
@@ -1046,7 +1047,7 @@ class CodeUnderTest:
                           cfg = self.cfg, data = self.moduleData,
                           success = rc)
         if not rc:
-            if self.cfg.log_to_file:
+            if self.args.log_to_file:
                 print("Fatal error loading dependencies. Giving up!")
             exit(1)
 
