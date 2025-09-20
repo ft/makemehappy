@@ -110,7 +110,7 @@ def loggedProcess(cfg, log, cmd, env = None):
         with proc.stdout:
             logOutput(log, proc.stdout)
         return proc.wait()
-    rc = subprocess.run(cmd)
+    rc = subprocess.run(cmd, env = env)
     return rc.returncode
 
 def devnullProcess(cmd):
