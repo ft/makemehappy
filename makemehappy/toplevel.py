@@ -8,7 +8,7 @@ defaultProjectName = "MakeMeHappy"
 defaultLanguages = "C CXX ASM"
 
 def deprecatedTemplate(inc):
-    return re.match(r'^[0-9a-z_]+$', inc) != None
+    return re.match(r'^[0-9a-z_]+$', inc) is not None
 
 class InvalidVariant(Exception):
     pass
@@ -17,13 +17,13 @@ def lookupVariant(table, name):
     for key in table:
         if (isinstance(table[key], str)):
             regex = table[key]
-            if (re.match(regex, name) != None):
+            if re.match(regex, name) is not None:
                 return key
         elif (isinstance(table[key], list)):
             if (name in table[key]):
                 return key
         else:
-            raise(InvalidVariant(name, key, table[key]))
+            raise InvalidVariant(name, key, table[key])
     return name
 
 def getMergedDict(data, what, more):
@@ -93,13 +93,13 @@ class Toplevel:
 
         if (name in tp and section in tp[name]):
             tmpl = tp[name][section]
-            if ('module' in tp[name] and (not 'included' in tp[name])):
+            if ('module' in tp[name] and ('included' not in tp[name])):
                 tp[name]['included'] = True
                 print("include({})".format(tp[name]['module']), file = fh)
             if (isinstance(tmpl, str)):
                 print(self.expandIncludeTemplate(tmpl, realname), file = fh)
         else:
-            if (default != None):
+            if default is not None:
                 default(name)
 
     def generateVariables(self, fh, variables):

@@ -78,7 +78,7 @@ def compileCommands():
     return makeParam('CMAKE_EXPORT_COMPILE_COMMANDS', 'on')
 
 def makeList(lst):
-    return ';'.join([x for x in lst if x != None])
+    return ';'.join([x for x in lst if x is not None])
 
 def makeParam(name, value, allowEmpty = False):
     exp = ''
@@ -114,13 +114,13 @@ def zephyrToolchain(spec):
     return ztv
 
 def commandWithArguments(cmd, lst):
-    return [ cmd ] + [ x for x in mmh.flatten(lst) if x != None ]
+    return [ cmd ] + [ x for x in mmh.flatten(lst) if x is not None ]
 
 def cmake(lst):
     return commandWithArguments('cmake', lst)
 
 def maybeExtend(lst, scalar, default = '.'):
-    if (scalar != None):
+    if scalar is not None:
         lst.extend([scalar])
     else:
         lst.extend([default])
@@ -205,7 +205,7 @@ def configureZephyr(log, args, ufw,
           makeParam('UFW_ZEPHYR_APPLICATION', mmh.expandFile(appsource)),
           makeParam('UFW_LOAD_BUILD_SYSTEM',  mmh.expandFile(buildsystem)) ])
 
-    if (args != None):
+    if args is not None:
         cmd.extend(args)
 
     return cmd
@@ -233,7 +233,7 @@ def configureBoard(log, args, ufw,
           makeParam('CMAKE_TOOLCHAIN_FILE',  tcfile),
           makeParam('UFW_LOAD_BUILD_SYSTEM', mmh.expandFile(buildsystem)) ])
 
-    if (args != None):
+    if args is not None:
         cmd.extend(args)
 
     return cmd
@@ -252,7 +252,7 @@ def configureLibrary(log, args,
           makeParam('PROJECT_TARGET_CPU',    architecture),
           makeParam('CMAKE_TOOLCHAIN_FILE',  toolchain) ])
 
-    if (args != None):
+    if args is not None:
         cmd.extend(args)
 
     return cmd
@@ -277,7 +277,7 @@ def test(directory = None):
 def install(directory = None, component = None):
     cmd = cmake([ '--install' ])
     maybeExtend(cmd, directory)
-    if (component != None):
+    if component is not None:
         cmd.extend([ '--component', component])
     return cmd
 

@@ -34,7 +34,7 @@ class BuildRoot:
         self.calldir = os.path.realpath(os.getcwd())
         existing = False
 
-        if (dirName == None):
+        if dirName is None:
             self.root = mkTempDir(seed, modName)
         elif (os.path.exists(dirName)):
             existing = True

@@ -36,7 +36,7 @@ def extendPath(root, lst, datum):
     elif (isinstance(datum, list)):
         lst.extend(new)
     else:
-        raise(InvalidPathExtension(root, lst, datum))
+        raise InvalidPathExtension(root, lst, datum)
 
 def addExtension(mods, idx, entry, name):
     if (idx in entry):
@@ -51,7 +51,7 @@ def genNames(lst):
 
 def genOrigins(lst):
     xs = list(map(lambda x: x['origin'],
-                  filter(lambda x: 'origin' in x and x['origin'] != None,
+                  filter(lambda x: 'origin' in x and x['origin'] is not None,
                          lst)))
 
     if (len(xs) == 0):
@@ -60,18 +60,18 @@ def genOrigins(lst):
     return xs
 
 def printTag(tag):
-    if (tag == None):
+    if tag is None:
         return ''
-    if (isinstance(tag, str)):
+    if isinstance(tag, str):
         return f' [{tag}]'
-    if (isinstance(tag, list)):
-        if (len(tag) == 0):
+    if isinstance(tag, list):
+        if len(tag) == 0:
             return ''
         return f' [{", ".join(tag)}]'
     return ' ' + str(tag)
 
 def inherited(lst):
-    return (lst != None and 'inherit' in lst)
+    return (lst is not None and 'inherit' in lst)
 
 class DependencyEvaluation:
     def __init__(self, sources):
@@ -102,7 +102,7 @@ class DependencyEvaluation:
         new = { 'name': origin, 'origin': tag }
         self.data[name][revision].append(new)
         midx = mmh.findByKey(self.data[name][revision], '!meta')
-        if (midx != None):
+        if midx is not None:
             meta = self.data[name][revision][midx]
         else:
             new = { '!meta': True }
@@ -213,7 +213,7 @@ class DependencyEvaluation:
             origins = genOrigins(list(it.chain.from_iterable(
                 map(lambda x: x.origin, compat[kind]))))
             detail = self.maybeBetter(key, kind, origins)
-            if (detail != None):
+            if detail is not None:
                 for vers in compat[kind]:
                     entry = { 'kind': 'revision:discouraged',
                               'detail': detail,
@@ -350,7 +350,7 @@ class Trace:
         self.data = [entry] + self.data
 
     def west(self, kernel = None):
-        if (kernel == None):
+        if kernel is None:
             return self.westData
         self.westData = z.loadWestYAML(kernel)
 
@@ -415,7 +415,7 @@ def fetchCheckout(cfg, log, mod, rev):
                          .format(branch, mod))
                 revision = branch
                 break
-        if (revision == None):
+        if revision is None:
             log.error("Could not determine main branch: {} for module {}!"
                       .format(rev, mod))
             return None
@@ -436,7 +436,7 @@ def fetch(cfg, log, src, st, trace):
 
     for dep in st.data:
         rover = revisionOverride(cfg, src, dep['name'])
-        if (rover != None):
+        if rover is not None:
             log.info("Revision Override for {} to {}"
                      .format(dep['name'], rover))
             dep['revision'] = rover
@@ -446,10 +446,10 @@ def fetch(cfg, log, src, st, trace):
                      .format(dep['name']))
             log.info('Attempting to resolve via zephyr-west')
             dep['revision'] = z.westRevision(src, trace.west(), dep['name'])
-            if (dep['revision'] == None):
+            if dep['revision'] is None:
                 log.error('Could not determine version for module {}'
                           .format(dep['name']))
-                raise(InvalidDependency(dep))
+                raise InvalidDependency(dep)
             dep['origin'] = 'inherit'
 
         log.info("Fetching revision {} of module {}"
@@ -462,7 +462,7 @@ def fetch(cfg, log, src, st, trace):
 
         url = source['repository']
         zpkg = z.westNameFromSourceStack(src, dep['name'])
-        p = os.path.join('deps', zpkg if zpkg != None else dep['name'])
+        p = os.path.join('deps', zpkg if zpkg is not None else dep['name'])
         newmod = os.path.join(p, 'module.yaml')
         detectrev = True
         if (os.path.exists(p)):
@@ -482,23 +482,23 @@ def fetch(cfg, log, src, st, trace):
             olddir = os.getcwd()
             os.chdir(p)
             rev = fetchCheckout(cfg, log, dep['name'], dep['revision'])
-            if (rev == None):
+            if rev is None:
                 return False
             dep['revision'] = rev
             rev = cfg.processOverrides(dep['name'])
             if (isinstance(rev, tuple) and rev[0] == '!latest'):
                 latest = git.latestTag('.', rev[1])
-                if (latest != None):
+                if latest is not None:
                     log.info('Moving to latest tag for {}: {}',
-                            dep['name'], latest)
+                             dep['name'], latest)
                     latest = gitCheckout(cfg, log, dep['name'], latest)
-                    if (latest == None):
-                        raise(InvalidDependency(dep))
+                    if latest is None:
+                        raise InvalidDependency(dep)
                     dep['revision'] = latest
             os.chdir(olddir)
             detectrev = False
         else:
-            raise(InvalidRepositoryType(source))
+            raise InvalidRepositoryType(source)
 
         if (isinstance(dep['revision'], list)):
             for branch in dep['revision']:
@@ -574,7 +574,7 @@ def endoftime(datum):
         else:
             return datum['time-stamp']
     else:
-        raise(InvalidTimeStampKind(datum['type']))
+        raise InvalidTimeStampKind(datum['type'])
 
 def renderTimedelta(d):
     minperday = 24 * 60
@@ -714,11 +714,11 @@ class ExecutionStatistics:
                     previous = datum['build-stamp']
                 time = renderTimedelta(datum['install-stamp'] - previous)
             else:
-                raise(InvalidStepKind(prefix))
+                raise InvalidStepKind(prefix)
 
-        if not((prefix + '-result') in datum):
+        if (prefix + '-result') not in datum:
             result = '---'
-        elif not(datum[prefix + '-result']):
+        elif not datum[prefix + '-result']:
             result = 'Failure'
 
         maybeInfo(self.cfg, self.log,
@@ -839,11 +839,11 @@ class ExecutionStatistics:
         maybeInfo(self.cfg, self.log, '')
         last = None
         for entry in self.data:
-            if not('type' in entry):
+            if 'type' not in entry:
                 self.log.warn('Statistics log entry has no type. Ignoring!')
                 continue
 
-            if not(last == None):
+            if last is not None:
                 self.renderTimeDifference(last, entry)
 
             last = entry
@@ -1006,7 +1006,7 @@ class CodeUnderTest:
             if (newdone == lastdone):
                 # Couldn't take a single item off of the rest in the last
                 # iteration. That means that dependencies can't be satisfied.
-                raise(CircularDependency(done, deps))
+                raise CircularDependency(done, deps)
         return rv
 
     def loadDependencies(self):
@@ -1150,7 +1150,7 @@ class CodeUnderTest:
                 .format(entry['module']))
             for origin in entry['from']:
                 self.log.info('    {}'.format(origin))
-            if (entry['alternative'] != None):
+            if entry['alternative'] is not None:
                 self.log.info('  Possible alternative: {}'
                             .format(entry['alternative']))
         elif (entry['kind'] == 'deprecated:revision'):
@@ -1288,7 +1288,7 @@ class CodeUnderTest:
             fatal = False
             b = behaviour[entry]
             tmp = mmh.findByName(self.depKWS, entry)
-            if (tmp == None):
+            if tmp is None:
                 continue
             user = self.depKWS[tmp]['user']
             sing = self.depKWS[tmp]['singular']

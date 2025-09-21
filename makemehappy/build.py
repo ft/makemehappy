@@ -187,7 +187,7 @@ def findToolchainByExtension(ext, tc):
 
 def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
     cmakeArgs = None
-    if (args.cmake == None):
+    if args.cmake is None:
         cmakeArgs = []
     else:
         cmakeArgs = args.cmake
@@ -205,13 +205,13 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
                 sourcedir    = root,
                 builddir     = '.')
         elif (instance['type'] == 'zephyr'):
-            if ('application' in instance and instance['application'] != None):
+            if 'application' in instance and instance['application'] is not None:
                 app = os.path.join('code-under-test', instance['application'])
             else:
                 app = 'code-under-test'
 
             cargs = c.makeParamsFromDict(instance['variables'])
-            if (cmakeArgs != None):
+            if cmakeArgs is not None:
                 cargs += cmakeArgs
 
             zephyrBase = os.path.join(root, 'deps', 'zephyr-kernel')
@@ -372,4 +372,4 @@ def findToolchain(tcp, tc):
         candidate = os.path.join(d, tc + extension)
         if (os.path.exists(candidate)):
             return candidate
-    raise(UnknownToolchain(tcp, tc))
+    raise UnknownToolchain(tcp, tc)

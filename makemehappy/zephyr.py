@@ -67,7 +67,7 @@ def westNameFromSourceStack(src, mod):
 
 def maybeWestName(src, mod):
     zpkg = westNameFromSourceStack(src, mod)
-    if zpkg == None:
+    if zpkg is None:
         return mod
     return zpkg
 
@@ -88,7 +88,7 @@ def westPackage(west, mod):
 
 def westRevision(src, west, mod):
     zpkg = westNameFromSourceStack(src, mod)
-    if (zpkg == None):
+    if zpkg is None:
         return None
     zmod = westPackage(west, zpkg)
     if ('revision' not in zmod):

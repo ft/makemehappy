@@ -61,7 +61,7 @@ class VersionComparison:
 
             break
 
-        if (self.kind == None):
+        if self.kind is None:
             if (self.compatible):
                 self.kind = 'same'
             else:
@@ -84,16 +84,16 @@ class Version:
         self.string = s
         self.origin = origin
 
-        if (s == None):
+        if s is None:
             return
 
         self.matcher = re.match(r'^[0-9A-Fa-f]+$', s)
-        if (self.matcher != None):
+        if self.matcher is not None:
             self.kind = 'hex'
             return
 
         self.matcher = re.match(r'([^0-9]*)([0-9]+\.([0-9]+\.?)*)(.*)', s)
-        if (self.matcher != None):
+        if self.matcher is not None:
             self.kind = 'version'
             self.elements = re.split(self.dots, self.matcher.group(2))
             self.prefix = list(

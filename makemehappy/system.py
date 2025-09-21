@@ -173,7 +173,7 @@ class SystemInstanceBoard:
 
     def configure(self):
         cargs = c.makeParamsFromDict(self.variables)
-        if (self.sys.args.cmake != None):
+        if self.sys.args.cmake is not None:
             cargs += self.sys.args.cmake
 
         cmd = c.configureBoard(
@@ -287,7 +287,7 @@ class SystemInstance:
                  self.tc,
                  self.cfg) = description.split('/')
             except Exception:
-                raise(InvalidSystemInstance(description))
+                raise InvalidSystemInstance(description)
 
             self.instance = SystemInstanceZephyr(
                 self.sys, self.board, self.app, self.tc, self.cfg)
@@ -299,12 +299,12 @@ class SystemInstance:
                  self.tc,
                  self.cfg) = description.split('/')
             except Exception:
-                raise(InvalidSystemInstance(description))
+                raise InvalidSystemInstance(description)
 
             self.instance = SystemInstanceBoard(
                 self.sys, self.board, self.tc, self.cfg)
         else:
-            raise(InvalidSystemInstance(description))
+            raise InvalidSystemInstance(description)
 
     def kind(self):
         return self.kind
@@ -434,7 +434,7 @@ class System:
         self.spec = args.system_spec
         self.combinations = combinations
         self.singleInstance = None
-        if (args.single_instance == None):
+        if args.single_instance is None:
             self.mode = None
         elif (args.single_instance):
             n = len(args.instances)
@@ -444,7 +444,7 @@ class System:
                 log.error(
                     'system: --single-instance requires exactly one instance. {} specified.'
                     .format(n))
-                raise(InvalidBuildTree())
+                raise InvalidBuildTree()
             self.mode = 'system-single'
         else:
             self.mode = 'system-multi'
@@ -540,7 +540,7 @@ class System:
             self.log.info('{} build(s) out of {} failed.'
                           .format(self.stats.countFailed(),
                                   self.stats.countBuilds()))
-            raise(SystemFailedSomeBuilds())
+            raise SystemFailedSomeBuilds()
 
     def matchZephyrAlias(self, name):
         return self.zephyr_aliases.get(name, name)
@@ -593,7 +593,7 @@ class System:
 
     def build(self):
         self.setupDirectory()
-        if (self.singleInstance != None):
+        if self.singleInstance is not None:
             self.log.info("Building single system instance:")
             self.buildInstances([ self.singleInstance ])
         elif self.withoutInstancesOrCombinations():
@@ -606,7 +606,7 @@ class System:
 
     def rebuild(self):
         self.setupDirectory()
-        if (self.singleInstance != None):
+        if self.singleInstance is not None:
             self.log.info("Re-Building single system instance:")
             self.rebuildInstances([ self.singleInstance ])
         elif self.withoutInstancesOrCombinations():
@@ -619,7 +619,7 @@ class System:
 
     def clean(self):
         self.setupDirectory()
-        if (self.singleInstance != None):
+        if self.singleInstance is not None:
             self.log.info("Cleaning single system instance:")
             self.cleanInstances([ self.singleInstance ])
         elif len(self.args.instances) == 0:
@@ -750,13 +750,13 @@ class System:
             self.setupDirectory()
 
         n = len(self.args.instances)
-        if (n != 1 and not (n == 0 and self.singleInstance != None)):
+        if n != 1 and not (n == 0 and self.singleInstance is not None):
             self.log.error('The db sub-command requires exactly one argument')
-            raise(InvalidArguments())
+            raise InvalidArguments()
 
         name = 'compile_commands.json'
 
-        if (self.singleInstance != None):
+        if self.singleInstance is not None:
             instance = self.singleInstance
             target = os.path.join(d, name)
         else:
@@ -765,7 +765,7 @@ class System:
 
         loc = self.args.location
         self.log.info('Creating symbolic link to {} for {} (location: {})',
-                        name, instance, loc)
+                      name, instance, loc)
         link = os.path.join(self.args.location, name)
         target = os.path.relpath(target, loc)
 
