@@ -150,11 +150,13 @@ class SystemInstanceBoard:
         self.spec = getSpec(self.sys.data['boards'], 'name', self.board)
         self.variables = mmh.expandFileDict(self.spec['variables'])
         self.systemdir = os.getcwd()
-        self.env = None
         if ('environment' in self.spec):
             self.env = mmh.makeEnvironment(self.sys.log,
                                            self.sys.args.environment_overrides,
                                            self.spec['environment'])
+        else:
+            self.env = mmh.makeEnvironment(self.sys.log, True, {})
+
         if (sys.mode == 'system-single'):
             self.builddir = self.sys.args.directory
             self.installdir = os.path.join(self.systemdir,
@@ -205,11 +207,13 @@ class SystemInstanceZephyr:
         self.spec = getSpec(self.sys.data['zephyr'], 'application', self.app)
         self.variables = mmh.expandFileDict(self.spec['variables'])
         self.systemdir = os.getcwd()
-        self.env = None
         if ('environment' in self.spec):
             self.env = mmh.makeEnvironment(self.sys.log,
                                            self.sys.args.environment_overrides,
                                            self.spec['environment'])
+        else:
+            self.env = mmh.makeEnvironment(self.sys.log, True, {})
+
         if (sys.mode == 'system-single'):
             self.builddir = self.sys.args.directory
             self.installdir = os.path.join(self.systemdir,
@@ -217,48 +221,51 @@ class SystemInstanceZephyr:
                                            self.spec['install-dir'])
         else:
             self.builddir = os.path.join(self.sys.args.directory, 'zephyr',
-                                         self.board, self.app, self.tc, self.cfg)
+                                         self.board, self.app, self.tc,
+                                         self.cfg)
             self.installdir = os.path.join(self.systemdir,
                                            self.sys.args.directory,
                                            self.spec['install-dir'],
-                                           self.board, self.tc, self.app, self.cfg)
-        self.sys.stats.systemZephyr(app, tc, self.zephyr_board, cfg, self.spec['build-tool'])
+                                           self.board, self.tc, self.app,
+                                           self.cfg)
+        self.sys.stats.systemZephyr(app, tc, self.zephyr_board, cfg,
+                                    self.spec['build-tool'])
 
-    def configure(self):
-        build = z.findBuild(self.spec['build'], self.tc,
-                            self.board)
+        self.build = z.findBuild(self.spec['build'], self.tc, self.board)
 
         tmp = copy.deepcopy(self.spec)
         tmp.pop('build', None)
-        build = { **build, **tmp }
-        if ('base-modules' in build):
-            build['modules'].extend(build['base-modules'])
-        if (not 'modules' in build):
-            build['modules'] = [ ]
+        self.build = { **self.build, **tmp }
+        if 'base-modules' in self.build:
+            self.build['modules'].extend(build['base-modules'])
+        if 'modules' not in self.build:
+            self.build['modules'] = [ ]
+        self.env['ZEPHYR_BASE'] = mmh.expandFile(self.build['zephyr-kernel'])
 
+    def configure(self):
         cargs = c.makeParamsFromDict(self.variables)
-        if (self.sys.args.cmake != None):
+        if self.sys.args.cmake is not None:
             cargs += self.sys.args.cmake
 
         cmd = c.configureZephyr(
             log         = self.sys.log,
             args        = cargs,
-            ufw         = build['ufw'],
+            ufw         = self.build['ufw'],
             zephyr_board= self.zephyr_board,
             buildconfig = self.cfg,
-            toolchain   = z.findToolchain(build, self.tc),
+            toolchain   = z.findToolchain(self.build, self.tc),
             sourcedir   = '.',
             builddir    = self.builddir,
             installdir  = self.installdir,
-            buildtool   = build['build-tool'],
-            buildsystem = build['build-system'],
-            appsource   = build['source'],
-            kernel      = build['zephyr-kernel'],
-            dtc         = build['dtc-overlays'],
-            kconfig     = build['kconfig'],
-            modulepath  = build['zephyr-module-path'],
-            modules     = build['modules'],
-            snippets    = build['snippets'])
+            buildtool   = self.build['build-tool'],
+            buildsystem = self.build['build-system'],
+            appsource   = self.build['source'],
+            kernel      = self.build['zephyr-kernel'],
+            dtc         = self.build['dtc-overlays'],
+            kconfig     = self.build['kconfig'],
+            modulepath  = self.build['zephyr-module-path'],
+            modules     = self.build['modules'],
+            snippets    = self.build['snippets'])
 
         removeConfigureStamp(self.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)

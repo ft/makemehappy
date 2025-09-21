@@ -193,6 +193,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
         cmakeArgs = args.cmake
 
     def rest():
+        cmdEnvironment = None
         if (instance['type'] == 'cmake'):
             cmd = c.configureLibrary(
                 log          = log,
@@ -213,6 +214,15 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             if (cmakeArgs != None):
                 cargs += cmakeArgs
 
+            zephyrBase = os.path.join(root, 'deps', 'zephyr-kernel')
+
+            # Setting ZEPHYR_BASE: In module builds this is enough, because the
+            # configure phase is always executed.
+            cmdEnvironment = mmh.makeEnvironment(
+                log = log,
+                with_overrides = True,
+                spec = { 'ZEPHYR_BASE': zephyrBase })
+
             cmd = c.configureZephyr(
                 log         = log,
                 args        = cargs,
@@ -226,15 +236,15 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
                 buildtool   = instance['buildtool'],
                 buildsystem = '',
                 appsource   = os.path.join(root, app),
-                kernel      = os.path.join(root, 'deps', 'zephyr-kernel'),
+                kernel      = zephyrBase,
                 dtc         = instance['dtc-overlays'],
                 kconfig     = instance['kconfig'],
                 modulepath  = [ os.path.join(root, 'deps') ],
                 modules     = instance['modules'],
                 snippets    = instance['snippets'])
         else:
-            raise(UnknownModuleType(instance['type']))
-        rc = mmh.loggedProcess(cfg, log, cmd)
+            raise UnknownModuleType(instance['type'])
+        rc = mmh.loggedProcess(cfg, log, cmd, cmdEnvironment)
         stats.logConfigure(rc)
         return (rc == 0)
     h.phase_hook('pre/configure', log = log, args = args, cfg = cfg,
