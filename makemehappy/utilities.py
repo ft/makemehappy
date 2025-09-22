@@ -110,7 +110,7 @@ def loggedProcess(cfg, log, cmd, env = None):
         with proc.stdout:
             logOutput(log, proc.stdout)
         return proc.wait()
-    rc = subprocess.run(cmd)
+    rc = subprocess.run(cmd, env = env)
     return rc.returncode
 
 def devnullProcess(cmd):
@@ -261,20 +261,22 @@ def get_install_components(log, spec):
 
 def makeEnvironment(log, with_overrides, spec):
     env = dict(os.environ)
+    info = log.info
+
     for var in spec:
         value = spec[var]
         if with_overrides == False and var in env:
             p = env[var]
-            log.info(f'Existing environment for {var} ({p}) supersedes'
-                     f' value from module ({value})')
+            info(f'Existing environment for {var} ({p}) supersedes'
+                 f' value from module ({value})')
             continue
 
         if var in env:
             p = env[var]
-            log.info(f'Existing environment for {var} ({p}) overridden by'
-                     f' value from module ({value})')
+            info(f'Existing environment for {var} ({p}) overridden by'
+                 f' value from module ({value})')
         else:
-            log.info(f'Setting environment for {var} ({value})')
+            info(f'Setting environment for {var} ({value})')
 
         env[var] = value
 

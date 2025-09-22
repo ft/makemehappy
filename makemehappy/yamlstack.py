@@ -39,8 +39,8 @@ class SourceStack(YamlStack):
         self.merged = None
 
     def merge(self):
-        if (self.data == None):
-            raise(NoSourceData())
+        if self.data is None:
+            raise NoSourceData()
 
         # The top level data structure is a dict. With sources, we only care
         # about the ‘modules’ and ‘remove’ keys. The merged dict will contain
@@ -67,16 +67,16 @@ class SourceStack(YamlStack):
                 self.merged['modules'][module]['main'] = [ 'main', 'master' ]
 
     def allSources(self):
-        if (self.merged == None):
-            raise(NoSourceData())
+        if self.merged is None:
+            raise NoSourceData()
         return self.merged['modules'].keys()
 
     def lookup(self, needle):
-        if (self.data == None):
-            raise(NoSourceData())
+        if self.data is None:
+            raise NoSourceData()
         if (needle in self.merged['modules']):
             return self.merged['modules'][needle]
-        raise(UnknownModule(needle))
+        raise UnknownModule(needle)
 
 class NoSourceData(Exception):
     pass
@@ -97,8 +97,8 @@ class ConfigStack(YamlStack):
         self.mergeLODbyName = [ 'revision-overrides', 'toolchains' ]
 
     def merge(self):
-        if (self.data == None):
-            raise(NoConfigData())
+        if self.data is None:
+            raise NoConfigData()
 
         # The top level data structure is a dict. These are predefined types as
         # lists, so we're populating them here. Toolchains and overrides are
@@ -134,9 +134,9 @@ class ConfigStack(YamlStack):
                     # other keys of this type, order does not matter.
                     for entry in reversed(slice[key]):
                         idx = mmh.findByName(self.merged[key], entry['name'])
-                        if (idx != None):
+                        if idx is not None:
                             new = { **self.merged[key][idx], **entry }
-                            del(self.merged[key][idx])
+                            del self.merged[key][idx]
                         else:
                             new = entry
                         self.merged[key].insert(0, new)
@@ -149,26 +149,26 @@ class ConfigStack(YamlStack):
 
         for rem in self.remove:
             if (rem in self.merged):
-                del(self.merged[rem])
+                del self.merged[rem]
 
     def lookup(self, needle):
-        if (self.data == None):
-            raise(NoConfigData())
-        if (needle in self.merged):
+        if self.data is None:
+            raise NoConfigData()
+        if needle in self.merged:
             return self.merged[needle]
-        raise(UnknownConfigItem(needle))
+        raise UnknownConfigItem(needle)
 
     def fetchToolchain(self, name):
         lst = self.lookup('toolchains')
         for tc in lst:
-            if (tc['name'] == name):
+            if tc['name'] == name:
                 return tc
-        raise(UnknownToolchain(name))
+        raise UnknownToolchain(name)
 
     def queryToolchain(self, key):
         rv = []
         for item in self.lookup('toolchains'):
-            if (isinstance(item[key], list)):
+            if isinstance(item[key], list):
                 rv += item[key]
             else:
                 rv += [ item[key] ]

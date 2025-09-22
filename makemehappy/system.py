@@ -150,11 +150,13 @@ class SystemInstanceBoard:
         self.spec = getSpec(self.sys.data['boards'], 'name', self.board)
         self.variables = mmh.expandFileDict(self.spec['variables'])
         self.systemdir = os.getcwd()
-        self.env = None
         if ('environment' in self.spec):
             self.env = mmh.makeEnvironment(self.sys.log,
                                            self.sys.args.environment_overrides,
                                            self.spec['environment'])
+        else:
+            self.env = mmh.makeEnvironment(self.sys.log, True, {})
+
         if (sys.mode == 'system-single'):
             self.builddir = self.sys.args.directory
             self.installdir = os.path.join(self.systemdir,
@@ -171,7 +173,7 @@ class SystemInstanceBoard:
 
     def configure(self):
         cargs = c.makeParamsFromDict(self.variables)
-        if (self.sys.args.cmake != None):
+        if self.sys.args.cmake is not None:
             cargs += self.sys.args.cmake
 
         cmd = c.configureBoard(
@@ -205,11 +207,13 @@ class SystemInstanceZephyr:
         self.spec = getSpec(self.sys.data['zephyr'], 'application', self.app)
         self.variables = mmh.expandFileDict(self.spec['variables'])
         self.systemdir = os.getcwd()
-        self.env = None
         if ('environment' in self.spec):
             self.env = mmh.makeEnvironment(self.sys.log,
                                            self.sys.args.environment_overrides,
                                            self.spec['environment'])
+        else:
+            self.env = mmh.makeEnvironment(self.sys.log, True, {})
+
         if (sys.mode == 'system-single'):
             self.builddir = self.sys.args.directory
             self.installdir = os.path.join(self.systemdir,
@@ -217,48 +221,51 @@ class SystemInstanceZephyr:
                                            self.spec['install-dir'])
         else:
             self.builddir = os.path.join(self.sys.args.directory, 'zephyr',
-                                         self.board, self.app, self.tc, self.cfg)
+                                         self.board, self.app, self.tc,
+                                         self.cfg)
             self.installdir = os.path.join(self.systemdir,
                                            self.sys.args.directory,
                                            self.spec['install-dir'],
-                                           self.board, self.tc, self.app, self.cfg)
-        self.sys.stats.systemZephyr(app, tc, self.zephyr_board, cfg, self.spec['build-tool'])
+                                           self.board, self.tc, self.app,
+                                           self.cfg)
+        self.sys.stats.systemZephyr(app, tc, self.zephyr_board, cfg,
+                                    self.spec['build-tool'])
 
-    def configure(self):
-        build = z.findBuild(self.spec['build'], self.tc,
-                            self.board)
+        self.build = z.findBuild(self.spec['build'], self.tc, self.board)
 
         tmp = copy.deepcopy(self.spec)
         tmp.pop('build', None)
-        build = { **build, **tmp }
-        if ('base-modules' in build):
-            build['modules'].extend(build['base-modules'])
-        if (not 'modules' in build):
-            build['modules'] = [ ]
+        self.build = { **self.build, **tmp }
+        if 'base-modules' in self.build:
+            self.build['modules'].extend(build['base-modules'])
+        if 'modules' not in self.build:
+            self.build['modules'] = [ ]
+        self.env['ZEPHYR_BASE'] = mmh.expandFile(self.build['zephyr-kernel'])
 
+    def configure(self):
         cargs = c.makeParamsFromDict(self.variables)
-        if (self.sys.args.cmake != None):
+        if self.sys.args.cmake is not None:
             cargs += self.sys.args.cmake
 
         cmd = c.configureZephyr(
             log         = self.sys.log,
             args        = cargs,
-            ufw         = build['ufw'],
+            ufw         = self.build['ufw'],
             zephyr_board= self.zephyr_board,
             buildconfig = self.cfg,
-            toolchain   = z.findToolchain(build, self.tc),
+            toolchain   = z.findToolchain(self.build, self.tc),
             sourcedir   = '.',
             builddir    = self.builddir,
             installdir  = self.installdir,
-            buildtool   = build['build-tool'],
-            buildsystem = build['build-system'],
-            appsource   = build['source'],
-            kernel      = build['zephyr-kernel'],
-            dtc         = build['dtc-overlays'],
-            kconfig     = build['kconfig'],
-            modulepath  = build['zephyr-module-path'],
-            modules     = build['modules'],
-            snippets    = build['snippets'])
+            buildtool   = self.build['build-tool'],
+            buildsystem = self.build['build-system'],
+            appsource   = self.build['source'],
+            kernel      = self.build['zephyr-kernel'],
+            dtc         = self.build['dtc-overlays'],
+            kconfig     = self.build['kconfig'],
+            modulepath  = self.build['zephyr-module-path'],
+            modules     = self.build['modules'],
+            snippets    = self.build['snippets'])
 
         removeConfigureStamp(self.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
@@ -280,7 +287,7 @@ class SystemInstance:
                  self.tc,
                  self.cfg) = description.split('/')
             except Exception:
-                raise(InvalidSystemInstance(description))
+                raise InvalidSystemInstance(description)
 
             self.instance = SystemInstanceZephyr(
                 self.sys, self.board, self.app, self.tc, self.cfg)
@@ -292,12 +299,12 @@ class SystemInstance:
                  self.tc,
                  self.cfg) = description.split('/')
             except Exception:
-                raise(InvalidSystemInstance(description))
+                raise InvalidSystemInstance(description)
 
             self.instance = SystemInstanceBoard(
                 self.sys, self.board, self.tc, self.cfg)
         else:
-            raise(InvalidSystemInstance(description))
+            raise InvalidSystemInstance(description)
 
     def kind(self):
         return self.kind
@@ -427,7 +434,7 @@ class System:
         self.spec = args.system_spec
         self.combinations = combinations
         self.singleInstance = None
-        if (args.single_instance == None):
+        if args.single_instance is None:
             self.mode = None
         elif (args.single_instance):
             n = len(args.instances)
@@ -437,7 +444,7 @@ class System:
                 log.error(
                     'system: --single-instance requires exactly one instance. {} specified.'
                     .format(n))
-                raise(InvalidBuildTree())
+                raise InvalidBuildTree()
             self.mode = 'system-single'
         else:
             self.mode = 'system-multi'
@@ -533,7 +540,7 @@ class System:
             self.log.info('{} build(s) out of {} failed.'
                           .format(self.stats.countFailed(),
                                   self.stats.countBuilds()))
-            raise(SystemFailedSomeBuilds())
+            raise SystemFailedSomeBuilds()
 
     def matchZephyrAlias(self, name):
         return self.zephyr_aliases.get(name, name)
@@ -586,7 +593,7 @@ class System:
 
     def build(self):
         self.setupDirectory()
-        if (self.singleInstance != None):
+        if self.singleInstance is not None:
             self.log.info("Building single system instance:")
             self.buildInstances([ self.singleInstance ])
         elif self.withoutInstancesOrCombinations():
@@ -599,7 +606,7 @@ class System:
 
     def rebuild(self):
         self.setupDirectory()
-        if (self.singleInstance != None):
+        if self.singleInstance is not None:
             self.log.info("Re-Building single system instance:")
             self.rebuildInstances([ self.singleInstance ])
         elif self.withoutInstancesOrCombinations():
@@ -612,7 +619,7 @@ class System:
 
     def clean(self):
         self.setupDirectory()
-        if (self.singleInstance != None):
+        if self.singleInstance is not None:
             self.log.info("Cleaning single system instance:")
             self.cleanInstances([ self.singleInstance ])
         elif len(self.args.instances) == 0:
@@ -743,13 +750,13 @@ class System:
             self.setupDirectory()
 
         n = len(self.args.instances)
-        if (n != 1 and not (n == 0 and self.singleInstance != None)):
+        if n != 1 and not (n == 0 and self.singleInstance is not None):
             self.log.error('The db sub-command requires exactly one argument')
-            raise(InvalidArguments())
+            raise InvalidArguments()
 
         name = 'compile_commands.json'
 
-        if (self.singleInstance != None):
+        if self.singleInstance is not None:
             instance = self.singleInstance
             target = os.path.join(d, name)
         else:
@@ -758,7 +765,7 @@ class System:
 
         loc = self.args.location
         self.log.info('Creating symbolic link to {} for {} (location: {})',
-                        name, instance, loc)
+                      name, instance, loc)
         link = os.path.join(self.args.location, name)
         target = os.path.relpath(target, loc)
 
