@@ -1,6 +1,35 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.33 → v0.34 (released 2025-09-22):
+
+** Features
+
+- zephyr: Better support for $ENV{ZEPHYR_BASE}.
+
+** Bugfixes
+
+- Fix application of provided environment in loggedProcess():
+
+** Miscellaneous
+
+- Fix a number of issues found be linter.
+
+** Diffstat
+
+    makemehappy/build.py     | 24 ++++++++----
+    makemehappy/buildroot.py |  2 +-
+    makemehappy/cmake.py     | 14 +++----
+    makemehappy/cut.py       | 60 ++++++++++++++--------------
+    makemehappy/system.py    | 85 ++++++++++++++++++++++------------------
+    makemehappy/toplevel.py  | 10 ++---
+    makemehappy/utilities.py | 14 ++++---
+    makemehappy/version.py   |  8 ++--
+    makemehappy/yamlstack.py | 38 +++++++++---------
+    makemehappy/zephyr.py    |  4 +-
+    10 files changed, 139 insertions(+), 120 deletions(-)
+
+
 * v0.32 → v0.33 (released 2025-09-14):
 
 ** Features
