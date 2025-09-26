@@ -1,0 +1,44 @@
+#!/bin/sh
+
+repo=$(git rev-parse --show-toplevel)
+
+if ! [ -d "$repo" ]; then
+    printf 'Could not determine repository top-level!\n'
+    exit 1
+fi
+
+root="$repo/doc-ng"
+envd='.env'
+
+if ! [ -d "$root" ]; then
+    printf 'Could not determine documentation root directory!\n'
+    exit 1
+fi
+
+printf 'Entering %s...\n' "$root"
+cd "$root" || exit 1
+
+ensure_environment () {
+    if [ -d "$envd" ]; then
+        . ./"$envd"/bin/activate || return 1
+        return 0
+    fi
+    printf 'Setting up new virtual environment in %s...\n' "$envd"
+    python3 -m venv "$envd" || return 1
+    . ./"$envd"/bin/activate || return 1
+    # Installing required packages. There are a few more than you may expect,
+    # since we want to be able to call into makemehappy's modules also in the
+    # sphinx configuration.
+    set --                             \
+        sphinx pydata-sphinx-theme     \
+        pyyaml mako
+    pip install "$@" || return 1
+    return 0
+}
+
+if ! ensure_environment; then
+    printf 'Setting up build environment failed!\n'
+    exit 1
+fi
+
+exec make "$@"

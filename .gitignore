@@ -17,6 +17,7 @@ doc/*.html
 doc/*.info
 doc/*.pdf
 doc/*.texi
+doc-ng/build/
 debian/files
 debian/makemehappy.*.debhelper
 debian/makemehappy.substvars
