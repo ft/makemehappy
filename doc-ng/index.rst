@@ -4,7 +4,17 @@ MakeMeHappy — Build Orchestration
 Synopsis
 ********
 
-``mmh [OPTION(s)...] SUBCMD [SUBOPTION(s)...] [++ CMAKE-PARAM(s)...]``
+``mmh [OPTION(s)…] SUBCMD [SUBOPTION(s)…] [++ CMAKE-PARAM(s)…]``
+
+The set of top-level ``OPTION(s)…`` is documented in
+:ref:`sec-toplevel-options`. A reference for all possibile uses of ``SUBCMD``
+can be found in :ref:`ch-command-reference`. All ``SUBOPTION(s)…`` are specific
+to the active ``SUBCMD``. ``OPTION(s)…`` and ``SUBOPTION(s)…`` cannot be mixed;
+the former go right after the ``mmh`` program and the latter have to be used
+after the ``SUBCMD``. If ``SUBCMD`` has further sub-sub-commands, this is also
+true here: All options always have to follow the level of command they are
+intended for. All parameters found after the literal word ``++`` will be passed
+verbatim to ``cmake`` processes in configuration phases.
 
 
 Description
@@ -98,6 +108,7 @@ depending on whether a file exists:
 Beyond these two modes, ``mmh`` has a couple of smaller, additional features,
 that will be described later in this document.
 
+.. _sec-toplevel-options:
 
 Top-Level Options
 *****************
@@ -209,6 +220,8 @@ Top-Level Options
 
    Load world-writeable files that contain code.
 
+
+.. _ch-command-reference:
 
 Command Reference
 *****************
