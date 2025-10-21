@@ -14,7 +14,7 @@ def isWorktree(path):
     return (rc == 0) and (stdout == 'true')
 
 def isDirty(path):
-    mmh.devnullProcess(['git', 'update-index', '-q', '--refresh'])
+    mmh.devnullProcess(['git', '-C', path, 'update-index', '-q', '--refresh'])
     (stdout, stderr, rc) = mmh.stdoutProcess(
         ['git', '-C', path,
          'diff-index', '--name-only', 'HEAD', '--'])
@@ -65,8 +65,9 @@ def author(path, commit = 'HEAD'):
 def committer(path, commit = 'HEAD'):
     return _authorish(path, 'cn', 'ce', commit)
 
-def remoteHasBranch(rev):
-    rc = mmh.devnullProcess(['git', 'rev-parse', '--verify', 'origin/' + rev])
+def remoteHasBranch(path, rev):
+    rc = mmh.devnullProcess(['git', '-C', path,
+                             'rev-parse', '--verify', 'origin/' + rev])
     return (rc == 0)
 
 def detectRevision(log, path):

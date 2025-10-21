@@ -410,7 +410,7 @@ def fetchCheckout(cfg, log, mod, rev):
     revision = None
     if (isinstance(rev, list)):
         for branch in rev:
-            if (git.remoteHasBranch(branch)):
+            if (git.remoteHasBranch('.', branch)):
                 log.info('Using main branch: {} for module {}'
                          .format(branch, mod))
                 revision = branch
@@ -502,7 +502,7 @@ def fetch(cfg, log, src, st, trace):
 
         if (isinstance(dep['revision'], list)):
             for branch in dep['revision']:
-                if (git.remoteHasBranch(branch)):
+                if (git.remoteHasBranch('.', branch)):
                     log.info('Using main branch: {} for module {}'
                             .format(branch, dep['name']))
                     dep['revision'] = branch
