@@ -27,6 +27,18 @@ html_static_path = ['_static']
 html_css_files = ['mmh-local.css']
 html_show_sourcelink = False
 
+html_theme_options = {
+    "logo": { "text": "MakeMeHappy" },
+    "navbar_align": "left",
+    "header_links_before_dropdown": 4,
+    "show_toc_level": 1,
+}
+
+html_sidebars = {
+    "/": ["search-field", "sidebar-nav-bs"],
+    "*": []
+}
+
 # LaTeX/PDF Output Setup
 
 latex_theme = 'manual'
