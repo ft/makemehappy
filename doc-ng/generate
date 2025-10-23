@@ -32,7 +32,7 @@ ensure_environment () {
     set --                             \
         sphinx pydata-sphinx-theme     \
         pyyaml mako
-    pip install "$@" || return 1
+    pip install -r "${root}/requirements.txt" || return 1
     return 0
 }
 
