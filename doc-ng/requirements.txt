@@ -1,0 +1,4 @@
+mako
+pydata-sphinx-theme
+pyyaml
+sphinx
