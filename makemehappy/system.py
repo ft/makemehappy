@@ -562,8 +562,9 @@ class System:
         if not self.args.no_combinations:
             cn = self.combinations.countPossible(instances)
         mmh.expectedInstances(instn + cn)
-        # Run all combinations without dependencies first.
-        self.combinations.execute()
+        if not self.args.no_combinations:
+            # Run all combinations without dependencies first.
+            self.combinations.execute()
         for instance in instances:
             mmh.nextInstance()
             sys = self.newInstance(instance)
