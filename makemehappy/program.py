@@ -339,10 +339,10 @@ class Program:
         self._src_load()
         loaded = {}
         failed = {}
+        mmh.expectedInstances(len(self.src.merged['modules']))
         for source in self.src.data:
             if 'modules' not in source:
                 continue
-            mmh.expectedInstances(len(source['modules']))
             for module in source['modules']:
                 if (module in loaded):
                     self.log.info("Module {} already defined by {}",
