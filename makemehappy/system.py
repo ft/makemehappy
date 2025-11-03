@@ -551,13 +551,17 @@ class System:
         cn = 0
         an = len(self.active_combinations)
         instn = len(instances)
-        if not self.args.no_combinations:
-            cn = self.combinations.countPossible(instances)
-        mmh.expectedInstances(instn + cn)
         if an > 0:
             # When combinations were named on the command line, set all
             # combinations not named to be assumed already done.
+            #
+            # We are marking things as "done" before calling countPossible, so
+            # that combinations without dependencies do not offset the count
+            # for expected combinations builds.
             self.combinations.only(self.active_combinations)
+        if not self.args.no_combinations:
+            cn = self.combinations.countPossible(instances)
+        mmh.expectedInstances(instn + cn)
         # Run all combinations without dependencies first.
         self.combinations.execute()
         for instance in instances:
