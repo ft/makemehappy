@@ -140,6 +140,12 @@ class GitInformation:
 
     def dict(self):
         self.version_data = v.Version(self.version())
+        digits = self.version_data.digits
+        if digits is not None:
+            (major, minor, patch) = (digits[0], digits[1], digits[2])
+        else:
+            (major, minor, patch) = (0, 0, 0)
+
         return {
             'valid':      self.valid,
             'release':    self._isRelease(),
@@ -148,9 +154,9 @@ class GitInformation:
             'human-date': self.dateHuman,
             'unix-date':  self.dateUnix,
             'tag':        self.tag,
-            'major':      self.version_data.digits[0],
-            'minor':      self.version_data.digits[1],
-            'patch':      self.version_data.digits[2],
+            'major':      major,
+            'minor':      minor,
+            'patch':      patch,
             'increment':  self.increment,
             'author':     self.author,
             'committer':  self.committer
