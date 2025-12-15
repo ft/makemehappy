@@ -454,7 +454,7 @@ class Registry:
                     success = p.data.succeeded()
                     if not success:
                         self.log.warn(f'combination({name}):' +
-                                      ' {p.description} did not succeed')
+                                      f' {p.name} did not succeed')
                         self.log.warn(f'combination({name}): will be skipped')
                         parentsok = False
                 if not parentsok:
