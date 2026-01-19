@@ -14,7 +14,7 @@ def isWorktree(path):
     return (rc == 0) and (stdout == 'true')
 
 def isDirty(path):
-    mmh.devnullProcess(['git', 'update-index', '-q', '--refresh'])
+    mmh.devnullProcess(['git', '-C', path, 'update-index', '-q', '--refresh'])
     (stdout, stderr, rc) = mmh.stdoutProcess(
         ['git', '-C', path,
          'diff-index', '--name-only', 'HEAD', '--'])
@@ -65,8 +65,9 @@ def author(path, commit = 'HEAD'):
 def committer(path, commit = 'HEAD'):
     return _authorish(path, 'cn', 'ce', commit)
 
-def remoteHasBranch(rev):
-    rc = mmh.devnullProcess(['git', 'rev-parse', '--verify', 'origin/' + rev])
+def remoteHasBranch(path, rev):
+    rc = mmh.devnullProcess(['git', '-C', path,
+                             'rev-parse', '--verify', 'origin/' + rev])
     return (rc == 0)
 
 def detectRevision(log, path):
@@ -139,6 +140,12 @@ class GitInformation:
 
     def dict(self):
         self.version_data = v.Version(self.version())
+        digits = self.version_data.digits
+        if digits is not None:
+            (major, minor, patch) = (digits[0], digits[1], digits[2])
+        else:
+            (major, minor, patch) = (0, 0, 0)
+
         return {
             'valid':      self.valid,
             'release':    self._isRelease(),
@@ -147,9 +154,9 @@ class GitInformation:
             'human-date': self.dateHuman,
             'unix-date':  self.dateUnix,
             'tag':        self.tag,
-            'major':      self.version_data.digits[0],
-            'minor':      self.version_data.digits[1],
-            'patch':      self.version_data.digits[2],
+            'major':      major,
+            'minor':      minor,
+            'patch':      patch,
             'increment':  self.increment,
             'author':     self.author,
             'committer':  self.committer

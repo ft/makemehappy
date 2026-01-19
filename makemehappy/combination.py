@@ -390,11 +390,14 @@ class Registry:
 
         In contrast to countProcessed(), this can be run before the entire
         build-process. Given a set of build instances to be performed, the
-        number of possible combinations can be computed."""
+        number of possible combinations can be computed.
+
+        Combinations that where marked as 'done', for instance by calling
+        the only() method, are not counted as possible."""
         n = 0
         for name in self.combinations:
             c = self.combinations[name]
-            if c.possible(instances):
+            if c.possible(instances) and not c.done:
                 n = n + 1
         return n
 
@@ -451,7 +454,7 @@ class Registry:
                     success = p.data.succeeded()
                     if not success:
                         self.log.warn(f'combination({name}):' +
-                                      ' {p.description} did not succeed')
+                                      f' {p.name} did not succeed')
                         self.log.warn(f'combination({name}): will be skipped')
                         parentsok = False
                 if not parentsok:

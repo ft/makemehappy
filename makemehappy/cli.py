@@ -156,6 +156,16 @@ ap_sources.add_argument(
     default = False,
     action = 'store_true',
     help = "Create bare git repository when downloading source")
+ap_sources.add_argument(
+    "-p", "--pattern",
+    dest = 'clone_whitelist',
+    action = 'append',
+    help = "Patterns to allow repository URLs")
+ap_sources.add_argument(
+    "-x", "--exclude",
+    dest = 'clone_blacklist',
+    action = 'append',
+    help = "Patterns to disallow repository URLs")
 ap_sources.add_argument('destination', nargs = '?', default = '.')
 
 # dump-description

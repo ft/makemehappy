@@ -1,4 +1,5 @@
 import os
+import re
 
 from pathlib import Path
 
@@ -333,69 +334,98 @@ class Program:
                     self._exit(1)
             os.chdir(olddir)
 
+    def _repository_filter(self, patterns, ifmatch, ifnotmatch):
+        ps = list(map(re.compile, patterns))
+
+        def _filter(module):
+            repo = str(module['repository'])
+            for pat in ps:
+                if re.search(pat, repo):
+                    return ifmatch
+            return ifnotmatch
+        return _filter
+
+    def _whitelist(self, patterns, modules):
+        f = self._repository_filter(patterns, True, False)
+        return list(filter(f, modules))
+
+    def _blacklist(self, patterns, modules):
+        f = self._repository_filter(patterns, False, True)
+        return list(filter(f, modules))
+
+    def _modlist(self, moddict):
+        rv = []
+        for mod in moddict:
+            data = moddict[mod]
+            data['name'] = mod
+            rv.append(data)
+        return rv
+
     def download_sources(self):
         destination = self.args.destination
         self._cfg_load()
         self._src_load()
         loaded = {}
         failed = {}
-        for source in self.src.data:
-            if 'modules' not in source:
-                continue
-            mmh.expectedInstances(len(source['modules']))
-            for module in source['modules']:
-                if (module in loaded):
-                    self.log.info("Module {} already defined by {}",
-                                  module, loaded[module]['source'])
-                    continue
-                sf = os.path.join(source['root'], source['definition'])
-                dd = os.path.join(destination, module)
-                repo = source['modules'][module]['repository']
-                self.log.info("Downloading module {} from {}...", module, repo)
 
-                def rest():
-                    cmd = ['git', '-c', 'advice.detachedHead=false',
-                           'clone', '--quiet' ]
-                    if (self.args.clone_bare):
-                        cmd.append('--bare')
-                    cmd += [ repo, dd ]
+        modules = self._modlist(self.src.merged['modules'])
+        if self.args.clone_whitelist is not None:
+            modules = self._whitelist(self.args.clone_whitelist, modules)
+        if self.args.clone_blacklist is not None:
+            modules = self._blacklist(self.args.clone_blacklist, modules)
+        mmh.expectedInstances(len(modules))
 
-                    rc = mmh.loggedProcess(self.cfg, self.log, cmd)
-                    if (rc == 0):
-                        self.log.info("Downloading module {} was successful.",
-                                      module)
-                    else:
-                        self.log.error("Downloading module {} failed!", module)
-                        failed[module] = {'source': sf, 'repository': repo }
+        for data in modules:
+            module = data['name']
+            dd = os.path.join(destination, module)
+            repo = data['repository']
+            self.log.info("Downloading module {} from {}...", module, repo)
 
-                    olddir = os.getcwd()
-                    os.chdir(module)
-                    meta = self.src.lookup(module)
-                    revision = fetchCheckout(self.cfg, self.log,
-                                             module, meta['main'])
-                    os.chdir(olddir)
+            def rest():
+                if os.path.exists(dd):
+                    self.log.info("Destination exists, skipping: {}", dd)
+                    return True
+                cmd = ['git', '-c', 'advice.detachedHead=false',
+                       'clone', '--quiet' ]
+                if (self.args.clone_bare):
+                    cmd.append('--bare')
+                cmd += [ repo, dd ]
 
-                    loaded[module] = { 'source':     sf,
-                                       'repository': repo,
-                                       'revision':   revision}
+                rc = mmh.loggedProcess(self.cfg, self.log, cmd)
+                if (rc == 0):
+                    self.log.info("Downloading module {} was successful.",
+                                  module)
+                else:
+                    self.log.error("Downloading module {} failed!", module)
+                    failed[module] = data
+                    return False
 
-                    return (rc == 0)
+                olddir = os.getcwd()
+                os.chdir(module)
+                meta = self.src.lookup(module)
+                revision = fetchCheckout(self.cfg, self.log,
+                                         module, meta['main'])
+                os.chdir(olddir)
 
-                mmh.nextInstance()
-                h.checkpoint_hook('pre/download-source', log = self.log,
-                                  args = self.args, module = module)
-                rc = mmh.maybeShowPhase(self.log, f'{module}',
-                                        'download-sources', self.args, rest)
-                h.checkpoint_hook('post/download-source', log = self.log,
-                                  args = self.args, module = module,
-                                  success = rc)
+                data['revision'] = revision
+                loaded[module] = data
+
+                return (rc == 0)
+
+            mmh.nextInstance()
+            h.checkpoint_hook('pre/download-source', log = self.log,
+                              args = self.args, module = module)
+            rc = mmh.maybeShowPhase(self.log, f'{module}',
+                                    'download-sources', self.args, rest)
+            h.checkpoint_hook('post/download-source', log = self.log,
+                              args = self.args, module = module,
+                              success = rc)
 
         for mod in sorted(loaded):
-            self.log.info("  Success: {} ({}) from {} [{}]",
+            self.log.info("  Success: {} ({}) from {}",
                           mod,
                           loaded[mod]['revision'],
-                          loaded[mod]['repository'],
-                          loaded[mod]['source'])
+                          loaded[mod]['repository'])
         if (len(failed) == 0):
             self.log.info("Downloading ALL sources succeeded!")
         else:
@@ -403,10 +433,9 @@ class Program:
                            len(failed), len(loaded))
             commandReturnValue = 1
             for fail in sorted(failed):
-                self.log.error("  Failure: {} from {} [{}]",
+                self.log.error("  Failure: {} from {}",
                                fail,
-                               failed[fail]['repository'],
-                               failed[fail]['source'])
+                               failed[fail]['repository'])
 
     def system(self):
         if ('system' not in self.args) or (self.args.system is None):
