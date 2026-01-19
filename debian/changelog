@@ -1,3 +1,13 @@
+makemehappy (0.35-1) unstable; urgency=medium
+
+  * [5fb8decd] New upstream release
+  * [565c787c] Bump debian Standards-Version to 4.7.3.0
+  * [227159cb] debian: Update copyright years
+  * [6275fd31] debian: Remove default-set Priority field
+  * [37a09d0d] debian: Remove default-set Rules-Requires-Root field
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Mon, 19 Jan 2026 02:56:51 +0100
+
 makemehappy (0.34-1) unstable; urgency=medium
 
   * [5322854b] New upstream release
