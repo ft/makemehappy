@@ -1,6 +1,5 @@
 Source: makemehappy
 Section: devel
-Priority: optional
 Maintainer: Frank Terbeck <ft@bewatermyfriend.org>
 Build-Depends: debhelper (>= 13),
                debhelper-compat (= 13),
