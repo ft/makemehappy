@@ -149,11 +149,13 @@ class SystemInstanceBoard:
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['boards'], 'name', self.board)
         self.variables = mmh.expandFileDict(self.spec['variables'])
+        self.envvars = {}
         self.systemdir = os.getcwd()
         if ('environment' in self.spec):
+            self.envvars = mmh.expandFileDict(self.spec['environment'])
             self.env = mmh.makeEnvironment(self.sys.log,
                                            self.sys.args.environment_overrides,
-                                           self.spec['environment'])
+                                           self.envvars)
         else:
             self.env = mmh.makeEnvironment(self.sys.log, True, {})
 
@@ -206,11 +208,13 @@ class SystemInstanceZephyr:
         self.cfg = cfg
         self.spec = getSpec(self.sys.data['zephyr'], 'application', self.app)
         self.variables = mmh.expandFileDict(self.spec['variables'])
+        self.envvars = {}
         self.systemdir = os.getcwd()
         if ('environment' in self.spec):
+            self.envvars = mmh.expandFileDict(self.spec['environment'])
             self.env = mmh.makeEnvironment(self.sys.log,
                                            self.sys.args.environment_overrides,
-                                           self.spec['environment'])
+                                           self.envvars)
         else:
             self.env = mmh.makeEnvironment(self.sys.log, True, {})
 
