@@ -49,8 +49,11 @@ class SourceStack(YamlStack):
         slices = copy.deepcopy(reversed(self.data))
         for slice in slices:
             if ('remove' in slice and 'modules' in slice['remove']):
-                for rem in slice['remove']['modules']:
-                    del(self.merged['modules'][rem])
+                if (slice['remove']['modules'] == True):
+                    self.merged['modules'] = {}
+                else:
+                    for rem in slice['remove']['modules']:
+                        del(self.merged['modules'][rem])
             if ('modules' in slice):
                 for mod in slice['modules']:
                     if (mod in self.merged['modules']):
