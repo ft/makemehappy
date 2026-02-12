@@ -1,3 +1,4 @@
+import json
 import os
 import re
 
@@ -294,10 +295,34 @@ class Program:
         if len(names) == 0:
             names = self.src.allSources()
 
-        for name in names:
-            data = self.src.lookup(name)
-            print("{}: ".format(name), end = '')
-            print(data)
+        if self.args.show_json:
+            conv = []
+            for name in names:
+                data = self.src.lookup(name)
+                if self.args.field is not None:
+                    if self.args.field not in data:
+                        continue
+                    data = { 'name': name,
+                              self.args.field: data[self.args.field] }
+                else:
+                    data['name'] = name
+                conv.append(data)
+            print(json.dumps(conv, sort_keys = True))
+        else:
+            if self.args.field is not None and len(names) == 1:
+                data = self.src.lookup(names[0])
+                if self.args.field in data:
+                    print(f'{data[self.args.field]}')
+                else:
+                    self._exit(1)
+            else:
+                for name in names:
+                    data = self.src.lookup(name)
+                    if self.args.field is None:
+                        print(f'{name}: {data}')
+                    else:
+                        if self.args.field in data:
+                            print(f'{name}: {data[self.args.field]}')
 
     def download_source(self):
         self._cfg_load()

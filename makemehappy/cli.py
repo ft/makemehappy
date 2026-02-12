@@ -273,6 +273,10 @@ ap_show = subp.add_parser(
     help = 'Show source location for module(s)')
 
 ap_show.set_defaults(sub_command = 'show-source')
+ap_show.add_argument("-f", "--field", help = "Show specified field only")
+ap_show.add_argument(
+    "-j", "--json", action = "store_true", dest = 'show_json',
+    help = "Show data in JSON format")
 ap_show.add_argument('modules', nargs = '*')
 
 # verify
