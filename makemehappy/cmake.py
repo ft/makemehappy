@@ -201,9 +201,12 @@ def configureZephyr(log, args, ufw,
           makeParam('SNIPPET',                _snippets),
           makeParam('DTC_OVERLAY_FILE',       dtc),
           makeParam(overlayvariable,          overlay),
-          makeParam('UFW_ZEPHYR_KERNEL',      mmh.expandFile(kernel)),
-          makeParam('UFW_ZEPHYR_APPLICATION', mmh.expandFile(appsource)),
-          makeParam('UFW_LOAD_BUILD_SYSTEM',  mmh.expandFile(buildsystem)) ])
+          makeParam('UFW_ZEPHYR_KERNEL:FILEPATH',
+                    mmh.expandFile(kernel)),
+          makeParam('UFW_ZEPHYR_APPLICATION:FILEPATH',
+                    mmh.expandFile(appsource)),
+          makeParam('UFW_LOAD_BUILD_SYSTEM:FILEPATH',
+                    mmh.expandFile(buildsystem)) ])
 
     if args is not None:
         cmd.extend(args)
@@ -231,7 +234,8 @@ def configureBoard(log, args, ufw,
           makeParam('CMAKE_INSTALL_PREFIX',  installdir),
           makeParam('TARGET_BOARD',          board),
           makeParam('CMAKE_TOOLCHAIN_FILE',  tcfile),
-          makeParam('UFW_LOAD_BUILD_SYSTEM', mmh.expandFile(buildsystem)) ])
+          makeParam('UFW_LOAD_BUILD_SYSTEM:FILEPATH',
+                    mmh.expandFile(buildsystem)) ])
 
     if args is not None:
         cmd.extend(args)
