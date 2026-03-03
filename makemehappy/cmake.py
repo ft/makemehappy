@@ -152,7 +152,7 @@ def zephyrWithExtraConfFile(log, path):
     return comparison.order != 'lt'
 
 def configureZephyr(log, args, ufw,
-                    zephyr_board, buildtool, buildconfig, buildsystem,
+                    zephyr_board, name, buildtool, buildconfig, buildsystem,
                     toolchain, sourcedir, builddir, installdir,
                     appsource, kernel, dtc, kconfig,
                     modulepath, modules, snippets):
@@ -205,6 +205,7 @@ def configureZephyr(log, args, ufw,
                     mmh.expandFile(kernel)),
           makeParam('UFW_ZEPHYR_APPLICATION:FILEPATH',
                     mmh.expandFile(appsource)),
+          makeParam('UFW_ZEPHYR_APPNAME:STRING', name),
           makeParam('UFW_LOAD_BUILD_SYSTEM:FILEPATH',
                     mmh.expandFile(buildsystem)) ])
 

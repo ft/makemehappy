@@ -223,6 +223,10 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
                 with_overrides = True,
                 spec = { 'ZEPHYR_BASE': zephyrBase })
 
+            appname = 'app-with-no-name'
+            if 'name' in instance:
+                appname = instance['name']
+
             cmd = c.configureZephyr(
                 log         = log,
                 args        = cargs,
@@ -233,6 +237,7 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
                 sourcedir   = root,
                 builddir    = '.',
                 installdir  = './artifacts',
+                name        = appname,
                 buildtool   = instance['buildtool'],
                 buildsystem = '',
                 appsource   = os.path.join(root, app),

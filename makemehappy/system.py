@@ -261,6 +261,7 @@ class SystemInstanceZephyr:
             sourcedir   = '.',
             builddir    = self.builddir,
             installdir  = self.installdir,
+            name        = self.build['application'],
             buildtool   = self.build['build-tool'],
             buildsystem = self.build['build-system'],
             appsource   = self.build['source'],
