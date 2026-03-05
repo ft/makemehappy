@@ -251,28 +251,38 @@ class SystemInstanceZephyr:
         if self.sys.args.cmake is not None:
             cargs += self.sys.args.cmake
 
-        cmd = c.configureZephyr(
-            log         = self.sys.log,
-            args        = cargs,
-            ufw         = self.build['ufw'],
-            zephyr_board= self.zephyr_board,
-            buildconfig = self.cfg,
-            toolchain   = z.findToolchain(self.build, self.tc),
-            sourcedir   = '.',
-            builddir    = self.builddir,
-            installdir  = self.installdir,
-            name        = self.build['application'],
-            buildtool   = self.build['build-tool'],
-            buildsystem = self.build['build-system'],
-            appsource   = self.build['source'],
-            kernel      = self.build['zephyr-kernel'],
-            dtc         = self.build['dtc-overlays'],
-            kconfig     = self.build['kconfig'],
-            modulepath  = self.build['zephyr-module-path'],
-            modules     = self.build['modules'],
-            snippets    = self.build['snippets'])
+        appvariant = None
+        if 'variant' in self.build:
+            appvariant = self.build['variant']
 
         removeConfigureStamp(self.builddir)
+
+        try:
+            cmd = c.configureZephyr(
+                log         = self.sys.log,
+                args        = cargs,
+                ufw         = self.build['ufw'],
+                zephyr_board= self.zephyr_board,
+                buildconfig = self.cfg,
+                toolchain   = z.findToolchain(self.build, self.tc),
+                sourcedir   = '.',
+                builddir    = self.builddir,
+                installdir  = self.installdir,
+                name        = self.build['application'],
+                variant     = appvariant,
+                buildtool   = self.build['build-tool'],
+                buildsystem = self.build['build-system'],
+                appsource   = self.build['source'],
+                kernel      = self.build['zephyr-kernel'],
+                dtc         = self.build['dtc-overlays'],
+                kconfig     = self.build['kconfig'],
+                modulepath  = self.build['zephyr-module-path'],
+                modules     = self.build['modules'],
+                snippets    = self.build['snippets'])
+        except mmh.InvalidVariantSpecifier:
+            self.sys.stats.logConfigure(1)
+            return False
+
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
         if (rc == 0):
             touchConfigureStamp(self.builddir)

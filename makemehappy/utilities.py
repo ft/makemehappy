@@ -307,6 +307,12 @@ def loadPython(log, fn, localenv = None, force = False):
         code = fragment.read()
         exec(code, {}, localenv)
 
+class InvalidVariantSpecifier(Exception):
+    pass
+
+def validVariant(fw, variant):
+    return fw.endswith('-' + variant)
+
 def checksumFile(filename, variant = hashlib.md5, buffersize = 2**13):
     state = variant()
     with open(filename, 'rb') as fh:
