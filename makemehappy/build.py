@@ -234,8 +234,6 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
             if 'variant' in instance:
                 appvariant = instance['variant']
 
-            mmh.pp(instance)
-
             try:
                 cmd = c.configureZephyr(
                     log         = log,
