@@ -1,6 +1,28 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.35 → v0.36 (released 2026-04-09):
+
+** Features
+
+- system: Allow expansions in environment definitions.
+- sources: Allow sources specs to remove all modules it knows.
+- show-source: Add --field and --json options.
+- zephyr,cmake: Add UFW_ZEPHYR_APPNAME cmake cache parameter.
+- zephyr,cmake: Add support for application variants.
+
+** Diffstat
+
+    makemehappy/build.py     | 55 ++++++++++++++++++++++++--------------
+    makemehappy/cli.py       |  4 +++
+    makemehappy/cmake.py     | 27 +++++++++++++++----
+    makemehappy/program.py   | 33 ++++++++++++++++++++---
+    makemehappy/system.py    | 57 +++++++++++++++++++++++++---------------
+    makemehappy/utilities.py |  6 +++++
+    makemehappy/yamlstack.py |  7 +++--
+    7 files changed, 138 insertions(+), 51 deletions(-)
+
+
 * v0.34 → v0.35 (released 2026-01-19):
 
 ** Features
