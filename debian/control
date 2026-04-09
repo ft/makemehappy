@@ -11,7 +11,7 @@ Build-Depends: debhelper (>= 13),
                texlive-latex-extra,
                lmodern,
                texinfo
-Standards-Version: 4.7.3.0
+Standards-Version: 4.7.4.1
 Homepage: https://github.com/ft/makemehappy
 
 Package: makemehappy
