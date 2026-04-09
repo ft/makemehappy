@@ -109,6 +109,8 @@ def generateZephyrInstances(log, mod):
                 for board in target['boards']:
                     zephyr_board = aliases.get(board, board)
                     for tc in target['toolchains']:
+                        if ('variant' not in target):
+                            target['variant'] = None
                         if ('kconfig' not in target):
                             target['kconfig'] = []
                         if ('dtc-overlays' not in target):
@@ -133,6 +135,7 @@ def generateZephyrInstances(log, mod):
                               'zephyr_board': zephyr_board,
                               'architecture': board,
                               'name'        : name,
+                              'variant'     : target['variant'],
                               'application' : target['application'],
                               'modules'     : target['modules'],
                               'dtc-overlays': target['dtc-overlays'],
@@ -223,25 +226,39 @@ def cmakeConfigure(cfg, log, args, stats, ext, root, instance):
                 with_overrides = True,
                 spec = { 'ZEPHYR_BASE': zephyrBase })
 
-            cmd = c.configureZephyr(
-                log         = log,
-                args        = cargs,
-                ufw         = os.path.join(root, 'deps', 'ufw'),
-                zephyr_board= instance['zephyr_board'],
-                buildconfig = instance['buildcfg'],
-                toolchain   = instance['toolchain'],
-                sourcedir   = root,
-                builddir    = '.',
-                installdir  = './artifacts',
-                buildtool   = instance['buildtool'],
-                buildsystem = '',
-                appsource   = os.path.join(root, app),
-                kernel      = zephyrBase,
-                dtc         = instance['dtc-overlays'],
-                kconfig     = instance['kconfig'],
-                modulepath  = [ os.path.join(root, 'deps') ],
-                modules     = instance['modules'],
-                snippets    = instance['snippets'])
+            appname = 'app-with-no-name'
+            if 'name' in instance:
+                appname = instance['name']
+
+            appvariant = None
+            if 'variant' in instance:
+                appvariant = instance['variant']
+
+            try:
+                cmd = c.configureZephyr(
+                    log         = log,
+                    args        = cargs,
+                    ufw         = os.path.join(root, 'deps', 'ufw'),
+                    zephyr_board= instance['zephyr_board'],
+                    buildconfig = instance['buildcfg'],
+                    toolchain   = instance['toolchain'],
+                    sourcedir   = root,
+                    builddir    = '.',
+                    installdir  = './artifacts',
+                    name        = appname,
+                    variant     = appvariant,
+                    buildtool   = instance['buildtool'],
+                    buildsystem = '',
+                    appsource   = os.path.join(root, app),
+                    kernel      = zephyrBase,
+                    dtc         = instance['dtc-overlays'],
+                    kconfig     = instance['kconfig'],
+                    modulepath  = [ os.path.join(root, 'deps') ],
+                    modules     = instance['modules'],
+                    snippets    = instance['snippets'])
+            except mmh.InvalidVariantSpecifier:
+                stats.logConfigure(1)
+                return False
         else:
             raise UnknownModuleType(instance['type'])
         rc = mmh.loggedProcess(cfg, log, cmd, cmdEnvironment)
