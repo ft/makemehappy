@@ -1,3 +1,10 @@
+makemehappy (0.36-1) unstable; urgency=medium
+
+  * [14e31070] New upstream release
+  * [31dcc943] Bump debian Standards-Version
+
+ -- Frank Terbeck <ft@bewatermyfriend.org>  Thu, 09 Apr 2026 03:44:47 +0200
+
 makemehappy (0.35-1) unstable; urgency=medium
 
   * [5fb8decd] New upstream release
