@@ -113,27 +113,17 @@ def zephyrToolchain(spec):
         ztv.extend([ makeParam('GNUARMEMB_TOOLCHAIN_PATH', real['path']) ])
     return ztv
 
-def commandWithArguments(cmd, lst):
-    return [ cmd ] + [ x for x in mmh.flatten(lst) if x is not None ]
-
 def cmake(lst):
-    return commandWithArguments('cmake', lst)
-
-def maybeExtend(lst, scalar, default = '.'):
-    if scalar is not None:
-        lst.extend([scalar])
-    else:
-        lst.extend([default])
-    return lst
+    return mmh.commandWithArguments('cmake', lst)
 
 def runTarget(target, directory = None):
     cmd = cmake([ '--build' ])
-    maybeExtend(cmd, directory)
+    mmh.maybeExtend(cmd, directory)
     cmd.extend(['--target', target ])
     return cmd
 
 def ctest(lst):
-    return commandWithArguments('ctest', lst)
+    return mmh.commandWithArguments('ctest', lst)
 
 class InvalidZephyrModuleSpec(Exception):
     pass
@@ -276,27 +266,59 @@ def configureLibrary(log, args,
 
 def compile(directory = None):
     cmd = cmake([ '--build' ])
-    maybeExtend(cmd, directory)
+    mmh.maybeExtend(cmd, directory)
     return cmd
 
 def countTests(directory = None):
     cmd = ctest([ '--show-only', '--test-dir' ])
-    maybeExtend(cmd, directory)
+    mmh.maybeExtend(cmd, directory)
     txt = subprocess.check_output(cmd)
     last = txt.splitlines()[-1]
     return int(last.decode().split(' ')[-1])
 
 def test(directory = None):
     cmd = ctest([ '--extra-verbose', '--test-dir' ])
-    maybeExtend(cmd, directory)
+    mmh.maybeExtend(cmd, directory)
     return cmd
 
 def install(directory = None, component = None):
     cmd = cmake([ '--install' ])
-    maybeExtend(cmd, directory)
+    mmh.maybeExtend(cmd, directory)
     if component is not None:
         cmd.extend([ '--component', component])
     return cmd
 
 def clean(directory = None):
     return runTarget('clean', directory)
+
+def stepBuild(cfg, log, env, stats, builddir):
+    cmd = compile(builddir)
+    rc = mmh.loggedProcess(cfg, log, cmd, env)
+    stats.logBuild(rc)
+    return (rc == 0)
+
+def stepClean(cfg, log, env, stats, builddir):
+    cmd = clean(builddir)
+    rc = mmh.loggedProcess(cfg, log, cmd, env)
+    return (rc == 0)
+
+def stepInstall(cfg, log, env, stats, builddir, components):
+    olddir = os.getcwd()
+    log.info(f'Changing to directory {builddir}.')
+    os.chdir(builddir)
+    rc = 0
+    for component in components:
+        cmd = install(component = component)
+        rc = mmh.loggedProcess(cfg, log, cmd, env)
+        if (rc != 0):
+            break
+    log.info('Changing back to directory {}.'.format(olddir))
+    os.chdir(olddir)
+    stats.logInstall(rc)
+    return (rc == 0)
+
+def stepTest(cfg, log, env, stats, builddir, numberOfTests):
+    cmd = test(builddir)
+    rc = mmh.loggedProcess(cfg, log, cmd, env)
+    stats.logTestsuite(rc, numberOfTests)
+    return (rc == 0)
