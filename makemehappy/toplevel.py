@@ -169,8 +169,6 @@ enable_language(ASM)''',
                                     self.zephyrSOCRoot)
 
             waypoint('pre-dependencies')
-            self.generateWaypoint('pre-dependencies', fh, self.deporder, tp, variants)
-            self.generateDependencies(fh, self.deporder, tp, variants)
             waypoint('basic')
             waypoint('include', add_subdirectory)
             waypoint('init')
