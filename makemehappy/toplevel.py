@@ -112,16 +112,9 @@ class Toplevel:
             print('  set({} "{}")'.format(key, defaults[key]), file = fh)
             print('endif()', file = fh)
 
-    def generateDependencies(self, fh, deps, thirdParty, variants):
+    def generateWaypoint(self, waypoint, fh, deps, thirdParty, variants, cb):
         for item in deps:
-            self.insertTemplate(fh, item, thirdParty, variants, 'basic')
-        for item in deps:
-            self.insertTemplate(fh, item, thirdParty, variants, 'include',
-                                lambda name:
-                                print("add_subdirectory(deps/{})".format(name),
-                                      file = fh))
-        for item in deps:
-            self.insertTemplate(fh, item, thirdParty, variants, 'init')
+            self.insertTemplate(fh, item, thirdParty, variants, waypoint, cb)
 
     def generateFooter(self, fh):
         print("add_subdirectory(code-under-test)", file = fh)
@@ -141,17 +134,33 @@ enable_language(ASM)''',
 
     def generateToplevel(self):
         with open(self.filename, 'w') as fh:
-            self.generateHeader(fh)
-            self.generateCMakeModulePath(fh, self.modulePath)
-
             var = getMergedDict(self.trace.data, 'variables', self.variables)
-            self.generateVariables(fh, var)
-
             defaults = getMergedDict(self.trace.data, 'defaults', self.defaults)
-            self.generateDefaults(fh, defaults)
+            tp = getMergedDict(self.trace.data, 'cmake-extensions',
+                               self.thirdParty)
+            variants = getMergedDict(self.trace.data,
+                                     'cmake-extension-variants',
+                                     self.cmakeVariants)
 
+            def waypoint(name, cb = None):
+                self.generateWaypoint(name, fh, self.deporder, tp, variants, cb)
+
+            def add_subdirectory(name):
+                print("add_subdirectory(deps/{})".format(name), file = fh)
+
+            waypoint('pre-header')
+            self.generateHeader(fh)
+            waypoint('pre-cmake-module-path')
+            self.generateCMakeModulePath(fh, self.modulePath)
+            waypoint('pre-variables')
+            self.generateVariables(fh, var)
+            waypoint('pre-defaults')
+            self.generateDefaults(fh, defaults)
+            waypoint('pre-os-init')
             self.generateZephyrInit(fh)
+            waypoint('pre-test-header')
             self.generateTestHeader(fh)
+            waypoint('post-test-header')
 
             if (self.moduleType == 'zephyr'):
                 self.generateZephyr(fh,
@@ -159,12 +168,11 @@ enable_language(ASM)''',
                                     self.zephyrDTSRoot,
                                     self.zephyrSOCRoot)
 
-            tp = getMergedDict(self.trace.data, 'cmake-extensions',
-                               self.thirdParty)
-
-            variants = getMergedDict(self.trace.data,
-                                     'cmake-extension-variants',
-                                     self.cmakeVariants)
-
+            waypoint('pre-dependencies')
+            self.generateWaypoint('pre-dependencies', fh, self.deporder, tp, variants)
             self.generateDependencies(fh, self.deporder, tp, variants)
+            waypoint('basic')
+            waypoint('include', add_subdirectory)
+            waypoint('init')
             self.generateFooter(fh)
+            waypoint('post-footer')
