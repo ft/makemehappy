@@ -320,5 +320,5 @@ def stepInstall(cfg, log, env, stats, builddir, components):
 def stepTest(cfg, log, env, stats, builddir, numberOfTests):
     cmd = test(builddir)
     rc = mmh.loggedProcess(cfg, log, cmd, env)
-    stats.logTestsuite(rc, numberOfTests)
+    stats.logTestsuite(numberOfTests, rc)
     return (rc == 0)

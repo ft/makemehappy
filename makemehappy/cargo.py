@@ -88,7 +88,7 @@ def stepTest(cfg, log, env, stats, srcdir, builddir):
     cmd = test(builddir)
     with contextlib.chdir(srcdir):
         rc = mmh.loggedProcess(cfg, log, cmd, env)
-    stats.logTestsuite(rc, 0)
+    stats.logTestsuite(0, rc)
     return (rc == 0)
 
 def stepClean(cfg, log, env, stats, srcdir, builddir):
