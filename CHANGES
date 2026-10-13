@@ -1,6 +1,23 @@
  User-visible changes in make-me-happy
 =======================================
 
+* v0.36 → v0.37 (released 2026-10-14):
+
+** Features
+
+- module: Many more points to control top-level generation.
+- cargo: Experimental support for rust targets via cargo.
+
+** Diffstat
+
+    makemehappy/cargo.py     |  98 +++++++++++++++++++
+    makemehappy/cmake.py     |  56 +++++++----
+    makemehappy/system.py    | 205 ++++++++++++++++++++++++++++++---------
+    makemehappy/toplevel.py  |  50 +++++-----
+    makemehappy/utilities.py |  10 ++
+    5 files changed, 333 insertions(+), 86 deletions(-)
+
+
 * v0.35 → v0.36 (released 2026-04-09):
 
 ** Features
