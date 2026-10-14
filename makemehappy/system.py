@@ -3,7 +3,8 @@ import os
 
 import makemehappy.utilities as mmh
 import makemehappy.cut as cut
-import makemehappy.cmake as c
+import makemehappy.cargo as cargo
+import makemehappy.cmake as cmake
 import makemehappy.combination as comb
 import makemehappy.hooks as h
 import makemehappy.manifest as m
@@ -25,6 +26,14 @@ defaults = { 'build-configs'      : [ 'debug', 'release' ],
              'zephyr-kernel'      : '${system}/zephyr/kernel',
              'zephyr-module-path' : [ '${system}/zephyr/modules' ],
              'zephyr-template'    : 'applications/${application}' }
+
+def makeCargoInstances(prj):
+    instances = []
+    name = prj['project']
+    for cfg in prj['build-configs']:
+        for tc in prj['targets']:
+            instances += [ f'cargo/{name}/{tc}/{cfg}' ]
+    return instances
 
 def makeZephyrInstances(zephyr):
     instances = []
@@ -52,14 +61,18 @@ def makeBoardInstances(board):
 
 def makeInstances(data):
     boards = []
+    cargo = []
     zephyr = []
     if ('zephyr' in data):
         for z in data['zephyr']:
-            boards += makeZephyrInstances(z)
+            zephyr += makeZephyrInstances(z)
     if ('boards' in data):
         for b in data['boards']:
             boards += makeBoardInstances(b)
-    rv = boards + zephyr
+    if ('cargo' in data):
+        for c in data['cargo']:
+            cargo += makeCargoInstances(c)
+    rv = boards + cargo + zephyr
     rv.sort()
     return rv
 
@@ -97,6 +110,11 @@ def fillData(data):
     if ('zephyr' in data):
         for z in data['zephyr']:
             fill(z, data['common'])
+    if ('cargo' in data):
+        for c in data['cargo']:
+            fill(c, data['common'])
+            if 'targets' not in c:
+                c['targets'] = [ 'native' ]
     if ('boards' in data):
         for b in data['boards']:
             fill(b, data['common'])
@@ -143,6 +161,7 @@ def touchConfigureStamp(d):
 
 class SystemInstanceBoard:
     def __init__(self, sys, board, tc, cfg):
+        self.skipConfigure = False
         self.sys = sys
         self.board = board
         self.tc = tc
@@ -174,11 +193,11 @@ class SystemInstanceBoard:
         self.sys.stats.systemBoard(tc, board, cfg, self.spec['build-tool'])
 
     def configure(self):
-        cargs = c.makeParamsFromDict(self.variables)
+        cargs = cmake.makeParamsFromDict(self.variables)
         if self.sys.args.cmake is not None:
             cargs += self.sys.args.cmake
 
-        cmd = c.configureBoard(
+        cmd = cmake.configureBoard(
             log         = self.sys.log,
             args        = cargs,
             ufw         = self.spec['ufw'],
@@ -198,8 +217,95 @@ class SystemInstanceBoard:
         self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
+    def compile(self):
+        return cmake.stepBuild(self.sys.cfg, self.sys.log,
+                               self.env, self.sys.stats,
+                               self.builddir)
+
+    def clean(self):
+        return cmake.stepClean(self.sys.cfg, self.sys.log,
+                               self.env, self.sys.stats,
+                               self.builddir)
+
+    def install(self):
+        return cmake.stepInstall(
+            self.sys.cfg, self.sys.log,
+            self.env, self.sys.stats,
+            self.builddir,
+            mmh.get_install_components(self.sys.log,
+                                       self.spec['install']))
+
+    def testsEnabled(self):
+        self.numberOfTests = cmake.countTests(self.builddir)
+        return (self.numberOfTests > 0)
+
+    def test(self):
+        return cmake.stepTest(self.sys.cfg, self.sys.log,
+                              self.env, self.sys.stats,
+                              self.builddir, self.numberOfTests)
+
+class SystemInstanceCargo:
+    def __init__(self, sys, prj, tc, cfg):
+        self.skipConfigure = True
+        self.sys = sys
+        self.prj = prj
+        self.tc = tc
+        self.cfg = cfg
+        self.spec = getSpec(self.sys.data['cargo'], 'project', self.prj)
+        self.source = mmh.expandFile(self.spec['source'])
+        self.features = self.spec['features'] if 'features' in self.spec else []
+        self.variables = mmh.expandFileDict(self.spec['variables'])
+        self.envvars = {}
+        self.systemdir = os.getcwd()
+        if ('environment' in self.spec):
+            self.envvars = mmh.expandFileDict(self.spec['environment'])
+            self.env = mmh.makeEnvironment(self.sys.log,
+                                           self.sys.args.environment_overrides,
+                                           self.envvars)
+        else:
+            self.env = mmh.makeEnvironment(self.sys.log, True, {})
+
+        if (sys.mode == 'system-single'):
+            self.builddir = self.sys.args.directory
+        else:
+            self.builddir = os.path.join(self.sys.args.directory, 'cargo',
+                                         self.prj, self.tc)
+
+        if os.path.isabs(self.builddir) is False:
+            self.builddir = os.path.join(os.getcwd(), self.builddir)
+
+    def compile(self):
+        return cargo.stepBuild(self.sys.cfg, self.sys.log,
+                               self.env, self.sys.stats,
+                               self.source,
+                               self.builddir,
+                               self.tc, self.cfg,
+                               self.features,
+                               self.variables)
+
+    def testsEnabled(self):
+        if 'tests' in self.spec:
+            return self.spec['tests']
+        return True
+
+    def test(self):
+        return cargo.stepTest(self.sys.cfg, self.sys.log,
+                              self.env, self.sys.stats,
+                              self.source, self.builddir)
+
+    def clean(self):
+        return cargo.stepClean(self.sys.cfg, self.sys.log,
+                               self.env, self.sys.stats,
+                               self.source, self.builddir)
+
+    def install(self):
+        if self.sys.args.verbose:
+            self.sys.log.info('Cargo build type does not implement installation')
+        return True
+
 class SystemInstanceZephyr:
     def __init__(self, sys, board, app, tc, cfg):
+        self.skipConfigure = False
         self.sys = sys
         self.board = board
         self.zephyr_board = self.sys.matchZephyrAlias(board)
@@ -247,7 +353,7 @@ class SystemInstanceZephyr:
         self.env['ZEPHYR_BASE'] = mmh.expandFile(self.build['zephyr-kernel'])
 
     def configure(self):
-        cargs = c.makeParamsFromDict(self.variables)
+        cargs = cmake.makeParamsFromDict(self.variables)
         if self.sys.args.cmake is not None:
             cargs += self.sys.args.cmake
 
@@ -258,7 +364,7 @@ class SystemInstanceZephyr:
         removeConfigureStamp(self.builddir)
 
         try:
-            cmd = c.configureZephyr(
+            cmd = cmake.configureZephyr(
                 log         = self.sys.log,
                 args        = cargs,
                 ufw         = self.build['ufw'],
@@ -289,6 +395,33 @@ class SystemInstanceZephyr:
         self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
+    def compile(self):
+        return cmake.stepBuild(self.sys.cfg, self.sys.log,
+                               self.env, self.sys.stats,
+                               self.builddir)
+
+    def clean(self):
+        return cmake.stepClean(self.sys.cfg, self.sys.log,
+                               self.env, self.sys.stats,
+                               self.builddir)
+
+    def install(self):
+        return cmake.stepInstall(
+            self.sys.cfg, self.sys.log,
+            self.env, self.sys.stats,
+            self.builddir,
+            mmh.get_install_components(self.sys.log,
+                                       self.spec['install']))
+
+    def testsEnabled(self):
+        self.numberOfTests = cmake.countTests(self.builddir)
+        return (self.numberOfTests > 0)
+
+    def test(self):
+        return cmake.stepTest(self.sys.cfg, self.sys.log,
+                              self.env, self.sys.stats,
+                              self.builddir, self.numberOfTests)
+
 class SystemInstance:
     def __init__(self, sys, description):
         self.sys = sys
@@ -318,6 +451,17 @@ class SystemInstance:
 
             self.instance = SystemInstanceBoard(
                 self.sys, self.board, self.tc, self.cfg)
+        elif (description.startswith("cargo/")):
+            self.board = None
+            try:
+                (self.kind,
+                 self.app,
+                 self.tc,
+                 self.cfg) = description.split('/')
+            except Exception:
+                raise InvalidSystemInstance(description)
+            self.instance = SystemInstanceCargo(
+                self.sys, self.app, self.tc, self.cfg)
         else:
             raise InvalidSystemInstance(description)
 
@@ -325,6 +469,8 @@ class SystemInstance:
         return self.kind
 
     def configure(self):
+        if self.instance.skipConfigure:
+            return True
         self.sys.log.info('Configuring system instance: {}'.format(self.desc))
         h.phase_hook('pre/configure', log = self.sys.log, args = self.sys.args,
                      cfg = self.sys.cfg, data = self.sys.data)
@@ -337,36 +483,23 @@ class SystemInstance:
 
     def compile(self):
         self.sys.log.info('Compiling system instance: {}'.format(self.desc))
-        def rest():
-            cmd = c.cmake(['--build', self.instance.builddir ])
-            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
-                                   self.instance.env)
-            self.sys.stats.logBuild(rc)
-            return (rc == 0)
         h.phase_hook('pre/compile', log = self.sys.log, args = self.sys.args,
                      cfg = self.sys.cfg, data = self.sys.data)
         success = mmh.maybeShowPhase(self.sys.log, 'compile', self.desc,
-                                     self.sys.args, rest)
+                                     self.sys.args, self.instance.compile)
         h.phase_hook('post/compile', log = self.sys.log, args = self.sys.args,
                      cfg = self.sys.cfg, data = self.sys.data,
                      success = success)
         return success
 
     def test(self):
-        num = c.countTests(self.instance.builddir)
-        if (num > 0):
+        if (self.instance.testsEnabled()):
             self.sys.log.info('Testing system instance: {}'.format(self.desc))
-            def rest():
-                cmd = c.test(self.instance.builddir)
-                rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
-                                       self.instance.env)
-                self.sys.stats.logTestsuite(num, rc)
-                return (rc == 0)
             h.phase_hook('pre/test', log = self.sys.log,
                          args = self.sys.args, cfg = self.sys.cfg,
                          data = self.sys.data)
             success = mmh.maybeShowPhase(self.sys.log, 'test', self.desc,
-                                         self.sys.args, rest)
+                                         self.sys.args, self.instance.test)
             h.phase_hook('post/test', log = self.sys.log,
                          args = self.sys.args, cfg = self.sys.cfg,
                          data = self.sys.data, success = success)
@@ -375,45 +508,23 @@ class SystemInstance:
 
     def install(self):
         self.sys.log.info('Installing system instance: {}'.format(self.desc))
-        def rest():
-            olddir = os.getcwd()
-            self.sys.log.info(
-                'Changing to directory {}.'.format(self.instance.builddir))
-            os.chdir(self.instance.builddir)
-            rc = 0
-            for component in mmh.get_install_components(
-                    self.sys.log, self.instance.spec['install']):
-                cmd = c.install(component = component)
-                rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
-                                       self.instance.env)
-                if (rc != 0):
-                    break
-            self.sys.log.info('Changing back to directory {}.'.format(olddir))
-            os.chdir(olddir)
-            self.sys.stats.logInstall(rc)
-            return (rc == 0)
         if self.instance.spec['install'] == False:
             self.sys.log.info('System installation disabled')
             return True
         h.phase_hook('pre/install', log = self.sys.log, args = self.sys.args,
                      cfg = self.sys.cfg, data = self.sys.data)
         success = mmh.maybeShowPhase(self.sys.log, 'install', self.desc,
-                                     self.sys.args, rest)
+                                     self.sys.args, self.instance.install)
         h.phase_hook('post/install', log = self.sys.log, args = self.sys.args,
                      cfg = self.sys.cfg, data = self.sys.data)
         return success
 
     def clean(self):
         self.sys.log.info('Cleaning system instance: {}'.format(self.desc))
-        def rest():
-            cmd = c.clean(self.instance.builddir)
-            rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd,
-                                   self.instance.env)
-            return (rc == 0)
         h.phase_hook('pre/clean', log = self.sys.log, args = self.sys.args,
                      cfg = self.sys.cfg, data = self.sys.data)
         success = mmh.maybeShowPhase(self.sys.log, 'clean', self.desc,
-                                     self.sys.args, rest)
+                                     self.sys.args, self.instance.clean)
         h.phase_hook('post/clean', log = self.sys.log, args = self.sys.args,
                      cfg = self.sys.cfg, data = self.sys.data)
         return success

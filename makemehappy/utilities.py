@@ -18,6 +18,9 @@ from pathlib import Path
 
 import mako.template as mako
 
+def commandWithArguments(cmd, lst):
+    return [ cmd ] + [ x for x in flatten(lst) if x is not None ]
+
 def dotFile(fn):
     return os.path.join(os.environ['HOME'], '.makemehappy', fn)
 
@@ -183,6 +186,13 @@ def expandFileDict(kv):
     for key in kv:
         rv[key] = expandFile(kv[key])
     return rv
+
+def maybeExtend(lst, scalar, default = '.'):
+    if scalar is not None:
+        lst.extend([scalar])
+    else:
+        lst.extend([default])
+    return lst
 
 def maybeMatch(lst, pat, returnPattern = True):
     m = fnmatch.filter(lst, pat)
