@@ -1,5 +1,6 @@
 #!@@PYTHON@@
 
+import json
 import os
 import re
 import sys
@@ -9,6 +10,7 @@ from logbook import Logger
 
 import makemehappy.hooks     as h
 import makemehappy.utilities as mmh
+import makemehappy.version   as ver
 
 from makemehappy.cli         import ap
 from makemehappy.combination import combination
@@ -61,7 +63,34 @@ def mmh_exit(code):
         exit(0)
     exit(code)
 
-if (cmdargs.version):
+if cmdargs.version:
+    if cmdargs.verbose:
+        script = Path(__file__)
+        v = ver.Version(version)
+        increment = None
+        checksum = None
+        if len(v.suffix) > 0:
+            increment = int(v.suffix[0])
+            if v.suffix[1].startswith("g"):
+                checksum = v.suffix[1][1:]
+        data = {
+            "project-name":      fullname,
+            "program-name":      name,
+            "version-string":    version,
+            "data-directory":    datadir,
+            "etc-directory":     etcdir,
+            "install-directory": str(script.resolve().parent),
+            "version": {
+                "major":     v.digits[0],
+                "minor":     v.digits[1],
+                "increment": increment,
+                "checksum":  checksum,
+                "dirty":    "dirty" in v.suffix
+            }
+        }
+        print(json.dumps(data, sort_keys = True))
+        mmh_exit(0)
+
     print("{} ({}) version {}".format(fullname, name, version))
     print()
     print('  datadir = {}'.format(datadir))
