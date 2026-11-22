@@ -221,6 +221,10 @@ ap_list = subp.add_parser(
     'list-instances', aliases = [ 'list' ],
     help = 'List instances available in build-tree')
 
+ap_list.add_argument(
+    "-j", "--json", action = "store_true", dest = 'show_json',
+    help = "Show data in JSON format")
+
 ap_list.set_defaults(sub_command = 'list-instances')
 
 # run-instance
@@ -311,6 +315,10 @@ sub_system = ap_system.add_subparsers(
 # list
 sys_list = sub_system.add_parser(
     'list', help = 'List all specified build instances')
+
+sys_list.add_argument(
+    "-j", "--json", action = "store_true", dest = 'show_json',
+    help = "Show data in JSON format")
 
 # db
 sys_db = sub_system.add_parser(

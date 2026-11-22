@@ -1,6 +1,8 @@
 import copy
 import os
+import json
 
+import makemehappy.private as prv
 import makemehappy.utilities as mmh
 import makemehappy.cut as cut
 import makemehappy.cargo as cargo
@@ -27,12 +29,24 @@ defaults = { 'build-configs'      : [ 'debug', 'release' ],
              'zephyr-module-path' : [ '${system}/zephyr/modules' ],
              'zephyr-template'    : 'applications/${application}' }
 
+class Instance:
+    def __init__(self, name, spec):
+        self.name = name
+        self.spec = spec
+
+    def __str__(self):
+        return self.name
+
+    def __lt__(self, other):
+        return self.name < other.name
+
 def makeCargoInstances(prj):
     instances = []
     name = prj['project']
     for cfg in prj['build-configs']:
         for tc in prj['targets']:
-            instances += [ f'cargo/{name}/{tc}/{cfg}' ]
+            instances.append(
+                Instance(f'cargo/{name}/{tc}/{cfg}', prj))
     return instances
 
 def makeZephyrInstances(zephyr):
@@ -47,16 +61,17 @@ def makeZephyrInstances(zephyr):
                 else:
                     tcname = tc['name']
                 for board in build['boards']:
-                    instances.extend(['zephyr/{}/{}/{}/{}'.format(
-                        board, name, tcname, cfg)])
+                    instances.append(
+                        Instance(f'zephyr/{board}/{name}/{tcname}/{cfg}',
+                                 zephyr))
     return instances
 
 def makeBoardInstances(board):
     instances = []
     for cfg in board['build-configs']:
         for tc in board['toolchains']:
-            instances.extend(['boards/{}/{}/{}'.format(
-                board['name'], tc, cfg)])
+            instances.append(
+                Instance(f'boards/{board["name"]}/{tc}/{cfg}', board))
     return instances
 
 def makeInstances(data):
@@ -143,22 +158,6 @@ class InvalidBuildSpec(Exception):
 class SystemFailedSomeBuilds(Exception):
     pass
 
-def gotConfigureStamp(d):
-    f = Path(d) / '.mmh-configure-stamp'
-    return f.exists()
-
-def removeConfigureStamp(d):
-    root = Path(d)
-    if root.is_dir() == False:
-        return
-    f = root / '.mmh-configure-stamp'
-    if f.exists():
-        f.unlink()
-
-def touchConfigureStamp(d):
-    f = Path(d) / '.mmh-configure-stamp'
-    f.touch(mode = 0o666, exist_ok = True)
-
 class SystemInstanceBoard:
     def __init__(self, sys, board, tc, cfg):
         self.skipConfigure = False
@@ -210,10 +209,10 @@ class SystemInstanceBoard:
             buildtool   = self.spec['build-tool'],
             buildsystem = self.spec['build-system'])
 
-        removeConfigureStamp(self.builddir)
+        prv.removeConfigureStamp(self.builddir)
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
         if (rc == 0):
-            touchConfigureStamp(self.builddir)
+            prv.touchConfigureStamp(self.builddir)
         self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
@@ -361,7 +360,7 @@ class SystemInstanceZephyr:
         if 'variant' in self.build:
             appvariant = self.build['variant']
 
-        removeConfigureStamp(self.builddir)
+        prv.removeConfigureStamp(self.builddir)
 
         try:
             cmd = cmake.configureZephyr(
@@ -391,7 +390,7 @@ class SystemInstanceZephyr:
 
         rc = mmh.loggedProcess(self.sys.cfg, self.sys.log, cmd, self.env)
         if (rc == 0):
-            touchConfigureStamp(self.builddir)
+            prv.touchConfigureStamp(self.builddir)
         self.sys.stats.logConfigure(rc)
         return (rc == 0)
 
@@ -422,44 +421,61 @@ class SystemInstanceZephyr:
                               self.env, self.sys.stats,
                               self.builddir, self.numberOfTests)
 
+def splitInstanceString(s, names):
+    n = len(names)
+    tokens = s.split('/')
+    m = len(tokens)
+
+    if n != m:
+        return None
+
+    data = {}
+    for (key, value) in zip(names, tokens):
+        data[key] = value
+
+    return data
+
+def parseSystemInstanceString(s):
+    if (s.startswith("zephyr/")):
+        data = splitInstanceString(s, ["kind", "board", "application",
+                                       "toolchain", "build-config"])
+    elif (s.startswith("boards/")):
+        data = splitInstanceString(s, ["kind", "board",
+                                       "toolchain", "build-config"])
+    elif (s.startswith("cargo/")):
+        data = splitInstanceString(s, ["kind", "application",
+                                       "toolchain", "build-config"])
+    else:
+        raise InvalidSystemInstance(s)
+
+    if data is None:
+        raise InvalidSystemInstance(s)
+    return data
+
 class SystemInstance:
     def __init__(self, sys, description):
         self.sys = sys
         self.desc = description
         self.success = False
-        if (description.startswith("zephyr/")):
-            try:
-                (self.kind,
-                 self.board,
-                 self.app,
-                 self.tc,
-                 self.cfg) = description.split('/')
-            except Exception:
-                raise InvalidSystemInstance(description)
-
+        tok = parseSystemInstanceString(description)
+        if (tok["kind"] == "zephyr"):
+            (self.kind, self.board, self.app, self.tc, self.cfg) = \
+                (tok["kind"], tok["board"], tok["application"],
+                 tok["toolchain"], tok["build-config"])
             self.instance = SystemInstanceZephyr(
                 self.sys, self.board, self.app, self.tc, self.cfg)
-        elif (description.startswith("boards/")):
+        elif (tok["kind"] == "boards"):
             self.app = None
-            try:
-                (self.kind,
-                 self.board,
-                 self.tc,
-                 self.cfg) = description.split('/')
-            except Exception:
-                raise InvalidSystemInstance(description)
-
+            (self.kind, self.board, self.tc, self.cfg) = \
+                (tok["kind"], tok["board"],
+                 tok["toolchain"], tok["build-config"])
             self.instance = SystemInstanceBoard(
                 self.sys, self.board, self.tc, self.cfg)
-        elif (description.startswith("cargo/")):
+        elif (tok["kind"] == "cargo"):
             self.board = None
-            try:
-                (self.kind,
-                 self.app,
-                 self.tc,
-                 self.cfg) = description.split('/')
-            except Exception:
-                raise InvalidSystemInstance(description)
+            (self.kind, self.app, self.tc, self.cfg) = \
+                (tok["kind"], tok["application"],
+                 tok["toolchain"], tok["build-config"])
             self.instance = SystemInstanceCargo(
                 self.sys, self.app, self.tc, self.cfg)
         else:
@@ -531,7 +547,7 @@ class SystemInstance:
 
     def build(self):
         if (not self.sys.args.force_build and
-           gotConfigureStamp(self.instance.builddir)):
+           prv.gotConfigureStamp(self.instance.builddir)):
             return self.rebuild()
         self.success = (self.configure() and
                         self.compile()   and
@@ -607,7 +623,8 @@ class System:
         self.log.info("Loading system specification: {}".format(self.spec))
         self.data = mmh.load(self.spec)
         fillData(self.data)
-        self.instances = makeInstances(self.data)
+        self.instance_data = makeInstances(self.data)
+        self.instances = list(map(lambda inst: inst.name, self.instance_data))
         self.zephyr_aliases = z.generateZephyrAliases(self.data)
         if ('evaluate' in self.data):
             mmh.loadPython(self.log, self.data['evaluate'],
@@ -869,6 +886,34 @@ class System:
         return False
 
     def listInstances(self):
+        if self.args.show_json:
+            lst = []
+
+            for inst in self.instance_data:
+                meta = parseSystemInstanceString(inst.name)
+                meta["type"] = meta["kind"]
+                del meta["kind"]
+                bd = os.path.join(self.args.directory, inst.name)
+                data = {
+                    "name":             inst.name,
+                    "build-directory":  self.args.directory,
+                    "directory":        bd,
+                    "build-tool":       inst.spec["build-tool"]
+                }
+                data.update(meta)
+
+                if meta["type"] == "zephyr":
+                    data["zephyr-kernel"] = \
+                        mmh.expandFile(inst.spec["zephyr-kernel"])
+
+                data["with-directory"] = prv.with_directory(data)
+                data["with-build-system"] = prv.with_build_system(data)
+
+                lst.append(data)
+
+            print(json.dumps(lst, sort_keys = True))
+            return True
+
         self.log.info("Generating list of all system build instances:")
         for v in self.instances:
             print(v)

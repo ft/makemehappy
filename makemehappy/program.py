@@ -10,6 +10,7 @@ import makemehappy.hooks       as h
 import makemehappy.result      as result
 import makemehappy.system      as ms
 import makemehappy.utilities   as mmh
+import makemehappy.private     as prv
 
 from makemehappy.cut    import (CodeUnderTest, fetchCheckout, gitCheckout)
 from makemehappy.verify import mmh_verify
@@ -231,6 +232,26 @@ class Program:
         if result.show(self.cfg, self.args) == False:
             self._exit(1)
 
+    def _show_module_instance(self, instance):
+        bd = os.path.join(self.args.directory, "build", instance)
+        (t, arch, project, toolchain, cfg, tool) = instance.split('/')
+        data = {
+            "name":             instance,
+            "build-directory":  self.args.directory,
+            "directory":        bd,
+            "type":             self.cut.moduleType,
+            "architecture":     arch,
+            "project":          project,
+            "toolchain":        toolchain,
+            "build-config":     cfg,
+            "build-tool":       tool
+        }
+
+        data["with-directory"] = prv.with_directory(data)
+        data["with-build-system"] = prv.with_build_system(data)
+
+        return data
+
     def list_instances(self):
         if self.args.directory is None:
             print("list-instances only works with -d!")
@@ -244,8 +265,15 @@ class Program:
 
         self._init()
 
+        data = []
         for inst in self.cut.listInstances():
-            print(inst)
+            if self.args.show_json:
+                data.append(self._show_module_instance(inst))
+            else:
+                print(inst)
+
+        if self.args.show_json:
+            print(json.dumps(data, sort_keys = True))
 
     def dump_description(self):
         mmh.pp(mmh.load(self.args.module))
