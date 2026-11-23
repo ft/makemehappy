@@ -19,6 +19,7 @@
 
 import contextlib
 import hashlib
+import inspect
 import math
 import os
 import re
@@ -71,6 +72,14 @@ class ManifestEntry:
         # '/foo/bar/baz/README'. If destination was None, then the final file
         # name would have been '/foo/bar/README'.
         self.destinationDir = destination
+        self.created = {}
+        if mmh.trackLocations:
+            try:
+                stack = inspect.stack()
+                self.created["type"] = "ManifestEntry"
+                self.created["stack"] = stack
+            finally:
+                del stack
 
     def expect(self, e):
         self.expectedMatches = e
