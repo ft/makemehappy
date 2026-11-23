@@ -64,11 +64,7 @@ def updateLocationsFile(directory, datum):
         return
 
     category = datum.created['type']
-    if category == 'combination':
-        locationsFile = directory / '.mmh-locations.yaml'
-    else:
-        locationsFile = directory / ('.' + datum.name + ".locations.yaml")
-
+    locationsFile = directory / '.mmh-locations.yaml'
     mmhState = mmh.sourceCodeState.get()
 
     if locationsFile.exists():
@@ -553,6 +549,8 @@ def findOutputs(base):
     rv = []
     for candidate in Path(base).rglob('.*.yaml'):
         if candidate.name == '.mmh-state.yaml':
+            continue
+        if candidate.name == '.mmh-locations.yaml':
             continue
         rv.append(candidate)
     return rv
