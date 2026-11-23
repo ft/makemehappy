@@ -2,6 +2,7 @@ log-all: false
 log-to-file: false
 log-unique-versions: false
 fatal-dependencies: true
+track-locations: true
 
 pager-from-env: false
 page-output: false

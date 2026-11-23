@@ -123,6 +123,7 @@ class Program:
     def _cfg_load(self):
         self.cfg.load()
         self._adjustConfig()
+        mmh.setTrackLocations(self.cfg.lookup('track-locations'))
 
     def _src_load(self):
         self.src.load()

@@ -35,6 +35,11 @@ def xdgFile(fn):
 def warn(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+trackLocations = False
+def setTrackLocations(value):
+    global trackLocations
+    trackLocations = value
+
 verbosity = 0
 def verbose(*args, **kwargs):
     if (verbosity > 0):
@@ -315,7 +320,23 @@ def loadPython(log, fn, localenv = None, force = False):
     sourceCodeState.add(fn)
     with open(fn, mode = "r", encoding = "utf-8") as fragment:
         code = fragment.read()
-        exec(code, {}, localenv)
+        exec(compile(code, str(Path(fn).resolve()), "exec"),
+             {}, localenv)
+
+def frameToPrimitives(frame):
+    data = {
+        "file": frame.filename,
+        "line": frame.lineno,
+        "column": frame.positions.col_offset
+    }
+
+    if frame.code_context is not None and frame.index is not None:
+        data["code"] = frame.code_context[frame.index].strip()
+
+    return data
+
+def stackToPrimitives(stack):
+    return list(map(frameToPrimitives, stack))
 
 class InvalidVariantSpecifier(Exception):
     pass

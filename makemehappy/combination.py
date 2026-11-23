@@ -36,6 +36,7 @@
 
 import datetime
 import hashlib
+import inspect
 import json
 import os
 import re
@@ -47,6 +48,7 @@ from pathlib import Path
 
 COMBINATION_STATE_FILE_VERSION = 0
 OUTPUT_STATE_FILE_VERSION = 0
+LOCATIONS_STATE_FILE_VERSION = 0
 
 class InvalidCombinationGenerator(Exception):
     pass
@@ -57,6 +59,38 @@ class CombinationOutputDotfile(Exception):
 class CombinationOutputReserved(Exception):
     pass
 
+def updateLocationsFile(directory, datum):
+    if mmh.trackLocations is False:
+        return
+
+    category = datum.created['type']
+    if category == 'combination':
+        locationsFile = directory / '.mmh-locations.yaml'
+    else:
+        locationsFile = directory / ('.' + datum.name + ".locations.yaml")
+
+    mmhState = mmh.sourceCodeState.get()
+
+    if locationsFile.exists():
+        locations = mmh.load(locationsFile)
+        fileState = locations['mmh']
+    else:
+        locations = {}
+        fileState = ''
+
+    if category not in locations:
+        locations[category] = {}
+
+    if fileState == mmhState and datum.name in locations[category]:
+        return
+
+    locations[category][datum.name] = \
+        mmh.stackToPrimitives(datum.created['stack'])
+
+    locations['version'] = LOCATIONS_STATE_FILE_VERSION
+    locations['mmh'] = mmhState
+    mmh.dump(locationsFile, locations)
+
 class CombinationOutput:
     def __init__(self, callback, name, inputs):
         if name.startswith('.'):
@@ -66,6 +100,14 @@ class CombinationOutput:
         self.callback = callback
         self.name = name
         self.inputs = inputs
+        self.created = {}
+        if mmh.trackLocations:
+            try:
+                stack = inspect.stack()
+                self.created["type"] = "output"
+                self.created["stack"] = stack[1:]
+            finally:
+                del stack
 
     def run(self, outdir):
         try:
@@ -88,10 +130,20 @@ class Combination:
         self.out = None
         self.outputs = None
         self.stateFile = None
+        self.locationsFile = None
         self.algorithm = hashlib.sha256
         self.checksumCache = {}
         self.printer = None
         self.verbose = None
+        frame = inspect.currentframe().f_back.f_back.f_back
+        self.created = {}
+        if mmh.trackLocations:
+            try:
+                stack = inspect.stack()
+                self.created["type"] = "combination"
+                self.created["stack"] = stack[1:]
+            finally:
+                del stack
 
     def _validOutputs(self, lst):
         if isinstance(lst, list) is False:
@@ -248,6 +300,7 @@ class Combination:
             self.log.error(f'Output runner did not return success.' +
                            f' Instead: {rv}')
             return (False, starttime, endtime)
+        updateLocationsFile(self.out, output)
         return ((rv == True), starttime, endtime)
 
     def isUpToDate(self, ident, output):
@@ -302,6 +355,7 @@ class Combination:
             self.log.info(f'mkdir({self.out})')
             self.out.mkdir(parents = True, exist_ok = True)
         ident = self.addCombinationState()
+        updateLocationsFile(self.out, self)
         for output in self.outputs:
             if self.isUpToDate(ident, output):
                 self.updateOutputState(ident, output)
