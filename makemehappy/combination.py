@@ -834,14 +834,35 @@ def _internalToJSON(data):
         for key in entry:
             dep[key] = str(entry[key])
         cleandeps.append(dep)
+
+    combination = data['combination']['combination']
+    definition = data['file']
+    directory = definition.parent
+    locfile = directory / ".mmh-locations.yaml"
+    locations = {}
+    if locfile.exists():
+        locations = mmh.load(locfile)
+
+    if 'combination' in locations and combination in locations['combination']:
+        combstack = locations['combination'][combination]
+    else:
+        combstack = []
+
+    outname = data['name']
+    if 'output' in locations and outname in locations['output']:
+        outstack = locations['output'][outname]
+    else:
+        outstack = []
+
     new = {
         'combination': {
-            'name': data['combination']['combination'],
-            'id':   data['combination']['id']
+            'name': combination,
+            'id':   data['combination']['id'],
+            'stack': combstack,
         },
-        'file':             str(data['file']),
+        'file':             str(definition),
         'size':             data['size'],
-        'name':             data['name'],
+        'name':             outname,
         'actual':           data['checksum'],
         'expected':         data['expected'],
         'state':            data['state'],
@@ -852,7 +873,8 @@ def _internalToJSON(data):
         'dependencies':     cleandeps,
         'dependency-state': data['dep-state'],
         'creation-unix':    data['creation'].timestamp(),
-        'creation-utc':     str(data['creation'])
+        'creation-utc':     str(data['creation']),
+        'stack':            outstack
     }
     return new
 
