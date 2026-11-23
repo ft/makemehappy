@@ -326,6 +326,7 @@ def loadPython(log, fn, localenv = None, force = False):
 def frameToPrimitives(frame):
     data = {
         "file": frame.filename,
+        "function": frame.function,
         "line": frame.lineno,
         "column": frame.positions.col_offset
     }
