@@ -361,7 +361,7 @@ class Manifest:
                 table['data'] = []
                 for (infile, outfile) in pairs:
                     table['data'].append([
-                        str(infile), str(dd / outfile)
+                        str(infile), str(outfile)
                     ])
 
             new = {
