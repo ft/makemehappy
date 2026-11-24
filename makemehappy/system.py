@@ -790,8 +790,11 @@ class System:
                                         'logging':          self.log},
                            force = self.args.load_insecure_files)
         else:
-            print('deploy: No manifest specified!')
-            self.log.error('deploy: No manifest specified!')
+            if self.args.json:
+                print("false")
+            else:
+                print('deploy: No manifest specified!')
+                self.log.error('deploy: No manifest specified!')
             return False
 
         m.manifest.withSpecification(self.data['manifest'])
@@ -810,6 +813,10 @@ class System:
 
         self.setupDirectory()
         m.manifest.collect(self.log)
+
+        if (self.args.json):
+            m.manifest.dumpJSON()
+            return True
 
         if (self.args.listCollection):
             col = m.manifest.listCollection()

@@ -20,6 +20,7 @@
 import contextlib
 import hashlib
 import inspect
+import json
 import math
 import os
 import re
@@ -77,7 +78,7 @@ class ManifestEntry:
             try:
                 stack = inspect.stack()
                 self.created["type"] = "ManifestEntry"
-                self.created["stack"] = stack
+                self.created["stack"] = stack[1:]
             finally:
                 del stack
 
@@ -332,6 +333,51 @@ class Manifest:
                 errors.append(UniquenessViolation(key, occurances))
 
         return errors
+
+    def dumpJSON(self):
+        data = {
+            "specification": str(Path(self.spec).resolve()),
+            "size":          len(self.collection),
+            "collection":    []
+        }
+
+        for (idx, entry, n, pairs) in self.collection:
+            if 'stack' in entry.created:
+                stack = mmh.stackToPrimitives(entry.created['stack'])
+            else:
+                stack = []
+
+            if entry.destinationDir is not None:
+                dd = entry.destinationDir
+            else:
+                dd = "."
+
+            table = {}
+            if isinstance(pairs, list) == False:
+                table['type'] = "error"
+                table['error'] = str(pairs)
+            else:
+                table['type'] = "pairs"
+                table['data'] = []
+                for (infile, outfile) in pairs:
+                    table['data'].append([
+                        str(infile), str(dd / outfile)
+                    ])
+
+            new = {
+                "index": idx,
+                "stack": stack,
+                "generator": entry.string,
+                "filters": len(entry.filters),
+                "transformers": len(entry.transformers),
+                "expected": entry.expectedMatches,
+                "destination": dd,
+                "entries": n,
+                "table": table
+            }
+            data["collection"].append(new)
+
+        print(json.dumps(data, sort_keys = True))
 
     def listSpec(self):
         if len(self.entries) == 0:

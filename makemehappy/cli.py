@@ -412,6 +412,10 @@ sys_deploy.add_argument(
     "-l", "--list", action = 'store_true', dest = 'listCollection',
     help = "List input/output file collection of manifest")
 
+sys_deploy.add_argument(
+    "-j", "--json", action = 'store_true',
+    help = "Produce JSON output instead of terminal markup")
+
 sys_deploy.add_argument('destination', default = 'deploy', nargs = '?')
 
 ### End of Argument Parser Spec
